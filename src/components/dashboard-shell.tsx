@@ -1,7 +1,9 @@
 import Link from "next/link";
 import {
+  Award,
   Bookmark,
   Briefcase,
+  DollarSign,
   LayoutDashboard,
   ListChecks,
   MapPin,
@@ -39,6 +41,8 @@ function navItemsForRole(role: UserRole) {
       { href: "/saved", label: "Saved", icon: Bookmark },
       { href: "/messages", label: "Messages", icon: MessageSquare },
       { href: "/assistant", label: "AI Assistant", icon: Sparkles },
+      { href: "/earnings", label: "Earnings", icon: DollarSign },
+      { href: "/passport", label: "Work Passport", icon: Award },
     ];
   }
 

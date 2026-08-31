@@ -8,6 +8,8 @@ import { ApplicationStatusBadge } from "@/components/application-status-badge";
 import { RateParticipantDialog } from "@/components/rate-participant-dialog";
 import { ReportButton } from "@/components/report-button";
 import { MessageButton } from "@/components/message-button";
+import { FundEscrowButton } from "@/components/fund-escrow-button";
+import { ReleasePaymentButton } from "@/components/release-payment-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ApplicationStatusSelect } from "./application-status-select";
 
@@ -139,6 +141,12 @@ export default async function ApplicationsPage({
                     )}
                   </div>
                   <div className="flex items-center gap-3">
+                    {application.status === "accepted" && job?.status !== "filled" && (
+                      <FundEscrowButton applicationId={application.id} />
+                    )}
+                    {job?.status === "filled" && application.status === "accepted" && (
+                      <ReleasePaymentButton applicationId={application.id} />
+                    )}
                     {canRate && job && (
                       <RateParticipantDialog
                         jobId={job.id}

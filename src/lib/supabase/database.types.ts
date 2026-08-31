@@ -358,7 +358,7 @@ export interface Database {
         Row: {
           id: string;
           job_id: string | null;
-          employer_id: string;
+          employer_id: string | null;
           teen_id: string;
           amount: number;
           type: TransactionType;
@@ -371,7 +371,7 @@ export interface Database {
         Insert: {
           id?: string;
           job_id?: string | null;
-          employer_id: string;
+          employer_id?: string | null;
           teen_id: string;
           amount: number;
           type: TransactionType;
