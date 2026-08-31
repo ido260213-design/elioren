@@ -237,6 +237,19 @@ export async function withdrawEarnings(_prevState: WithdrawState, formData: Form
 
   const admin = createAdminClient();
 
+  // Atomically reserve the funds first — this (not the `balance` read above, which is
+  // only a friendly pre-check) is the real guard against two concurrent withdrawals
+  // both passing against the same stale balance and both getting a real Stripe
+  // transfer. See reserve_withdrawal() in the payments migration.
+  const { data: reserved, error: reserveError } = await admin.rpc("reserve_withdrawal", {
+    p_teen_id: user.id,
+    p_amount: amount,
+  });
+
+  if (reserveError || !reserved) {
+    return { error: "You don't have that much available to withdraw." };
+  }
+
   try {
     const transfer = await stripe.transfers.create({
       amount: Math.round(amount * 100),
@@ -252,13 +265,9 @@ export async function withdrawEarnings(_prevState: WithdrawState, formData: Form
       status: "succeeded",
       stripe_transfer_id: transfer.id,
     });
-
-    await admin
-      .from("earnings_balance")
-      .update({ available_balance: Number(balance.available_balance) - amount })
-      .eq("teen_id", user.id);
   } catch (err) {
     console.error("Stripe transfer failed", err);
+    await admin.rpc("release_withdrawal_reservation", { p_teen_id: user.id, p_amount: amount });
     return { error: "The withdrawal couldn't be completed — try again shortly." };
   }
 

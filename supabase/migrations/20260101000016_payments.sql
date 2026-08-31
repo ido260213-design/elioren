@@ -110,3 +110,47 @@ $$;
 create trigger guardian_payout_accounts_prevent_tamper
   before update on public.guardian_payout_accounts
   for each row execute function public.prevent_payout_enabled_tamper();
+
+-- Atomically reserves p_amount from a teen's available balance for a withdrawal.
+-- withdrawEarnings() previously read the balance, checked it in JS, then called Stripe
+-- and wrote the new balance back from that same stale read — two concurrent withdraw
+-- requests (two tabs/devices, or a double-submit) could both pass the check against the
+-- same starting balance and both get a real Stripe transfer, with the DB balance write
+-- at the end simply overwriting rather than compounding, silently losing track of how
+-- much was actually paid out. Doing the check-and-decrement as a single guarded UPDATE
+-- makes it atomic under Postgres's row-level locking: at most one concurrent caller can
+-- win the race for a given balance. SECURITY DEFINER because earnings_balance has no
+-- authenticated-role update policy; callers must already be authorized (withdrawEarnings
+-- requires the teen role and passes the session's own user id, never client input).
+create or replace function public.reserve_withdrawal(p_teen_id uuid, p_amount numeric)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  updated_rows int;
+begin
+  update public.earnings_balance
+  set available_balance = available_balance - p_amount
+  where teen_id = p_teen_id and available_balance >= p_amount;
+
+  get diagnostics updated_rows = row_count;
+  return updated_rows > 0;
+end;
+$$;
+
+-- Compensates a reserve_withdrawal() reservation back onto the balance when the Stripe
+-- transfer that was gated on it fails after the reservation succeeded.
+create or replace function public.release_withdrawal_reservation(p_teen_id uuid, p_amount numeric)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update public.earnings_balance
+  set available_balance = available_balance + p_amount
+  where teen_id = p_teen_id;
+end;
+$$;

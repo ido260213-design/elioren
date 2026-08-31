@@ -69,6 +69,13 @@ create trigger profiles_prevent_role_change
 
 -- Auto-create a profiles row whenever a new auth.users row is created. The role is
 -- read from the signup call's user_metadata (supabase.auth.signUp({ options: { data: { role } } })).
+--
+-- SECURITY: raw_user_meta_data is client-supplied — supabase.auth.signUp() is a public
+-- endpoint callable directly with just the anon key (bypassing our Next.js server
+-- action and its zod validation entirely), so a caller can pass options.data.role set
+-- to literally anything, including 'admin'. Only ever promote to 'teen', 'employer' or
+-- 'business' from that value; 'admin' (and anything else) always falls back to 'teen'.
+-- There is deliberately no self-service path to the admin role.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
@@ -79,7 +86,11 @@ begin
   insert into public.profiles (id, role, email)
   values (
     new.id,
-    coalesce((new.raw_user_meta_data ->> 'role')::public.user_role, 'teen'),
+    case
+      when (new.raw_user_meta_data ->> 'role') in ('teen', 'employer', 'business')
+        then (new.raw_user_meta_data ->> 'role')::public.user_role
+      else 'teen'
+    end,
     new.email
   );
   return new;

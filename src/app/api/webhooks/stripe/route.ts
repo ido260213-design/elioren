@@ -38,6 +38,22 @@ export async function POST(request: NextRequest) {
         const { job_id, employer_id, teen_id } = session.metadata;
         const amount = (session.amount_total ?? 0) / 100;
 
+        // Stripe delivers webhooks at-least-once and will retry this same event (e.g.
+        // on a slow/ambiguous ack), so guard against double-crediting: skip if a hold
+        // already exists for this job/teen (same natural key fundJobEscrow itself
+        // checks before creating the Checkout Session).
+        const { data: existingHold } = await admin
+          .from("transactions")
+          .select("id")
+          .eq("job_id", job_id)
+          .eq("teen_id", teen_id)
+          .eq("type", "hold")
+          .maybeSingle();
+
+        if (existingHold) {
+          break;
+        }
+
         await admin.from("transactions").insert({
           job_id,
           employer_id,

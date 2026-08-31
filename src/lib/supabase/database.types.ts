@@ -450,6 +450,15 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      reserve_withdrawal: {
+        Args: { p_teen_id: string; p_amount: number };
+        Returns: boolean;
+      };
+      release_withdrawal_reservation: {
+        Args: { p_teen_id: string; p_amount: number };
+        Returns: undefined;
+      };
+    };
   };
 }
