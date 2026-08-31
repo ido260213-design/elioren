@@ -43,6 +43,13 @@ this README covers what's built and how to run it.
   HireUp Premium (Stripe Billing subscriptions, feature-gated free tier, priority
   job-ranking boost, premium badge). See [Going live with Stripe](#going-live-with-stripe)
   before ever pointing this at real money.
+- **Hardening pass (post-Phase-3): done.** A dedicated correctness/security review
+  (automated first pass + a manual follow-up pass across every phase) found and fixed
+  several real bugs before this app saw any real users or money — see
+  [Hardening pass findings](#hardening-pass-findings) for the full list. The most
+  serious: a signup-metadata privilege escalation to `admin`, and a SECURITY DEFINER
+  withdrawal RPC that any authenticated user could call directly to drain an arbitrary
+  teen's balance. Both are closed and re-verified against a real Postgres instance.
 
 ## Getting started
 
@@ -165,6 +172,10 @@ Stripe webhook — and `subscriptions`) were verified the same way too, confirmi
 particular: a teen can't approve their own verification request or self-confirm
 `payouts_enabled`; `transactions`/`earnings_balance` reject direct authenticated-role
 writes entirely (service-role only); an employer can't see another employer's blocks.
+The post-Phase-3 hardening pass re-verified this area with real exploit attempts, not
+just policy inspection — see [Hardening pass findings](#hardening-pass-findings) for
+what that actually caught (a working privilege-escalation-to-admin path and a working
+arbitrary-balance-drain path, both closed and re-confirmed blocked).
 
 ## Phase 3 acceptance criteria — self-check
 
@@ -184,6 +195,88 @@ writes entirely (service-role only); an employer can't see another employer's bl
   reporter's behalf) alongside "Dismiss", each resolving the report.
 - **"Stripe wired in test mode by default"** — see
   [Going live with Stripe](#going-live-with-stripe) directly below.
+
+## Hardening pass findings
+
+After Phase 3 shipped, a dedicated correctness/security review (an automated pass,
+then a manual follow-up across every phase) went looking for real bugs before this app
+saw any real users or money. Every finding below was reproduced against a real
+Postgres instance (or Node/browser runtime) before being fixed, and re-verified after.
+Security-relevant findings first:
+
+- **Admin privilege escalation** — `handle_new_user()` cast the client-supplied signup
+  metadata `role` directly to the `user_role` enum, which includes `'admin'`.
+  `supabase.auth.signUp()` is a public endpoint independent of the app's own
+  teen/employer/business-only signup form — anyone could call it directly with
+  `options.data.role: 'admin'` and get a real admin account. Fixed: the trigger now
+  whitelists `teen`/`employer`/`business` only, anything else (including `admin`)
+  falls back to `teen`.
+- **Withdrawal RPC callable by anyone, for anyone** — the atomic `reserve_withdrawal()`/
+  `release_withdrawal_reservation()` functions added to fix the race condition below
+  are `SECURITY DEFINER`, and Postgres grants `EXECUTE` on new functions to `PUBLIC` by
+  default. Neither function checked that `p_teen_id` belonged to the caller, so *any*
+  authenticated user could call `reserve_withdrawal` directly (e.g. from the browser
+  Supabase client, bypassing `withdrawEarnings()` entirely) with an arbitrary
+  `p_teen_id` and silently drain that teen's `available_balance` — confirmed
+  exploitable (an employer account draining a teen's balance with no Stripe transfer,
+  no ownership check, no trace but the balance moving) before the fix. Fixed:
+  `EXECUTE` revoked from `PUBLIC`, granted only to `service_role`
+  (migration `20260101000019`).
+- **Withdrawal race condition (TOCTOU)** — `withdrawEarnings()` read
+  `available_balance`, checked it in JS, called Stripe, then wrote the balance back
+  from that same stale read. Two concurrent withdrawals (two tabs, a double-submit)
+  could both pass the check against the same starting balance and both get a real
+  Stripe transfer, with the final write overwriting rather than compounding — the DB
+  balance ending up higher than it should while the platform paid out more than the
+  teen ever had available. Fixed: `reserve_withdrawal()` does the check-and-decrement
+  as one atomically-guarded `UPDATE`, called *before* Stripe is touched; a failed
+  transfer compensates via `release_withdrawal_reservation()`.
+- **Stripe webhook double-crediting on retry** — `checkout.session.completed` always
+  inserted a new `hold` transaction and bumped `pending_balance`, with no idempotency
+  check. Stripe delivers webhooks at-least-once and retries on any ambiguous response;
+  a retried delivery would double-credit escrow for one real charge. Fixed: skip if a
+  `hold` already exists for the job/teen pair before inserting.
+- **Auth links didn't actually sign anyone in** — `@supabase/ssr`'s clients default to
+  the PKCE flow, where every email link (signup confirmation, password reset) redirects
+  back with a `?code=` that must be exchanged for a session server-side — landing on
+  the page alone doesn't authenticate you. There was no `/auth/callback` route to do
+  that exchange, so on a real Supabase Cloud project (which requires email confirmation
+  by default), a password-reset link would land on `/reset-password` with no session,
+  and `resetPassword()` would just fail with "link has expired." Fixed: added
+  `/auth/callback` (calls `exchangeCodeForSession`), pointed both
+  `resetPasswordForEmail`'s `redirectTo` and `signUp`'s `emailRedirectTo` at it.
+
+Correctness/UX findings:
+
+- **Job search broke on a comma** — `/jobs`'s search built a PostgREST `.or()` filter
+  string via raw interpolation of the user's query; `,`/`(`/`)` are that filter
+  syntax's own delimiters, so a location search like "Austin, TX" (an extremely common
+  input) broke the query and silently returned zero results. Fixed: strip those
+  characters before building the filter.
+- **`SaveJobButton` rendered (and acted on) for non-teen users on `/jobs`** — the
+  listing page passed a `saved` boolean whenever *any* user was logged in, not just
+  teens (the per-job-detail page already gated this correctly). An employer clicking
+  the bookmark icon would hit `saveJob()`'s `requireRole(['teen'])` check and get
+  silently redirected to their own dashboard. Fixed: only pass a defined `saved` value
+  for teens.
+- **Admin role hit a dead-end 404 on `/profile`** — the page branched teen vs.
+  employer/business only; an admin (no `teen_profiles`/`employer_profiles` row) fell
+  into the employer branch and got redirected to a nonexistent `/onboarding/admin`.
+  Fixed: admins are sent to `/admin` instead. Also added a bare `/dashboard` → correct
+  role-dashboard redirect (previously a 404) and a logout button to `/admin`'s header
+  (previously unreachable from anywhere in the admin panel).
+- **Stale "Release payment" button** — the button's "released" state was local
+  component state that reset on every page reload, so a refreshed `/applications` page
+  showed the button again even after payment had already been released (clicking it
+  again was a harmless server-side no-op, but confusing). Fixed: the page now checks
+  for an existing `release` transaction and passes the real state in.
+- Added Stripe idempotency keys to both Checkout Session creations (a double-click or
+  slow-network resubmit now gets back the same session instead of risking a second real
+  charge) and wrapped the remaining un-caught Stripe API calls in `try`/`catch` so a
+  transient Stripe error returns a friendly message instead of an unhandled crash.
+- Added `/billing` (employer/business transaction history — there was previously no
+  in-app way for an employer to see what they'd funded to escrow) as a small,
+  genuinely-missing feature alongside the fixes above.
 
 ## Going live with Stripe
 
