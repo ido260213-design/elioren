@@ -12,6 +12,10 @@ export type ApplicationStatus = "applied" | "viewed" | "interview" | "accepted" 
 export type ReportTargetType = "job" | "profile" | "message";
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
 export type NotificationType = "application_status_changed" | "new_message";
+export type VerificationRequestStatus = "pending" | "approved" | "rejected";
+export type TransactionType = "hold" | "release" | "refund" | "payout";
+export type TransactionStatus = "pending" | "succeeded" | "failed" | "canceled";
+export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete";
 
 export interface Availability {
   [day: string]: { start: string; end: string }[] | undefined;
@@ -52,6 +56,7 @@ export interface Database {
           guardian_email: string;
           guardian_confirmation_token: string;
           guardian_confirmed_at: string | null;
+          verification_status: VerificationStatus;
           created_at: string;
           updated_at: string;
         };
@@ -78,6 +83,9 @@ export interface Database {
           // Only ever written by the server (service-role client) — see
           // src/app/api/guardian/confirm/route.ts and prevent_guardian_confirmation_tamper().
           guardian_confirmed_at: string | null;
+          // Only ever written by the admin verification-decision trigger — see
+          // prevent_verification_status_tamper() / apply_verification_decision().
+          verification_status: VerificationStatus;
         }>;
         Relationships: [];
       };
@@ -308,6 +316,135 @@ export interface Database {
         };
         Update: Partial<{
           read_at: string | null;
+        }>;
+        Relationships: [];
+      };
+      verification_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          note: string | null;
+          status: VerificationRequestStatus;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          note?: string | null;
+        };
+        Update: Partial<{
+          status: VerificationRequestStatus;
+        }>;
+        Relationships: [];
+      };
+      blocked_users: {
+        Row: {
+          blocker_id: string;
+          blocked_id: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          blocker_id: string;
+          blocked_id: string;
+          reason?: string | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      transactions: {
+        Row: {
+          id: string;
+          job_id: string | null;
+          employer_id: string;
+          teen_id: string;
+          amount: number;
+          type: TransactionType;
+          status: TransactionStatus;
+          stripe_payment_intent_id: string | null;
+          stripe_transfer_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          job_id?: string | null;
+          employer_id: string;
+          teen_id: string;
+          amount: number;
+          type: TransactionType;
+          status?: TransactionStatus;
+          stripe_payment_intent_id?: string | null;
+          stripe_transfer_id?: string | null;
+        };
+        Update: Partial<{
+          status: TransactionStatus;
+          stripe_payment_intent_id: string | null;
+          stripe_transfer_id: string | null;
+        }>;
+        Relationships: [];
+      };
+      earnings_balance: {
+        Row: {
+          teen_id: string;
+          available_balance: number;
+          pending_balance: number;
+          updated_at: string;
+        };
+        Insert: {
+          teen_id: string;
+          available_balance?: number;
+          pending_balance?: number;
+        };
+        Update: Partial<{
+          available_balance: number;
+          pending_balance: number;
+        }>;
+        Relationships: [];
+      };
+      guardian_payout_accounts: {
+        Row: {
+          teen_id: string;
+          guardian_email: string;
+          stripe_connect_account_id: string;
+          payouts_enabled: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          teen_id: string;
+          guardian_email: string;
+          stripe_connect_account_id: string;
+        };
+        Update: Partial<{
+          payouts_enabled: boolean;
+        }>;
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          stripe_customer_id: string;
+          stripe_subscription_id: string;
+          status: SubscriptionStatus;
+          current_period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          stripe_customer_id: string;
+          stripe_subscription_id: string;
+          status?: SubscriptionStatus;
+          current_period_end?: string | null;
+        };
+        Update: Partial<{
+          status: SubscriptionStatus;
+          current_period_end: string | null;
         }>;
         Relationships: [];
       };
