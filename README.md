@@ -26,8 +26,13 @@ this README covers what's built and how to run it.
 
 - **Phase 1 — Core MVP: done.** Auth, role-based onboarding, dashboards, job
   browse/post/apply, application status tracking, ratings, guardian-consent
-  scaffolding, `reports` stub. See [Phase 1 self-check](#phase-1-self-check) below.
-- **Phase 2 — Engagement layer:** not started.
+  scaffolding, `reports` stub.
+- **Phase 2 — Engagement layer: done.** In-app chat (Realtime + presence typing
+  indicator + read receipts + photo attachments via Storage), AI match score (Claude,
+  cached in `job_matches`), saved jobs (filterable at `/saved`), nearby-jobs map
+  (Mapbox GL + clustering, geocoded on post / lazily on first view), notifications
+  (DB-trigger-driven, delivered live via Realtime), AI Assistant panel (job
+  recommendations, Work Passport draft, interview prep — rate-limited per user).
 - **Phase 3 — Trust, payments, monetization:** not started.
 
 ## Getting started
@@ -126,7 +131,11 @@ non-open jobs, or applications; duplicate applications and duplicate ratings are
 rejected; a teen cannot self-confirm guardian consent; ratings only insert for a real
 participant of a `filled` job. That scratch harness isn't part of this repo — re-run
 migrations against a real Supabase project (or `supabase start`) to verify directly
-against PostgREST.
+against PostgREST. Phase 2's additional tables/triggers (`conversations`, `messages`,
+`saved_jobs`, `job_matches`, `notifications` — including the two notification-creating
+triggers) were verified the same way; `chat-images` Storage bucket policies
+(migration `20260101000013`) couldn't be, since vanilla Postgres has no `storage`
+schema — that one needs a real Supabase project to exercise.
 
 ## Directory structure
 
@@ -154,6 +163,19 @@ e2e/                    Playwright critical-path tests
   no time-range picker yet.
 - Avatar upload isn't wired to Supabase Storage yet — `avatar_url` columns exist but
   nothing writes them.
-- Phase 2 (chat, AI match score, saved jobs, map, notifications, AI assistant) and
-  Phase 3 (Work Passport, verification, Stripe payments, moderation queue, Premium) are
+- `src/lib/rate-limit.ts` is an in-memory, single-instance rate limiter (protects the
+  match-score and AI-assistant Claude calls). Fine for one Next.js server; a
+  multi-instance deployment needs a shared store (e.g. Upstash Redis) instead.
+- The AI match score (`src/lib/match-score.ts`) and AI Assistant panel
+  (`src/lib/actions/assistant.ts`) fall back to a heuristic score / a "not configured"
+  message when `ANTHROPIC_API_KEY` is unset, so those pages don't crash without it —
+  but you need a real key to see actual Claude-generated scores/explanations/drafts.
+- Match scores are computed synchronously on `/jobs` and `/assistant` page loads (for
+  every visible card, capped at a page size) to satisfy "match scores appear on job
+  listings" literally; the `job_matches` cache keeps repeat visits fast, but a larger
+  job catalog would want to precompute these in the background instead.
+- "Bookmarks... filterable in `/dashboard/teen`" (Phase 2 acceptance criteria) is
+  implemented as a dedicated `/saved` page (reachable from the teen nav, filterable by
+  category) rather than embedded inside the `/dashboard/teen` route itself.
+- Phase 3 (Work Passport, verification, Stripe payments, moderation queue, Premium) is
   not started — see the build spec.
