@@ -23,6 +23,7 @@ export function ReportButton({ targetType, targetId }: { targetType: ReportTarge
   const [state, formAction, isPending] = useActionState<FileReportState, FormData>(fileReport, undefined);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close the dialog once the server action reports success
     if (state?.success) setOpen(false);
   }, [state]);
 

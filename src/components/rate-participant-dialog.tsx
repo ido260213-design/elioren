@@ -33,6 +33,7 @@ export function RateParticipantDialog({
   const [state, formAction, isPending] = useActionState<SubmitRatingState, FormData>(submitRating, undefined);
 
   React.useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close the dialog once the server action reports success
     if (state?.success) setOpen(false);
   }, [state]);
 
