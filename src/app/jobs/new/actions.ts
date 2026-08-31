@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/auth";
 import { jobPostSchema } from "@/lib/validations/jobs";
 import { geocodeLocation } from "@/lib/geocode";
 import { screenContent } from "@/lib/moderation";
+import { hasPremium, FREE_ACTIVE_JOB_POSTS } from "@/lib/premium";
 
 export type JobPostState = { error?: string } | undefined;
 
@@ -35,6 +36,20 @@ export async function postJob(_prevState: JobPostState, formData: FormData): Pro
   }
 
   const supabase = await createClient();
+
+  if (!(await hasPremium(supabase, user.id))) {
+    const { count } = await supabase
+      .from("jobs")
+      .select("id", { count: "exact", head: true })
+      .eq("employer_id", user.id)
+      .eq("status", "open");
+
+    if ((count ?? 0) >= FREE_ACTIVE_JOB_POSTS) {
+      return {
+        error: `Free accounts get ${FREE_ACTIVE_JOB_POSTS} active job posts at a time. Upgrade to HireUp Premium for unlimited posts, or close an existing one first.`,
+      };
+    }
+  }
 
   const { data: job, error } = await supabase
     .from("jobs")

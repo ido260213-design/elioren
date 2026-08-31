@@ -4,6 +4,7 @@ import { MapPin, Users, BadgeCheck, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { SaveJobButton } from "@/components/save-job-button";
+import { PremiumBadge } from "@/components/premium-badge";
 import type { JobStatus, PayType, VerificationStatus } from "@/lib/supabase/database.types";
 
 export interface JobCardData {
@@ -30,12 +31,14 @@ export function JobCard({
   job,
   saved,
   matchScore,
+  employerIsPremium,
 }: {
   job: JobCardData;
   /** Pass a boolean (teen viewers only) to render the bookmark toggle. */
   saved?: boolean;
   /** Pass 0–100 (teen viewers only) to render the AI match score badge. */
   matchScore?: number;
+  employerIsPremium?: boolean;
 }) {
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -52,11 +55,12 @@ export function JobCard({
           </div>
         </div>
         {job.employer_display_name && (
-          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
             {job.employer_display_name}
             {job.employer_verification_status === "verified" && (
               <BadgeCheck className="size-3.5 text-primary" aria-label="Verified" />
             )}
+            {employerIsPremium && <PremiumBadge />}
           </p>
         )}
       </CardHeader>

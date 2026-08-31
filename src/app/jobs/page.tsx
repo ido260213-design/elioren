@@ -34,13 +34,26 @@ export default async function JobsPage({
     query = query.or(`title.ilike.%${q}%,location_text.ilike.%${q}%`);
   }
 
-  const { data: jobs } = await query;
+  const { data: fetchedJobs } = await query;
 
-  const employerIds = [...new Set((jobs ?? []).map((j) => j.employer_id))];
+  const employerIds = [...new Set((fetchedJobs ?? []).map((j) => j.employer_id))];
   const { data: employers } = employerIds.length
     ? await supabase.from("employer_profiles").select("user_id, display_name, verification_status").in("user_id", employerIds)
     : { data: [] };
   const employersById = new Map((employers ?? []).map((e) => [e.user_id, e]));
+
+  const { data: premiumSubs } = employerIds.length
+    ? await supabase.from("subscriptions").select("user_id").in("user_id", employerIds).eq("status", "active")
+    : { data: [] };
+  const premiumEmployerIds = new Set((premiumSubs ?? []).map((s) => s.user_id));
+
+  // Priority-visibility boost for HireUp Premium employers: stable sort keeps
+  // everything else in its existing (most-recent-first) order.
+  const jobs = [...(fetchedJobs ?? [])].sort((a, b) => {
+    const aPremium = premiumEmployerIds.has(a.employer_id) ? 1 : 0;
+    const bPremium = premiumEmployerIds.has(b.employer_id) ? 1 : 0;
+    return bPremium - aPremium;
+  });
 
   const {
     data: { user },
@@ -89,6 +102,7 @@ export default async function JobsPage({
                   }}
                   saved={user ? savedJobIds.has(job.id) : undefined}
                   matchScore={matchScores.get(job.id)}
+                  employerIsPremium={premiumEmployerIds.has(job.employer_id)}
                 />
               );
             })}

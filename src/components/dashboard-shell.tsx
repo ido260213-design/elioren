@@ -3,6 +3,7 @@ import {
   Award,
   Bookmark,
   Briefcase,
+  Crown,
   DollarSign,
   LayoutDashboard,
   ListChecks,
@@ -83,13 +84,13 @@ export async function DashboardShell({
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur print:hidden">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <div className="flex items-center gap-6">
-            <Link href={dashboardPathForRole(role)} className="flex items-center gap-1.5 text-lg font-bold text-primary">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+          <div className="flex min-w-0 items-center gap-6">
+            <Link href={dashboardPathForRole(role)} className="flex shrink-0 items-center gap-1.5 text-lg font-bold text-primary">
               <Briefcase className="size-5" />
               HireUp
             </Link>
-            <nav className="hidden items-center gap-1 sm:flex">
+            <nav className="hidden items-center gap-1 overflow-x-auto sm:flex">
               {navItems.map(({ href, label, icon: Icon }) => (
                 <Button key={href} asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
                   <Link href={href}>
@@ -101,7 +102,7 @@ export async function DashboardShell({
             </nav>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {user && <NotificationsBell userId={user.id} initialNotifications={notifications ?? []} />}
             <ThemeToggle />
             <DropdownMenu>
@@ -119,6 +120,12 @@ export async function DashboardShell({
                   <Link href="/profile">
                     <UserIcon />
                     Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/premium">
+                    <Crown />
+                    HireUp Premium
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
