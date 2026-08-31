@@ -6,7 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { ProfileForm } from "@/components/profile-form";
 import { GuardianPendingBanner } from "@/components/guardian-pending-banner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VerificationBadge } from "@/components/verification-badge";
+import { Card, CardContent, CardHeader, CardTitle, CardAction } from "@/components/ui/card";
 import { updateTeenProfile, updateEmployerProfile } from "./actions";
 
 export const metadata: Metadata = { title: "Profile" };
@@ -18,7 +19,7 @@ export default async function ProfilePage() {
   if (profile.role === "teen") {
     const { data: teenProfile } = await supabase
       .from("teen_profiles")
-      .select("full_name, bio, skills, hobbies, guardian_email, guardian_confirmed_at")
+      .select("full_name, bio, skills, hobbies, guardian_email, guardian_confirmed_at, verification_status")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -32,6 +33,9 @@ export default async function ProfilePage() {
         <Card className="mx-auto max-w-xl">
           <CardHeader>
             <CardTitle>Your profile</CardTitle>
+            <CardAction>
+              <VerificationBadge status={teenProfile.verification_status} />
+            </CardAction>
           </CardHeader>
           <CardContent>
             <ProfileForm
@@ -52,7 +56,7 @@ export default async function ProfilePage() {
 
   const { data: employerProfile } = await supabase
     .from("employer_profiles")
-    .select("display_name, bio")
+    .select("display_name, bio, verification_status")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -63,6 +67,9 @@ export default async function ProfilePage() {
       <Card className="mx-auto max-w-xl">
         <CardHeader>
           <CardTitle>Your profile</CardTitle>
+          <CardAction>
+            <VerificationBadge status={employerProfile.verification_status} />
+          </CardAction>
         </CardHeader>
         <CardContent>
           <ProfileForm
