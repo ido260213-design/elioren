@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Flag, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Flag, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { signOut } from "@/app/logout/actions";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard },
@@ -30,7 +31,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <form action={signOut}>
+              <Button type="submit" variant="ghost" size="icon" aria-label="Log out">
+                <LogOut className="size-4" />
+              </Button>
+            </form>
+          </div>
         </div>
         <nav className="flex items-center gap-1 overflow-x-auto border-t border-border px-2 py-1 sm:hidden">
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => (

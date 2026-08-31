@@ -52,6 +52,7 @@ function navItemsForRole(role: UserRole) {
     { href: "/jobs/new", label: "Post a job", icon: Plus },
     { href: "/applications", label: "Applicants", icon: ListChecks },
     { href: "/messages", label: "Messages", icon: MessageSquare },
+    { href: "/billing", label: "Billing", icon: DollarSign },
   ];
 }
 

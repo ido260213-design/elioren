@@ -26,32 +26,39 @@ export async function startPremiumCheckout(): Promise<PremiumActionState> {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "subscription",
-    payment_method_types: ["card"],
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          product_data: { name: "HireUp Premium" },
-          unit_amount: Math.round(PREMIUM_MONTHLY_PRICE_USD * 100),
-          recurring: { interval: "month" },
+  let sessionUrl: string | null;
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: "HireUp Premium" },
+            unit_amount: Math.round(PREMIUM_MONTHLY_PRICE_USD * 100),
+            recurring: { interval: "month" },
+          },
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    client_reference_id: user.id,
-    subscription_data: { metadata: { user_id: user.id } },
-    metadata: { kind: "premium_subscription", user_id: user.id },
-    success_url: `${siteUrl}/premium?subscribed=1`,
-    cancel_url: `${siteUrl}/premium`,
-  }, { idempotencyKey: `premium-checkout:${user.id}` });
+      ],
+      client_reference_id: user.id,
+      subscription_data: { metadata: { user_id: user.id } },
+      metadata: { kind: "premium_subscription", user_id: user.id },
+      success_url: `${siteUrl}/premium?subscribed=1`,
+      cancel_url: `${siteUrl}/premium`,
+    }, { idempotencyKey: `premium-checkout:${user.id}` });
+    sessionUrl = session.url;
+  } catch (err) {
+    console.error("Stripe checkout session creation failed", err);
+    return { error: "Couldn't start checkout — try again shortly." };
+  }
 
-  if (!session.url) {
+  if (!sessionUrl) {
     return { error: "Couldn't start checkout — try again." };
   }
 
-  redirect(session.url);
+  redirect(sessionUrl);
 }
 
 export async function openBillingPortal(): Promise<PremiumActionState> {
@@ -81,10 +88,18 @@ export async function openBillingPortal(): Promise<PremiumActionState> {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const portalSession = await stripe.billingPortal.sessions.create({
-    customer: subscription.stripe_customer_id,
-    return_url: `${siteUrl}/premium`,
-  });
 
-  redirect(portalSession.url);
+  let portalUrl: string;
+  try {
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: subscription.stripe_customer_id,
+      return_url: `${siteUrl}/premium`,
+    });
+    portalUrl = portalSession.url;
+  } catch (err) {
+    console.error("Stripe billing portal session creation failed", err);
+    return { error: "Couldn't open billing management — try again shortly." };
+  }
+
+  redirect(portalUrl);
 }
