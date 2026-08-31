@@ -33,7 +33,16 @@ this README covers what's built and how to run it.
   (Mapbox GL + clustering, geocoded on post / lazily on first view), notifications
   (DB-trigger-driven, delivered live via Realtime), AI Assistant panel (job
   recommendations, Work Passport draft, interview prep — rate-limited per user).
-- **Phase 3 — Trust, payments, monetization:** not started.
+- **Phase 3 — Trust, payments, monetization: done.** Work Passport view (auto-compiled
+  from completed jobs + ratings + skills, print/PDF export), verification tiers
+  (`/admin/verification` manual review queue — no automated verification), Stripe
+  Connect escrow payments gated on admin-verified employer status, guardian payout
+  linking + withdrawal flow gated on a confirmed guardian link, admin moderation queue
+  (`/admin/reports`, actionable: remove post / block user) built on the Phase 1
+  `reports` table, keyword-filter content screening on chat messages and job posts,
+  HireUp Premium (Stripe Billing subscriptions, feature-gated free tier, priority
+  job-ranking boost, premium badge). See [Going live with Stripe](#going-live-with-stripe)
+  before ever pointing this at real money.
 
 ## Getting started
 
@@ -92,9 +101,21 @@ See `.env.example` for the full list with placeholder values. Never commit
   (`src/lib/email.ts`) falls back to logging the email + link to the server console when
   this is unset. Set it (plus `EMAIL_FROM`) to actually send guardian-confirmation
   emails via [Resend](https://resend.com).
-- `ANTHROPIC_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
-  `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_MAPBOX_TOKEN` are for Phase 2/3,
-  not yet wired up.
+- `ANTHROPIC_API_KEY` powers the AI match score (`src/lib/match-score.ts`) and AI
+  Assistant panel (`src/lib/actions/assistant.ts`). Without it, those fall back to a
+  heuristic score / a "not configured" message rather than crashing.
+- `NEXT_PUBLIC_MAPBOX_TOKEN` powers geocoding (`src/lib/geocode.ts`) and the `/map`
+  view. Without it, job posts just never get lat/lng and `/map` shows a "not
+  configured" message instead of a blank/broken map.
+- `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` power escrow payments (`src/lib/actions/payments.ts`),
+  guardian payout linking (`src/lib/actions/guardian-payout.ts`), and HireUp Premium
+  billing (`src/lib/actions/premium.ts`) — all server-side via `src/lib/stripe.ts`.
+  Without a key, those actions return a clear "not configured" error instead of
+  throwing. `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is documented per the build spec but
+  currently unused — checkout/billing-portal use server-redirected Stripe-hosted
+  sessions, not client-side Stripe.js, so no publishable key is needed yet.
+- `ALLOW_STRIPE_LIVE_MODE` — leave unset/`false`. See
+  [Going live with Stripe](#going-live-with-stripe).
 
 ## Testing
 
@@ -135,7 +156,46 @@ against PostgREST. Phase 2's additional tables/triggers (`conversations`, `messa
 `saved_jobs`, `job_matches`, `notifications` — including the two notification-creating
 triggers) were verified the same way; `chat-images` Storage bucket policies
 (migration `20260101000013`) couldn't be, since vanilla Postgres has no `storage`
-schema — that one needs a real Supabase project to exercise.
+schema — that one needs a real Supabase project to exercise. Phase 3's tables/triggers
+(`verification_requests` and its approve/reject cascade into
+`teen_profiles`/`employer_profiles.verification_status`, `blocked_users`,
+`transactions`/`earnings_balance`/`guardian_payout_accounts` — including that
+`payouts_enabled` can *only* be flipped by the service-role client, simulating the
+Stripe webhook — and `subscriptions`) were verified the same way too, confirming in
+particular: a teen can't approve their own verification request or self-confirm
+`payouts_enabled`; `transactions`/`earnings_balance` reject direct authenticated-role
+writes entirely (service-role only); an employer can't see another employer's blocks.
+
+## Phase 3 acceptance criteria — self-check
+
+- **"No job can be marked paid without passing through the admin manual-review gate"** —
+  `fundJobEscrow` (`src/lib/actions/payments.ts`) checks
+  `employer_profiles.verification_status === 'verified'` before creating a Stripe
+  Checkout session; that field can only reach `'verified'` via
+  `apply_verification_decision()`, a DB trigger that only fires from an admin's own
+  `verification_requests` approval (RLS-verified above).
+- **"A teen cannot withdraw funds without a confirmed guardian payout link"** —
+  `withdrawEarnings` checks `guardian_payout_accounts.payouts_enabled` before calling
+  Stripe at all; that column can only be set by the service-role client (the
+  `account.updated` webhook handler), never by the teen (RLS-verified above).
+- **"Reported content actually reaches the moderation queue and can be actioned"** —
+  `/admin/reports` lists every open report; `ReportActions` offers "Remove post"
+  (closes the reported job) and "Block user" (inserts a `blocked_users` row on the
+  reporter's behalf) alongside "Dismiss", each resolving the report.
+- **"Stripe wired in test mode by default"** — see
+  [Going live with Stripe](#going-live-with-stripe) directly below.
+
+## Going live with Stripe
+
+Every Stripe-calling action (`fundJobEscrow`, `withdrawEarnings`,
+`linkGuardianPayoutAccount`, `startPremiumCheckout`, `openBillingPortal`) calls
+`assertStripeTestMode()` (`src/lib/stripe.ts`) first. It throws — refusing the API call
+— unless `STRIPE_SECRET_KEY` looks like a test-mode key (`sk_test_`/`rk_test_`) *or*
+`ALLOW_STRIPE_LIVE_MODE=true` is set. That env var is never set by this codebase, by a
+migration, or by any default — flipping it is the one, explicit, separate decision the
+build spec asks for before real money can move. Don't set it in `.env.local` for local
+dev; don't set it in a deployment's env vars without that being the actual decision to
+go live.
 
 ## Directory structure
 
@@ -177,5 +237,24 @@ e2e/                    Playwright critical-path tests
 - "Bookmarks... filterable in `/dashboard/teen`" (Phase 2 acceptance criteria) is
   implemented as a dedicated `/saved` page (reachable from the teen nav, filterable by
   category) rather than embedded inside the `/dashboard/teen` route itself.
-- Phase 3 (Work Passport, verification, Stripe payments, moderation queue, Premium) is
-  not started — see the build spec.
+- Content moderation (`src/lib/moderation.ts`) is a small keyword filter, not an
+  exhaustive profanity/safety list or an LLM call — explicitly a starting point per the
+  build spec ("keyword filter or an LLM moderation call"); swap in a Claude moderation
+  call there for stronger coverage before this goes near production.
+- "HireUp Premium... feature-gating middleware" is implemented as inline checks inside
+  the relevant server actions (`applyToJob`, `postJob` — see `src/lib/premium.ts`),
+  not as Next.js `middleware.ts`/`proxy.ts` — same enforcement point (nothing gets
+  written to the DB either way), different mechanism.
+- No signup flow grants the `admin` role (by design — `/signup` only offers
+  teen/employer/business). To create the first admin for local testing, update a
+  user's `profiles.role` directly using the **service-role** key (the
+  `prevent_role_change` trigger blocks this for a normal authenticated session, by
+  design, but the service role bypasses RLS): `update public.profiles set role =
+  'admin' where id = '<user-uuid>';` run via the Supabase SQL editor or
+  `service_role`-authenticated client — never exposed as an in-app action.
+- Stripe integration (escrow, guardian payouts, Premium billing, the webhook handler)
+  is written against Stripe's documented Connect/Billing/Checkout APIs but couldn't be
+  exercised end-to-end in this sandbox (no Stripe test account). Test thoroughly in
+  Stripe test mode against a real test account before relying on it — start with
+  Stripe's CLI (`stripe listen --forward-to localhost:3000/api/webhooks/stripe`) to
+  exercise the webhook handler locally.
