@@ -7,6 +7,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { ApplicationStatusBadge } from "@/components/application-status-badge";
 import { RateParticipantDialog } from "@/components/rate-participant-dialog";
 import { ReportButton } from "@/components/report-button";
+import { MessageButton } from "@/components/message-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ApplicationStatusSelect } from "./application-status-select";
 
@@ -71,6 +72,7 @@ export default async function ApplicationsPage({
                           alreadyRated={ratedJobIds.has(job.id)}
                         />
                       )}
+                      <MessageButton applicationId={application.id} />
                       <ApplicationStatusBadge status={application.status} />
                     </div>
                   </CardContent>
@@ -145,6 +147,7 @@ export default async function ApplicationsPage({
                         alreadyRated={ratedPairs.has(`${job.id}:${application.teen_id}`)}
                       />
                     )}
+                    <MessageButton applicationId={application.id} />
                     <ApplicationStatusSelect applicationId={application.id} status={application.status} />
                     <ReportButton targetType="profile" targetId={application.teen_id} />
                   </div>

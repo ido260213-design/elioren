@@ -11,6 +11,7 @@ export type JobStatus = "open" | "filled" | "closed";
 export type ApplicationStatus = "applied" | "viewed" | "interview" | "accepted" | "rejected";
 export type ReportTargetType = "job" | "profile" | "message";
 export type ReportStatus = "open" | "reviewing" | "resolved" | "dismissed";
+export type NotificationType = "application_status_changed" | "new_message";
 
 export interface Availability {
   [day: string]: { start: string; end: string }[] | undefined;
@@ -217,6 +218,96 @@ export interface Database {
         };
         Update: Partial<{
           status: ReportStatus;
+        }>;
+        Relationships: [];
+      };
+      conversations: {
+        Row: {
+          id: string;
+          application_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          application_id: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      messages: {
+        Row: {
+          id: string;
+          conversation_id: string;
+          sender_id: string;
+          body: string | null;
+          image_url: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          conversation_id: string;
+          sender_id: string;
+          body?: string | null;
+          image_url?: string | null;
+        };
+        Update: Partial<{
+          read_at: string | null;
+        }>;
+        Relationships: [];
+      };
+      saved_jobs: {
+        Row: {
+          teen_id: string;
+          job_id: string;
+          created_at: string;
+        };
+        Insert: {
+          teen_id: string;
+          job_id: string;
+        };
+        Update: never;
+        Relationships: [];
+      };
+      job_matches: {
+        Row: {
+          teen_id: string;
+          job_id: string;
+          score: number;
+          explanation: string;
+          computed_at: string;
+        };
+        Insert: {
+          teen_id: string;
+          job_id: string;
+          score: number;
+          explanation: string;
+          computed_at?: string;
+        };
+        Update: Partial<{
+          score: number;
+          explanation: string;
+          computed_at: string;
+        }>;
+        Relationships: [];
+      };
+      notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: NotificationType;
+          payload: Record<string, unknown>;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: NotificationType;
+          payload?: Record<string, unknown>;
+        };
+        Update: Partial<{
+          read_at: string | null;
         }>;
         Relationships: [];
       };

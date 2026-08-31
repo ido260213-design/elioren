@@ -4,8 +4,11 @@ import { PublicHeader } from "@/components/public-header";
 import { JobFilterBar } from "@/components/job-filter-bar";
 import { JobCard } from "@/components/job-card";
 import { createClient } from "@/lib/supabase/server";
+import { getOrComputeMatchScore } from "@/lib/match-score";
 
 export const metadata: Metadata = { title: "Browse jobs" };
+
+const PAGE_SIZE = 24;
 
 export default async function JobsPage({
   searchParams,
@@ -17,9 +20,12 @@ export default async function JobsPage({
 
   let query = supabase
     .from("jobs")
-    .select("id, title, category, location_text, pay_type, pay_amount, age_min, age_max, workers_needed, status")
+    .select(
+      "id, title, category, location_text, pay_type, pay_amount, age_min, age_max, workers_needed, status, description, updated_at, employer_id"
+    )
     .eq("status", "open")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
 
   if (category) {
     query = query.eq("category", category);
@@ -29,6 +35,37 @@ export default async function JobsPage({
   }
 
   const { data: jobs } = await query;
+
+  const employerIds = [...new Set((jobs ?? []).map((j) => j.employer_id))];
+  const { data: employers } = employerIds.length
+    ? await supabase.from("employer_profiles").select("user_id, display_name, verification_status").in("user_id", employerIds)
+    : { data: [] };
+  const employersById = new Map((employers ?? []).map((e) => [e.user_id, e]));
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let savedJobIds = new Set<string>();
+  let matchScores = new Map<string, number>();
+
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+
+    if (profile?.role === "teen") {
+      const { data: saved } = await supabase.from("saved_jobs").select("job_id").eq("teen_id", user.id);
+      savedJobIds = new Set((saved ?? []).map((s) => s.job_id));
+
+      // Computing (or reading cached) match scores for every visible card trades page
+      // load latency for satisfying "match scores appear on job listings" directly —
+      // the job_matches cache keeps repeat visits fast. A production deployment with a
+      // larger catalog would want to precompute these in the background instead.
+      const results = await Promise.all(
+        (jobs ?? []).map((job) => getOrComputeMatchScore(supabase, user.id, job))
+      );
+      matchScores = new Map((jobs ?? []).map((job, i) => [job.id, results[i].score]));
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -40,9 +77,21 @@ export default async function JobsPage({
         </div>
         {jobs?.length ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
+            {jobs.map((job) => {
+              const employer = employersById.get(job.employer_id);
+              return (
+                <JobCard
+                  key={job.id}
+                  job={{
+                    ...job,
+                    employer_display_name: employer?.display_name,
+                    employer_verification_status: employer?.verification_status,
+                  }}
+                  saved={user ? savedJobIds.has(job.id) : undefined}
+                  matchScore={matchScores.get(job.id)}
+                />
+              );
+            })}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No jobs match your search yet.</p>

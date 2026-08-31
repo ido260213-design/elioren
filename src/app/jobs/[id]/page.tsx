@@ -5,7 +5,10 @@ import { MapPin, Users, BadgeCheck } from "lucide-react";
 import { PublicHeader } from "@/components/public-header";
 import { Badge } from "@/components/ui/badge";
 import { ReportButton } from "@/components/report-button";
+import { SaveJobButton } from "@/components/save-job-button";
+import { MatchScoreCard } from "@/components/match-score-card";
 import { createClient } from "@/lib/supabase/server";
+import { getOrComputeMatchScore } from "@/lib/match-score";
 import { ApplyButton } from "./apply-button";
 import { JobOwnerControls } from "./job-owner-controls";
 
@@ -41,19 +44,22 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   let profileRole: string | null = null;
   let alreadyApplied = false;
+  let alreadySaved = false;
+  let match: { score: number; explanation: string } | null = null;
 
   if (user) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     profileRole = profile?.role ?? null;
 
     if (profileRole === "teen") {
-      const { data: existingApplication } = await supabase
-        .from("applications")
-        .select("id")
-        .eq("job_id", job.id)
-        .eq("teen_id", user.id)
-        .maybeSingle();
+      const [{ data: existingApplication }, { data: existingSave }, matchResult] = await Promise.all([
+        supabase.from("applications").select("id").eq("job_id", job.id).eq("teen_id", user.id).maybeSingle(),
+        supabase.from("saved_jobs").select("job_id").eq("teen_id", user.id).eq("job_id", job.id).maybeSingle(),
+        getOrComputeMatchScore(supabase, user.id, job),
+      ]);
       alreadyApplied = Boolean(existingApplication);
+      alreadySaved = Boolean(existingSave);
+      match = matchResult;
     }
   }
 
@@ -73,10 +79,15 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
               )}
             </p>
           </div>
-          <Badge variant="secondary" className="shrink-0 text-base">
-            {formatPay(job.pay_type, job.pay_amount)}
-          </Badge>
+          <div className="flex shrink-0 items-center gap-1">
+            <Badge variant="secondary" className="text-base">
+              {formatPay(job.pay_type, job.pay_amount)}
+            </Badge>
+            {profileRole === "teen" && <SaveJobButton jobId={job.id} saved={alreadySaved} />}
+          </div>
         </div>
+
+        {match && <MatchScoreCard score={match.score} explanation={match.explanation} />}
 
         <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">

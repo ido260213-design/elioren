@@ -1,7 +1,18 @@
 import Link from "next/link";
-import { Briefcase, LayoutDashboard, ListChecks, Plus, Search, User as UserIcon, LogOut } from "lucide-react";
+import {
+  Bookmark,
+  Briefcase,
+  LayoutDashboard,
+  ListChecks,
+  MessageSquare,
+  Plus,
+  Search,
+  User as UserIcon,
+  LogOut,
+} from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationsBell } from "@/components/notifications-bell";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -13,6 +24,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { UserRole } from "@/lib/supabase/database.types";
 import { dashboardPathForRole } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/app/logout/actions";
 
 function navItemsForRole(role: UserRole) {
@@ -21,6 +33,8 @@ function navItemsForRole(role: UserRole) {
       { href: dashboardPathForRole(role), label: "Dashboard", icon: LayoutDashboard },
       { href: "/jobs", label: "Browse jobs", icon: Search },
       { href: "/applications", label: "My applications", icon: ListChecks },
+      { href: "/saved", label: "Saved", icon: Bookmark },
+      { href: "/messages", label: "Messages", icon: MessageSquare },
     ];
   }
 
@@ -28,10 +42,11 @@ function navItemsForRole(role: UserRole) {
     { href: dashboardPathForRole(role), label: "Dashboard", icon: LayoutDashboard },
     { href: "/jobs/new", label: "Post a job", icon: Plus },
     { href: "/applications", label: "Applicants", icon: ListChecks },
+    { href: "/messages", label: "Messages", icon: MessageSquare },
   ];
 }
 
-export function DashboardShell({
+export async function DashboardShell({
   role,
   email,
   children,
@@ -42,6 +57,20 @@ export function DashboardShell({
 }) {
   const navItems = navItemsForRole(role);
   const initials = email.slice(0, 2).toUpperCase();
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: notifications } = user
+    ? await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20)
+    : { data: [] };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -65,6 +94,7 @@ export function DashboardShell({
           </div>
 
           <div className="flex items-center gap-2">
+            {user && <NotificationsBell userId={user.id} initialNotifications={notifications ?? []} />}
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
