@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { jobPostSchema } from "@/lib/validations/jobs";
 import { geocodeLocation } from "@/lib/geocode";
+import { screenContent } from "@/lib/moderation";
 
 export type JobPostState = { error?: string } | undefined;
 
@@ -26,6 +27,11 @@ export async function postJob(_prevState: JobPostState, formData: FormData): Pro
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form and try again." };
+  }
+
+  const screening = screenContent(`${parsed.data.title} ${parsed.data.description}`);
+  if (screening.blocked) {
+    return { error: `This listing was blocked: it ${screening.reason}. Edit it and try again.` };
   }
 
   const supabase = await createClient();

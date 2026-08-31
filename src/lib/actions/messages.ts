@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
+import { screenContent } from "@/lib/moderation";
 
 export type SendMessageState = { error?: string } | undefined;
 
@@ -43,6 +44,13 @@ export async function sendMessage(
 
   if (!body && !imageUrl) {
     return { error: "Write a message or attach a photo." };
+  }
+
+  if (body) {
+    const screening = screenContent(body);
+    if (screening.blocked) {
+      return { error: `Message blocked: ${screening.reason}. Keep chats and payments on HireUp.` };
+    }
   }
 
   const { error } = await supabase.from("messages").insert({
