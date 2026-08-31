@@ -4,9 +4,11 @@ import {
   Briefcase,
   LayoutDashboard,
   ListChecks,
+  MapPin,
   MessageSquare,
   Plus,
   Search,
+  Sparkles,
   User as UserIcon,
   LogOut,
 } from "lucide-react";
@@ -32,9 +34,11 @@ function navItemsForRole(role: UserRole) {
     return [
       { href: dashboardPathForRole(role), label: "Dashboard", icon: LayoutDashboard },
       { href: "/jobs", label: "Browse jobs", icon: Search },
+      { href: "/map", label: "Map", icon: MapPin },
       { href: "/applications", label: "My applications", icon: ListChecks },
       { href: "/saved", label: "Saved", icon: Bookmark },
       { href: "/messages", label: "Messages", icon: MessageSquare },
+      { href: "/assistant", label: "AI Assistant", icon: Sparkles },
     ];
   }
 

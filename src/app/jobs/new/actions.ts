@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth";
 import { jobPostSchema } from "@/lib/validations/jobs";
+import { geocodeLocation } from "@/lib/geocode";
 
 export type JobPostState = { error?: string } | undefined;
 
@@ -48,6 +49,14 @@ export async function postJob(_prevState: JobPostState, formData: FormData): Pro
 
   if (error || !job) {
     return { error: error?.message ?? "Something went wrong posting your job." };
+  }
+
+  // Best-effort — a failed/missing geocode never blocks the post; the job just won't
+  // show a map marker until it succeeds (retried on first detail-page view, see
+  // src/app/jobs/[id]/page.tsx).
+  const coords = await geocodeLocation(parsed.data.locationText);
+  if (coords) {
+    await supabase.from("jobs").update({ lat: coords.lat, lng: coords.lng }).eq("id", job.id);
   }
 
   redirect(`/jobs/${job.id}`);

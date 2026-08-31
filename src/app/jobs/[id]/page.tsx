@@ -9,6 +9,7 @@ import { SaveJobButton } from "@/components/save-job-button";
 import { MatchScoreCard } from "@/components/match-score-card";
 import { createClient } from "@/lib/supabase/server";
 import { getOrComputeMatchScore } from "@/lib/match-score";
+import { geocodeLocation } from "@/lib/geocode";
 import { ApplyButton } from "./apply-button";
 import { JobOwnerControls } from "./job-owner-controls";
 
@@ -31,6 +32,18 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const { data: job } = await supabase.from("jobs").select("*").eq("id", id).maybeSingle();
 
   if (!job) notFound();
+
+  // Fallback for jobs whose post-time geocode failed or ran with no Mapbox token
+  // configured yet — geocode lazily on first view instead of leaving it permanently
+  // un-mapped.
+  if (job.lat === null || job.lng === null) {
+    const coords = await geocodeLocation(job.location_text);
+    if (coords) {
+      job.lat = coords.lat;
+      job.lng = coords.lng;
+      await supabase.from("jobs").update({ lat: coords.lat, lng: coords.lng }).eq("id", job.id);
+    }
+  }
 
   const { data: employerProfile } = await supabase
     .from("employer_profiles")

@@ -29,6 +29,9 @@ export async function PublicHeader() {
           <Button asChild variant="ghost" size="sm">
             <Link href="/jobs">Browse jobs</Link>
           </Button>
+          <Button asChild variant="ghost" size="sm">
+            <Link href="/map">Map</Link>
+          </Button>
           <ThemeToggle />
           {user ? (
             <Button asChild size="sm">
