@@ -65,13 +65,15 @@ export default async function JobsPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  let isTeen = false;
   let savedJobIds = new Set<string>();
   let matchScores = new Map<string, number>();
 
   if (user) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    isTeen = profile?.role === "teen";
 
-    if (profile?.role === "teen") {
+    if (isTeen) {
       const { data: saved } = await supabase.from("saved_jobs").select("job_id").eq("teen_id", user.id);
       savedJobIds = new Set((saved ?? []).map((s) => s.job_id));
 
@@ -106,7 +108,7 @@ export default async function JobsPage({
                     employer_display_name: employer?.display_name,
                     employer_verification_status: employer?.verification_status,
                   }}
-                  saved={user ? savedJobIds.has(job.id) : undefined}
+                  saved={isTeen ? savedJobIds.has(job.id) : undefined}
                   matchScore={matchScores.get(job.id)}
                   employerIsPremium={premiumEmployerIds.has(job.employer_id)}
                 />

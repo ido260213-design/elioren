@@ -96,6 +96,7 @@ export function ChatThread({
 
     return () => {
       channelRef.current = null;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       supabase.removeChannel(channel);
     };
   }, [conversationId, currentUserId]);

@@ -42,6 +42,9 @@ export default async function AssistantPage() {
     ? await supabase.from("jobs").select("id, title").in("id", appliedJobIds)
     : { data: [] };
 
+  const { data: saved } = await supabase.from("saved_jobs").select("job_id").eq("teen_id", user.id);
+  const savedJobIds = new Set((saved ?? []).map((s) => s.job_id));
+
   return (
     <DashboardShell role={profile.role} email={profile.email}>
       <h1 className="mb-6 text-2xl font-bold">AI Assistant</h1>
@@ -66,6 +69,7 @@ export default async function AssistantPage() {
                         employer_verification_status: employer?.verification_status,
                       }}
                       matchScore={score}
+                      saved={savedJobIds.has(job.id)}
                     />
                   );
                 })}
