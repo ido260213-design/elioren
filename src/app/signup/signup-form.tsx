@@ -22,6 +22,14 @@ export function SignupForm() {
   const [role, setRole] = React.useState<Exclude<UserRole, "admin">>("teen");
   const [state, formAction, isPending] = useActionState<SignupState, FormData>(signUp, undefined);
 
+  if (state?.checkEmail) {
+    return (
+      <p className="text-center text-sm text-muted-foreground">
+        Check your email for a confirmation link to finish creating your account.
+      </p>
+    );
+  }
+
   return (
     <form action={formAction} className="space-y-5">
       <div className="space-y-2">

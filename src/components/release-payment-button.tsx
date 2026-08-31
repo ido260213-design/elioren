@@ -6,9 +6,15 @@ import { HandCoins } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { releaseEscrowPayment } from "@/lib/actions/payments";
 
-export function ReleasePaymentButton({ applicationId }: { applicationId: string }) {
+export function ReleasePaymentButton({
+  applicationId,
+  alreadyReleased,
+}: {
+  applicationId: string;
+  alreadyReleased: boolean;
+}) {
   const [isPending, startTransition] = React.useTransition();
-  const [released, setReleased] = React.useState(false);
+  const [released, setReleased] = React.useState(alreadyReleased);
 
   if (released) {
     return <span className="text-xs text-success">Payment released</span>;

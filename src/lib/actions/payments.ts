@@ -79,6 +79,9 @@ export async function fundJobEscrow(applicationId: string, _prevState: PaymentAc
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
+  // The idempotency key means a double-click/slow-network resubmit gets back the
+  // *same* Checkout Session instead of a second one — two tabs completing "Fund
+  // escrow" can't double-charge the employer for one job.
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     payment_method_types: ["card"],
@@ -101,7 +104,7 @@ export async function fundJobEscrow(applicationId: string, _prevState: PaymentAc
     },
     success_url: `${siteUrl}/jobs/${job.id}?funded=1`,
     cancel_url: `${siteUrl}/jobs/${job.id}`,
-  });
+  }, { idempotencyKey: `escrow-hold:${application.id}` });
 
   if (!session.url) {
     return { error: "Couldn't start checkout — try again." };

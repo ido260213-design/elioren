@@ -34,7 +34,12 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object as Stripe.Checkout.Session;
-      if (session.metadata?.kind === "job_escrow_hold") {
+      // Both checkout flows restrict payment_method_types to ["card"], which settles
+      // synchronously — "completed" always implies "paid" for us today. Still worth
+      // checking explicitly: a bank-debit or other async method added later would fire
+      // "completed" before the payment actually clears, and this guards against ever
+      // crediting escrow for a session that didn't really get paid.
+      if (session.metadata?.kind === "job_escrow_hold" && session.payment_status === "paid") {
         const { job_id, employer_id, teen_id } = session.metadata;
         const amount = (session.amount_total ?? 0) / 100;
 

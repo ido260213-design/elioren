@@ -118,6 +118,11 @@ export default async function ApplicationsPage({
   const { data: myRatings } = await supabase.from("ratings").select("job_id, ratee_id").eq("rater_id", user.id);
   const ratedPairs = new Set((myRatings ?? []).map((r) => `${r.job_id}:${r.ratee_id}`));
 
+  const { data: releasedTransactions } = myJobIds.length
+    ? await supabase.from("transactions").select("job_id, teen_id").eq("type", "release").in("job_id", myJobIds)
+    : { data: [] };
+  const releasedPairs = new Set((releasedTransactions ?? []).map((t) => `${t.job_id}:${t.teen_id}`));
+
   return (
     <DashboardShell role={profile.role} email={profile.email}>
       <h1 className="mb-6 text-2xl font-bold">Applicants</h1>
@@ -145,7 +150,10 @@ export default async function ApplicationsPage({
                       <FundEscrowButton applicationId={application.id} />
                     )}
                     {job?.status === "filled" && application.status === "accepted" && (
-                      <ReleasePaymentButton applicationId={application.id} />
+                      <ReleasePaymentButton
+                        applicationId={application.id}
+                        alreadyReleased={releasedPairs.has(`${application.job_id}:${application.teen_id}`)}
+                      />
                     )}
                     {canRate && job && (
                       <RateParticipantDialog

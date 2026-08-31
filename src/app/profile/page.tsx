@@ -16,6 +16,13 @@ export default async function ProfilePage() {
   const { user, profile } = await requireUser();
   const supabase = await createClient();
 
+  // Admins have no teen_profiles/employer_profiles row (and no onboarding flow of
+  // their own) — falling through to the employer branch below would 404 on a
+  // redirect to a nonexistent /onboarding/admin. Send them to their own dashboard.
+  if (profile.role === "admin") {
+    redirect("/admin");
+  }
+
   if (profile.role === "teen") {
     const { data: teenProfile } = await supabase
       .from("teen_profiles")

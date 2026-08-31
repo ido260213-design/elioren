@@ -45,7 +45,7 @@ export async function startPremiumCheckout(): Promise<PremiumActionState> {
     metadata: { kind: "premium_subscription", user_id: user.id },
     success_url: `${siteUrl}/premium?subscribed=1`,
     cancel_url: `${siteUrl}/premium`,
-  });
+  }, { idempotencyKey: `premium-checkout:${user.id}` });
 
   if (!session.url) {
     return { error: "Couldn't start checkout — try again." };

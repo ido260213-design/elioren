@@ -31,7 +31,13 @@ export default async function JobsPage({
     query = query.eq("category", category);
   }
   if (q) {
-    query = query.or(`title.ilike.%${q}%,location_text.ilike.%${q}%`);
+    // PostgREST's .or() filter string uses `,`, `(`, `)` as syntax delimiters — a
+    // search term containing any of them (a location like "Austin, TX" is the common
+    // case) would otherwise break the filter and silently return zero results.
+    const safeQuery = q.replace(/[,()]/g, " ").trim();
+    if (safeQuery) {
+      query = query.or(`title.ilike.%${safeQuery}%,location_text.ilike.%${safeQuery}%`);
+    }
   }
 
   const { data: fetchedJobs } = await query;
