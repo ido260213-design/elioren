@@ -144,15 +144,15 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 @media (max-width:900px){.atlas{grid-template-columns:1fr}}
 .globe-col{position:sticky;top:84px}
 @media (max-width:900px){.globe-col{position:static}}
-.globe-wrap{position:relative;aspect-ratio:1/1;width:100%;max-width:100%;max-height:min(680px,calc(100vh - 150px));margin:0 auto;border-radius:50%}
+.globe-wrap{position:relative;aspect-ratio:1/1;width:min(100%,680px,calc(100vh - 170px));min-width:min(100%,320px);max-width:100%;margin:0 auto;border-radius:50%;overflow:hidden}
 .globe-wrap canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+@media (pointer:coarse){.globe-wrap canvas{touch-action:pan-y}}
 .globe-wrap canvas.dragging{cursor:grabbing}
-.globe-wrap::before{content:"";position:absolute;inset:6%;border-radius:50%;box-shadow:0 30px 80px -20px color-mix(in srgb,var(--moss) 40%,transparent);pointer-events:none}
-.globe-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:.8rem;padding:4px 9px;border-radius:6px;transform:translate(-50%,calc(-100% - 12px));white-space:nowrap;box-shadow:var(--shadow-lift)}
+.globe-tip{position:absolute;z-index:2;pointer-events:none;background:var(--ink);color:var(--paper);font-size:.8rem;padding:4px 9px;border-radius:6px;transform:translate(-50%,calc(-100% - 12px));white-space:nowrap;box-shadow:var(--shadow-lift)}
 .globe-help{text-align:center;font-size:.8rem;color:var(--muted);margin-top:6px}
 .globe-fallback{border:1px dashed var(--hairline-strong);border-radius:var(--r);padding:18px;color:var(--muted);font-size:.9rem}
 .side{display:grid;gap:18px}
-.detail{overflow:hidden}
+.detail{overflow:hidden;scroll-margin-top:130px}
 .scene{position:relative;aspect-ratio:16/7;max-width:100%;background:var(--sunken)}
 .scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .detail-body{padding:18px 20px 20px;display:grid;gap:10px}
@@ -212,10 +212,11 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .proj{padding:16px 18px;display:grid;gap:10px;align-content:start}
 .proj.archived{opacity:.7}
 .proj-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.proj-top h3{overflow-wrap:anywhere}
 .proj .desc{font-size:.92rem;color:var(--ink)}
 .proj .when{font-size:.78rem;color:var(--muted)}
-.proj-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--hairline);padding-top:10px}
-.proj-controls select{width:auto;padding:4px 8px;font-size:.84rem}
+.proj-controls{display:flex;gap:2px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--hairline);padding-top:10px}
+.proj-controls select{width:auto;padding:4px 8px;font-size:.84rem;margin-right:auto}
 .books{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .book-col{padding:14px 14px 8px;background:transparent;box-shadow:none;border-style:dashed}
 .book-col h3{font-size:1rem;font-weight:500;display:flex;justify-content:space-between;align-items:baseline}
@@ -272,7 +273,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .wd .dn{font:500 1.15rem/1 var(--f-mono);font-variant-numeric:tabular-nums}
 .wd .s{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .wd.plan{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--raised))}
-.wd.rest{border-color:var(--hairline);background:var(--sunken);color:var(--muted)}
+.wd.rest{border-color:var(--hairline-strong);background:var(--sunken);color:var(--muted)}
 .wd.done{background:var(--moss);border-color:var(--moss);color:var(--on-moss)}
 .wd.done .s{color:var(--on-moss);opacity:.85}
 .wd.today{box-shadow:0 0 0 2px var(--paper),0 0 0 4px color-mix(in srgb,var(--ink) 35%,transparent)}
@@ -350,7 +351,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
         <div class="globe-wrap" id="globe-wrap">
           <div class="globe-tip" id="globe-tip" hidden></div>
         </div>
-        <p class="globe-help" id="globe-help">Drag to turn the globe. Scroll or pinch to zoom. Tap a marker to open it.</p>
+        <p class="globe-help" id="globe-help">Drag to turn the globe. Scroll or pinch to zoom. Click or tap a marker to open it.</p>
         <p class="globe-fallback" id="globe-fallback" hidden>This device can't draw the 3D globe (WebGL is unavailable). Every place is still in the list, and choosing one opens its details.</p>
       </div>
       <div class="side">
@@ -581,7 +582,7 @@ function toast(msg, bad = false) {
   const el = document.createElement("div");
   el.className = "toast" + (bad ? " bad" : "");
   el.textContent = msg;
-  $("#toasts").appendChild(el);
+  $("#toasts").replaceChildren(el);
   setTimeout(() => el.remove(), bad ? 4200 : 2400);
 }
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
@@ -899,7 +900,7 @@ function createGlobe(container) {
   container.insertBefore(canvas, container.firstChild);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
-  let dist = 3.15; const MIN_D = 1.75, MAX_D = 5.2;
+  let dist = 3.15; const MIN_D = 1.75, MAX_D = 4.2;
   camera.position.set(0, 0, dist);
   const world = new THREE.Group(); world.rotation.order = "XYZ"; scene.add(world);
 
@@ -1016,8 +1017,9 @@ function createGlobe(container) {
       moved += Math.abs(dx) + Math.abs(dy);
       if (moved > 4) canvas.classList.add("dragging");
       const k = 0.0055 * (dist / 3.15);
-      yaw += dx * k; pitch = clampPitch(pitch + dy * k);
-      vYaw = (dx * k) / dt * 16; vPitch = (dy * k) / dt * 16;
+      const tilt = e.pointerType === "touch" ? 0 : dy * k;
+      yaw += dx * k; pitch = clampPitch(pitch + tilt);
+      vYaw = (dx * k) / dt * 16; vPitch = tilt / dt * 16;
       lastX = e.clientX; lastY = e.clientY; lastT = now; lastInteract = now;
       return;
     }
@@ -1027,7 +1029,7 @@ function createGlobe(container) {
       if (id) {
         const m = markers.get(id); const rect = canvas.getBoundingClientRect(), wrap = container.getBoundingClientRect();
         tip.textContent = m.name; tip.hidden = false;
-        tip.style.left = (e.clientX - wrap.left) + "px"; tip.style.top = (e.clientY - wrap.top) + "px";
+        tip.style.left = Math.min(wrap.width - 70, Math.max(70, e.clientX - wrap.left)) + "px"; tip.style.top = Math.max(40, e.clientY - wrap.top) + "px";
       } else tip.hidden = true;
     }
   });
@@ -1290,8 +1292,8 @@ function renderProjects() {
       <div class="proj-controls">
         <label class="sr-only" for="st-${esc(p.id)}">Status for ${esc(p.name)}</label>
         <select id="st-${esc(p.id)}" data-act="proj-status" data-id="${esc(p.id)}">${PROJECT_STATUSES.map((s) => `<option ${s === p.status ? "selected" : ""}>${s}</option>`).join("")}</select>
-        ${jUI.editingDesc === p.id ? "" : `<button class="btn ghost small" type="button" data-act="desc-edit" data-id="${esc(p.id)}">Edit description</button>`}
-        <button class="btn ghost small" type="button" data-act="proj-archive" data-id="${esc(p.id)}">${p.archived ? "Restore" : "Archive"}</button>
+        ${jUI.editingDesc === p.id ? "" : `<button class="btn ghost small" type="button" data-act="desc-edit" data-id="${esc(p.id)}" aria-label="Edit description for ${esc(p.name)}">Edit</button>`}
+        <button class="btn ghost small" type="button" data-act="proj-archive" data-id="${esc(p.id)}" aria-label="${p.archived ? "Restore" : "Archive"} ${esc(p.name)}">${p.archived ? "Restore" : "Archive"}</button>
       </div>
       <span class="err" id="proj-err-${esc(p.id)}"></span>
     </article>`).join("")}</div>`;
@@ -1315,7 +1317,8 @@ $("#form-project").addEventListener("submit", async (e) => {
 });
 
 function renderBooks() {
-  $("#book-seg").innerHTML = Object.entries(BOOK_STATUS).map(([k, l]) => `<button type="button" data-act="book-tab" data-k="${k}" aria-pressed="${jUI.bookTab === k}">${l}</button>`).join("");
+  const SHORT = { want: "Want to read", reading: "Reading", read: "Read" };
+  $("#book-seg").innerHTML = Object.entries(BOOK_STATUS).map(([k, l]) => `<button type="button" data-act="book-tab" data-k="${k}" aria-pressed="${jUI.bookTab === k}" aria-label="${l}">${SHORT[k]} <span class="mono">${state.books.filter((b) => b.status === k).length}</span></button>`).join("");
   $("#books").innerHTML = Object.entries(BOOK_STATUS).map(([k, label]) => {
     const list = state.books.filter((b) => b.status === k).sort((a, b) => k === "read" ? String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")) : String(b.addedAt).localeCompare(String(a.addedAt)));
     return `<div class="card book-col" data-hide-mobile="${jUI.bookTab !== k}">
@@ -1570,7 +1573,7 @@ function renderPlan(el) {
       <div class="legend" aria-hidden="true">
         <span><i style="background:color-mix(in srgb,var(--gold) 10%,var(--raised));border-color:var(--gold)"></i>Planned, not yet trained</span>
         <span><i style="background:var(--moss);border-color:var(--moss)"></i>Trained</span>
-        <span><i style="background:var(--sunken);border-color:var(--hairline)"></i>Rest day</span>
+        <span><i style="background:var(--sunken);border-color:var(--hairline-strong)"></i>Rest day</span>
       </div>
       <span class="err" id="week-err"></span>
     </section>
@@ -1599,7 +1602,7 @@ function renderPlan(el) {
       ${history.length ? `<ul>${history.slice(0, 8).map((e) => `<li><span class="d">${fmtDate(e.date)}</span><span>${esc(e.session)}</span></li>`).join("")}</ul>` : `<p class="muted" style="margin-top:6px">No sessions logged yet. Mark a day in the week above when you train.</p>`}
     </div>`;
   const strip = $("#week-strip"); const td = $(".wd.today", strip);
-  if (td && strip.scrollWidth > strip.clientWidth) strip.scrollLeft = Math.max(0, td.offsetLeft - strip.offsetLeft - 8);
+  if (td && strip.scrollWidth > strip.clientWidth) strip.scrollLeft = Math.max(0, td.offsetLeft - strip.offsetLeft - td.offsetWidth * .6);
 }
 async function toggleDay(date) {
   const log = state.trainingLog.slice();
@@ -1620,7 +1623,7 @@ function openDialog(sel, focusSel) {
   const d = $(sel); $$(".err", d).forEach((e) => (e.textContent = ""));
   $$("[aria-invalid]", d).forEach((e) => e.removeAttribute("aria-invalid"));
   if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", "");
-  if (focusSel) setTimeout(() => $(focusSel).focus(), 30);
+  if (focusSel) $(focusSel).focus();
 }
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
@@ -1673,7 +1676,12 @@ document.addEventListener("click", async (e) => {
     }
     case "close-dialog": closeDialogs(); break;
     // atlas
-    case "select": selectPlace(id); break;
+    case "select": {
+      selectPlace(id);
+      const card = $("#detail"), top = card.getBoundingClientRect().top, head = $(".top").getBoundingClientRect().bottom;
+      if (top < head || top > window.innerHeight * .6) card.scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+      break;
+    }
     case "fam": { const f = b.dataset.fam; atlasUI.families.has(f) ? atlasUI.families.delete(f) : atlasUI.families.add(f); renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); $(`[data-fam="${f}"]`).focus(); break; }
     case "clear-filters": atlasUI.families.clear(); atlasUI.search = ""; $("#place-search").value = ""; renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(null); break;
     case "add-place": openPlaceForm(null); break;
