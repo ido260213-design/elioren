@@ -143,6 +143,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .atlas{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px;align-items:start}
 @media (max-width:900px){.atlas{grid-template-columns:1fr}}
 .globe-col{position:sticky;top:84px}
+.globe-stage{position:relative}
 @media (max-width:900px){.globe-col{position:static}}
 .globe-wrap{position:relative;aspect-ratio:1/1;width:min(100%,680px,calc(100vh - 170px));min-width:min(100%,320px);max-width:100%;margin:0 auto;border-radius:50%;overflow:hidden}
 .globe-wrap canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
@@ -170,6 +171,21 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .place-row .terr{display:block;font-size:.78rem;color:var(--muted)}
 .place-row .coord{font-size:.76rem;text-align:right}
 .list-count{font-size:.8rem;color:var(--muted)}
+.been-line{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:.88rem;color:var(--muted)}
+.been-line .num{color:var(--ink);font-weight:500}
+.been-bar{width:120px;height:6px;border-radius:99px;background:var(--sunken);border:1px solid var(--hairline);overflow:hidden}
+.been-bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.been-tag{display:inline-flex;align-items:center;gap:3px;margin-left:8px;font-size:.7rem;font-weight:600;letter-spacing:.02em;color:var(--ink);background:color-mix(in srgb,var(--gold) 22%,var(--raised));border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);border-radius:99px;padding:0 7px;vertical-align:2px}
+.been-tag svg{width:10px;height:10px}
+.btn.been[aria-pressed="true"]{background:color-mix(in srgb,var(--gold) 22%,var(--raised));border-color:var(--gold)}
+.btn.been svg{width:15px;height:15px}
+.visit-row{display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:center}
+.visit-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--moss)}
+.pick-btn{justify-self:start}
+.pick-bar{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:10px;background:var(--ink);color:var(--paper);padding:8px 8px 8px 14px;border-radius:999px;font-size:.86rem;box-shadow:var(--shadow-lift);white-space:nowrap;max-width:calc(100% - 20px)}
+.pick-bar span{overflow:hidden;text-overflow:ellipsis}
+.pick-bar .btn{background:var(--paper);color:var(--ink);border-color:transparent}
+.globe-wrap canvas.picking{cursor:crosshair}
 .empty{color:var(--muted);font-size:.9rem;padding:14px 4px}
 
 /* ---------- JOURNEY ---------- */
@@ -341,6 +357,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
       <div>
         <h1>Atlas</h1>
         <p>Wild over crowded. Every place on the list, and why it made the cut.</p>
+        <div class="been-line" id="been-line" aria-live="polite"></div>
       </div>
       <button class="btn primary" type="button" data-act="add-place">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a place
@@ -348,8 +365,11 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
     </div>
     <div class="atlas">
       <div class="globe-col">
+        <div class="globe-stage">
+        <div class="pick-bar" id="pick-bar" hidden role="status"><span id="pick-text">Click the spot on the globe for this place.</span><button class="btn small" type="button" data-act="pick-cancel">Cancel</button></div>
         <div class="globe-wrap" id="globe-wrap">
           <div class="globe-tip" id="globe-tip" hidden></div>
+        </div>
         </div>
         <p class="globe-help" id="globe-help">Drag to turn the globe. Scroll or pinch to zoom. Click or tap a marker to open it.</p>
         <p class="globe-fallback" id="globe-fallback" hidden>This device can't draw the 3D globe (WebGL is unavailable). Every place is still in the list, and choosing one opens its details.</p>
@@ -361,6 +381,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
             <label class="sr-only" for="place-search">Search places by name or terrain</label>
             <input type="search" id="place-search" placeholder="Search by name or terrain" autocomplete="off">
             <div class="fam-chips" id="fam-chips" role="group" aria-label="Filter by terrain family"></div>
+            <div class="fam-chips" id="visit-chips" role="group" aria-label="Filter by where you've been"></div>
             <div class="row" style="justify-content:space-between">
               <span class="list-count" id="list-count" aria-live="polite"></span>
               <button class="btn ghost small" type="button" data-act="clear-filters" id="clear-filters" hidden>Clear filters</button>
@@ -469,12 +490,17 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
       <div class="field"><label for="pf-lat">Latitude</label><input type="number" id="pf-lat" step="any" inputmode="decimal" placeholder="e.g. 46.5"><span class="hint">−90 (south) to 90 (north)</span><span class="err" id="pf-lat-err"></span></div>
       <div class="field"><label for="pf-lon">Longitude</label><input type="number" id="pf-lon" step="any" inputmode="decimal" placeholder="e.g. 12.1"><span class="hint">−180 (west) to 180 (east)</span><span class="err" id="pf-lon-err"></span></div>
     </div>
+    <button class="btn small pick-btn" type="button" data-act="pick-start" id="pf-pick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>Pick the spot on the globe</button>
     <div class="grid2">
       <div class="field"><label for="pf-terrain">Terrain</label><input type="text" id="pf-terrain" maxlength="60" placeholder="e.g. Granite peaks & glacier"></div>
       <div class="field"><label for="pf-family">Family</label>
         <select id="pf-family"><option value="alpine">Alpine</option><option value="arctic">Arctic</option><option value="arid">Arid</option><option value="rainforest">Rainforest</option><option value="ocean">Ocean</option></select></div>
     </div>
     <div class="field"><label for="pf-note">Note</label><textarea id="pf-note" maxlength="500" placeholder="Why this place, and what to skip."></textarea></div>
+    <div class="visit-row">
+      <input type="checkbox" id="pf-visited"><label for="pf-visited" style="font-weight:500;font-size:.9rem">I've been here</label>
+      <span></span><div class="field" id="pf-visited-on-field" hidden><label for="pf-visited-on">When <span class="muted">(optional)</span></label><input type="date" id="pf-visited-on"></div>
+    </div>
     <span class="err" id="pf-save-err"></span>
     <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit" id="pf-submit">Save place</button></div>
   </form>
@@ -700,22 +726,30 @@ try { const t = localStorage.getItem("the-goal-theme"); if (t === "dark" || t ==
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onThemeChange);
 
 /* ============================ ATLAS ============================ */
-const atlasUI = { selectedId: null, search: "", families: new Set(), confirmDelete: false, editingId: null };
+const atlasUI = { selectedId: null, search: "", families: new Set(), visit: "all", confirmDelete: false, editingId: null };
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+const fmtMonth = (s) => parseISO(s).toLocaleDateString("en-US", { month: "short", year: "numeric" });
 const sortedPlaces = () => state.destinations.slice().sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.name).localeCompare(b.name));
 function visiblePlaces() {
   const q = atlasUI.search.trim().toLowerCase();
   return sortedPlaces().filter((p) =>
     (atlasUI.families.size === 0 || atlasUI.families.has(p.family)) &&
+    (atlasUI.visit === "all" || (atlasUI.visit === "been") === !!p.visited) &&
     (!q || String(p.name).toLowerCase().includes(q) || String(p.terrain || "").toLowerCase().includes(q)));
 }
 function renderFamilyChips() {
   $("#fam-chips").innerHTML = FAMILIES.map((f) =>
     `<button type="button" class="chip fam-${f}" data-act="fam" data-fam="${f}" aria-pressed="${atlasUI.families.has(f)}"><span class="dot"></span>${FAMILY_LABEL[f]}</button>`).join("");
+  const been = state.destinations.filter((p) => p.visited).length, total = state.destinations.length;
+  $("#visit-chips").innerHTML =
+    `<button type="button" class="chip" style="--c:var(--gold)" data-act="visit" data-v="been" aria-pressed="${atlasUI.visit === "been"}">${CHECK_SVG.replace("<svg", '<svg width="12" height="12"')}Been there <span class="mono">${been}</span></button>` +
+    `<button type="button" class="chip" data-act="visit" data-v="not" aria-pressed="${atlasUI.visit === "not"}">Not yet <span class="mono">${total - been}</span></button>`;
+  $("#been-line").innerHTML = total ? `<span class="been-bar" aria-hidden="true"><i style="width:${(been / total) * 100}%"></i></span><span>Been to <span class="num">${been}</span> of <span class="num">${total}</span></span>` : "";
 }
 function renderPlaceList() {
   const list = visiblePlaces();
   const total = state.destinations.length;
-  const filtered = atlasUI.families.size > 0 || atlasUI.search.trim() !== "";
+  const filtered = atlasUI.families.size > 0 || atlasUI.search.trim() !== "" || atlasUI.visit !== "all";
   $("#clear-filters").hidden = !filtered;
   $("#list-count").textContent = filtered ? `${list.length} of ${total} places` : `${total} ${total === 1 ? "place" : "places"}`;
   if (!total) { $("#place-list").innerHTML = `<li class="empty">No places on the atlas yet — add the first one.</li>`; return; }
@@ -723,7 +757,7 @@ function renderPlaceList() {
   $("#place-list").innerHTML = list.map((p) => `
     <li><button type="button" class="place-row fam-${esc(p.family)}" data-act="select" data-id="${esc(p.id)}" aria-pressed="${p.id === atlasUI.selectedId}">
       <span class="dot" aria-hidden="true"></span>
-      <span><span class="nm">${esc(p.name)}</span><span class="terr">${esc(p.terrain || FAMILY_LABEL[p.family] || "")}</span></span>
+      <span><span class="nm">${esc(p.name)}</span>${p.visited ? `<span class="been-tag">${CHECK_SVG}Been</span>` : ""}<span class="terr">${esc(p.terrain || FAMILY_LABEL[p.family] || "")}</span></span>
       <span class="coord">${fmtCoord(p.lat, p.lon)}</span>
     </button></li>`).join("");
 }
@@ -739,12 +773,12 @@ function renderDetail() {
     <div class="scene"><canvas id="scene" aria-hidden="true"></canvas></div>
     <div class="detail-body">
       <h2>${esc(p.name)}</h2>
-      <div class="meta"><span class="coord">${fmtCoord(p.lat, p.lon)}</span><span class="pill fam-${esc(p.family)}"><span class="dot" aria-hidden="true"></span>${esc(p.terrain || FAMILY_LABEL[p.family])}</span></div>
+      <div class="meta"><span class="coord">${fmtCoord(p.lat, p.lon)}</span><span class="pill fam-${esc(p.family)}"><span class="dot" aria-hidden="true"></span>${esc(p.terrain || FAMILY_LABEL[p.family])}</span>${p.visited ? `<span class="pill" style="--c:var(--gold)">${CHECK_SVG.replace("<svg", '<svg width="12" height="12"')}Been there${p.visitedOn ? " · " + fmtMonth(p.visitedOn) : ""}</span>` : ""}</div>
       ${p.note ? `<p>${esc(p.note)}</p>` : ""}
       <div class="detail-actions">
         ${atlasUI.confirmDelete
           ? `<span class="muted" style="font-size:.88rem;align-self:center">Delete ${esc(p.name)} from the atlas?</span><button class="btn small danger" type="button" data-act="delete-place-yes">Delete</button><button class="btn small" type="button" data-act="delete-place-no">Keep it</button>`
-          : `<button class="btn small" type="button" data-act="edit-place">Edit</button><button class="btn small ghost" type="button" data-act="delete-place">Delete</button>`}
+          : `<button class="btn small been" type="button" data-act="toggle-visited" aria-pressed="${!!p.visited}">${p.visited ? CHECK_SVG + "Been there" : "I've been here"}</button><button class="btn small" type="button" data-act="edit-place">Edit</button><button class="btn small ghost" type="button" data-act="delete-place">Delete</button>`}
       </div>
       <span class="err" id="place-err"></span>
     </div>`;
@@ -1103,6 +1137,10 @@ function createGlobe(container) {
   const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const edgeGeo = new THREE.CircleGeometry(0.047, 24), edgeMat = new THREE.MeshBasicMaterial({ color: 0x0b1410, transparent: true, opacity: .45, depthWrite: false });
   const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+  const ckc = document.createElement("canvas"); ckc.width = ckc.height = 64; const ckg = ckc.getContext("2d");
+  ckg.strokeStyle = "#fff"; ckg.lineWidth = 9; ckg.lineCap = ckg.lineJoin = "round"; ckg.beginPath(); ckg.moveTo(16, 34); ckg.lineTo(28, 46); ckg.lineTo(49, 20); ckg.stroke();
+  const checkMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(ckc), transparent: true, depthWrite: false }), checkGeo = new THREE.PlaneGeometry(0.05, 0.05);
+  const goldRingMat = new THREE.MeshBasicMaterial({ color: 0xd3a75f });
   function famColor(f) { return new THREE.Color(cssVar("--" + (FAMILIES.includes(f) ? f : "alpine")) || "#3f5b45"); }
   function setMarkers(list) {
     markers.forEach((m) => { markerGroup.remove(m.group); m.discMat.dispose(); m.haloMat.dispose(); });
@@ -1115,13 +1153,14 @@ function createGlobe(container) {
       const discMat = new THREE.MeshBasicMaterial({ color: famColor(p.family) });
       const haloMat = new THREE.MeshBasicMaterial({ color: famColor(p.family), transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
       const edge = new THREE.Mesh(edgeGeo, edgeMat); edge.position.z = -.001;
-      const ring = new THREE.Mesh(ringGeo, ringMat);
+      const ring = new THREE.Mesh(ringGeo, p.visited ? goldRingMat : ringMat);
       const disc = new THREE.Mesh(discGeo, discMat); disc.position.z = .001;
       const halo = new THREE.Mesh(haloGeo, haloMat); halo.position.z = .002;
       const hit = new THREE.Mesh(hitGeo, hitMat); hit.position.z = .003; hit.userData.id = p.id;
       group.add(edge, ring, disc, halo, hit);
+      if (p.visited) { const ck = new THREE.Mesh(checkGeo, checkMat); ck.position.z = .0025; group.add(ck); }
       markerGroup.add(group);
-      markers.set(p.id, { group, discMat, haloMat, halo, hit, name: p.name, family: p.family });
+      markers.set(p.id, { group, discMat, haloMat, halo, hit, name: p.name, family: p.family, visited: !!p.visited });
     });
     applyVisible();
   }
@@ -1198,13 +1237,20 @@ function createGlobe(container) {
       lastX = e.clientX; lastY = e.clientY; lastT = now; lastInteract = now;
       return;
     }
+    if (e.pointerType === "mouse" && picking) {
+      lastInteract = performance.now();
+      const ll = pickLatLon(e.clientX, e.clientY), wrap = container.getBoundingClientRect();
+      if (ll) { tip.textContent = fmtCoord(ll[0], ll[1]); tip.hidden = false; tip.style.left = Math.min(wrap.width - 70, Math.max(70, e.clientX - wrap.left)) + "px"; tip.style.top = Math.max(40, e.clientY - wrap.top) + "px"; }
+      else tip.hidden = true;
+      return;
+    }
     if (e.pointerType === "mouse") {
       lastInteract = performance.now(); // hold the idle spin while the pointer is over the globe
       const id = pick(e.clientX, e.clientY);
       canvas.style.cursor = id ? "pointer" : "";
       if (id) {
         const m = markers.get(id); const rect = canvas.getBoundingClientRect(), wrap = container.getBoundingClientRect();
-        tip.textContent = m.name; tip.hidden = false;
+        tip.textContent = m.visited ? `${m.name} · been there` : m.name; tip.hidden = false;
         tip.style.left = Math.min(wrap.width - 70, Math.max(70, e.clientX - wrap.left)) + "px"; tip.style.top = Math.max(40, e.clientY - wrap.top) + "px";
       } else tip.hidden = true;
     }
@@ -1214,7 +1260,8 @@ function createGlobe(container) {
     pointers.delete(e.pointerId);
     if (pointers.size === 0) { dragging = false; canvas.classList.remove("dragging"); pinchStart = 0; }
     if (performance.now() - lastT > 80) { vYaw = vPitch = 0; }
-    if (wasClick && e.type === "pointerup") { const id = pick(e.clientX, e.clientY); if (id) selectPlace(id); }
+    if (wasClick && e.type === "pointerup" && picking) { const ll = pickLatLon(e.clientX, e.clientY); if (ll) { const cb = picking; stopPick(); cb(ll[0], ll[1]); } }
+    else if (wasClick && e.type === "pointerup") { const id = pick(e.clientX, e.clientY); if (id) selectPlace(id); }
     lastInteract = performance.now();
   };
   canvas.addEventListener("pointerup", end);
@@ -1226,6 +1273,16 @@ function createGlobe(container) {
     lastInteract = performance.now();
   }, { passive: false });
 
+  let picking = null;
+  function pickLatLon(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    const hit = raycaster.intersectObject(earth, false)[0]; if (!hit) return null;
+    const v = world.worldToLocal(hit.point.clone()).normalize();
+    return [Math.asin(Math.max(-1, Math.min(1, v.y))) * 180 / Math.PI, Math.atan2(v.x, v.z) * 180 / Math.PI];
+  }
+  function stopPick() { picking = null; canvas.classList.remove("picking"); tip.hidden = true; }
   function resize() {
     const w = container.clientWidth, h = container.clientHeight;
     if (!w || !h) return;
@@ -1265,6 +1322,8 @@ function createGlobe(container) {
     setVisible(set) { visibleSet = set; applyVisible(); },
     setSelected(id) { selectedId = id; },
     flyTo, recolor, resize,
+    startPick(cb) { picking = cb; canvas.classList.add("picking"); tYaw = tPitch = null; vYaw = vPitch = 0; lastInteract = performance.now() + 60000; },
+    cancelPick() { stopPick(); lastInteract = performance.now(); },
   };
 }
 
@@ -1288,9 +1347,27 @@ function openPlaceForm(p) {
   $("#place-title").textContent = p ? `Edit ${p.name}` : "Add a place";
   $("#pf-name").value = p ? p.name : ""; $("#pf-lat").value = p ? p.lat : ""; $("#pf-lon").value = p ? p.lon : "";
   $("#pf-terrain").value = p ? (p.terrain || "") : ""; $("#pf-family").value = p ? p.family : "alpine"; $("#pf-note").value = p ? (p.note || "") : "";
+  $("#pf-visited").checked = !!(p && p.visited); $("#pf-visited-on").value = p && p.visitedOn ? p.visitedOn : "";
+  $("#pf-visited-on-field").hidden = !$("#pf-visited").checked;
+  $("#pf-pick").hidden = !globe;
   ["name", "lat", "lon", "save"].forEach((k) => { $("#pf-" + k + "-err").textContent = ""; const i = $("#pf-" + k); i && i.removeAttribute("aria-invalid"); });
   openDialog("#dlg-place", "#pf-name");
 }
+$("#pf-visited").addEventListener("change", () => { $("#pf-visited-on-field").hidden = !$("#pf-visited").checked; });
+function startGlobePick() {
+  closeDialogs();
+  $("#pick-bar").hidden = false;
+  $(".globe-col").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" });
+  globe.startPick((lat, lon) => {
+    $("#pick-bar").hidden = true;
+    $("#pf-lat").value = lat.toFixed(1); $("#pf-lon").value = lon.toFixed(1);
+    $("#dlg-place").showModal(); validatePlaceField("lat"); validatePlaceField("lon");
+    ($("#pf-name").value.trim() ? $("#pf-terrain") : $("#pf-name")).focus();
+    toast(`Spot set to ${fmtCoord(lat, lon)}`);
+  });
+}
+function cancelGlobePick() { if ($("#pick-bar").hidden) return; $("#pick-bar").hidden = true; globe && globe.cancelPick(); $("#dlg-place").showModal(); $("#pf-pick").focus(); }
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#pick-bar").hidden) { e.preventDefault(); setTimeout(cancelGlobePick, 0); } });
 ["name", "lat", "lon"].forEach((k) => $("#pf-" + k).addEventListener("input", () => { if ($("#pf-" + k).getAttribute("aria-invalid") === "true" || k !== "name") validatePlaceField(k); }));
 $("#form-place").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1302,6 +1379,7 @@ $("#form-place").addEventListener("submit", async (e) => {
     id: existing ? existing.id : `${slug}-${uid().slice(-5)}`,
     name: $("#pf-name").value.trim(), lat: Number($("#pf-lat").value), lon: Number($("#pf-lon").value),
     terrain: $("#pf-terrain").value.trim(), family: $("#pf-family").value, note: $("#pf-note").value.trim(),
+    visited: $("#pf-visited").checked, visitedOn: $("#pf-visited").checked && validISO($("#pf-visited-on").value) ? $("#pf-visited-on").value : null,
     order: existing ? existing.order : Math.max(0, ...state.destinations.map((d) => d.order || 0)) + 1,
     createdAt: existing ? existing.createdAt : new Date().toISOString(),
   };
@@ -1860,9 +1938,19 @@ document.addEventListener("click", async (e) => {
       break;
     }
     case "fam": { const f = b.dataset.fam; atlasUI.families.has(f) ? atlasUI.families.delete(f) : atlasUI.families.add(f); renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); $(`[data-fam="${f}"]`).focus(); break; }
-    case "clear-filters": atlasUI.families.clear(); atlasUI.search = ""; $("#place-search").value = ""; renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(null); break;
+    case "clear-filters": atlasUI.families.clear(); atlasUI.search = ""; atlasUI.visit = "all"; $("#place-search").value = ""; renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(null); break;
     case "add-place": openPlaceForm(null); break;
     case "edit-place": openPlaceForm(state.destinations.find((d) => d.id === atlasUI.selectedId)); break;
+    case "toggle-visited": {
+      const p = state.destinations.find((d) => d.id === atlasUI.selectedId); if (!p) break;
+      const upd = { ...p, visited: !p.visited, visitedOn: !p.visited ? (p.visitedOn || todayISO()) : null };
+      try { await store.put("destinations", upd); } catch (err) { $("#place-err").textContent = SAVE_FAIL; break; }
+      renderAtlas(); $("[data-act=toggle-visited]").focus();
+      toast(upd.visited ? `${p.name} marked as been there` : `${p.name} moved back to not yet`); break;
+    }
+    case "visit": atlasUI.visit = atlasUI.visit === b.dataset.v ? "all" : b.dataset.v; renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); $(`[data-act=visit][data-v="${b.dataset.v}"]`).focus(); break;
+    case "pick-start": if (globe) startGlobePick(); break;
+    case "pick-cancel": cancelGlobePick(); break;
     case "delete-place": atlasUI.confirmDelete = true; renderDetail(); $("[data-act=delete-place-no]").focus(); break;
     case "delete-place-no": atlasUI.confirmDelete = false; renderDetail(); break;
     case "delete-place-yes": {
