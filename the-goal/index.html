@@ -1,0 +1,1756 @@
+<!doctype html>
+<title>The Goal</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A personal expedition dossier: an atlas of wild places to go, a tracker for the online business that pays for it, and a training plan for getting up the mountains.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='none' stroke='%233f5b45' stroke-width='2.5'/%3E%3Cpath d='M16 5 L19.5 16 L16 27 L12.5 16 Z' fill='%233f5b45'/%3E%3Cpath d='M16 5 L19.5 16 L12.5 16 Z' fill='%238f6a2f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --paper:#f5f6f0; --raised:#ffffff; --ink:#1c231f; --muted:#5b6660;
+  --moss:#3f5b45; --gold:#8f6a2f; --on-moss:#ffffff;
+  --hairline:#d9ddd2; --hairline-strong:#c3c9bc; --sunken:#eceee6;
+  --launched:#1d7a4a; --paused:#7c857f; --danger:#a3372b;
+  --alpine:#3f5b45; --arctic:#23706e; --arid:#9a6a1c; --rainforest:#1b6a35; --ocean:#2c5b99;
+  --globe-sea:#e3e8dc; --globe-land:#6f836f; --globe-grid:#c9d1c1;
+  --shadow:0 1px 2px rgba(28,35,31,.06), 0 1px 1px rgba(28,35,31,.04);
+  --shadow-lift:0 6px 18px rgba(28,35,31,.10), 0 1px 3px rgba(28,35,31,.06);
+  --f-display:"Fraunces", "Iowan Old Style", Georgia, serif;
+  --f-body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px; --r-sm:6px;
+  --t:170ms cubic-bezier(.2,.7,.3,1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --paper:#12160f; --raised:#1a201a; --ink:#eef0ea; --muted:#9aa39a;
+    --moss:#8fb397; --gold:#d3a75f; --on-moss:#12160f;
+    --hairline:#2b332b; --hairline-strong:#3a443a; --sunken:#161b14;
+    --launched:#72d69c; --paused:#8a938a; --danger:#ef8a7c;
+    --alpine:#8fb397; --arctic:#6cc3bd; --arid:#d9a95a; --rainforest:#5cc07a; --ocean:#7ea9e3;
+    --globe-sea:#1b231c; --globe-land:#6d8a72; --globe-grid:#2c372d;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+    --shadow-lift:0 8px 22px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --paper:#12160f; --raised:#1a201a; --ink:#eef0ea; --muted:#9aa39a;
+  --moss:#8fb397; --gold:#d3a75f; --on-moss:#12160f;
+  --hairline:#2b332b; --hairline-strong:#3a443a; --sunken:#161b14;
+  --launched:#72d69c; --paused:#8a938a; --danger:#ef8a7c;
+  --alpine:#8fb397; --arctic:#6cc3bd; --arid:#d9a95a; --rainforest:#5cc07a; --ocean:#7ea9e3;
+  --globe-sea:#1b231c; --globe-land:#6d8a72; --globe-grid:#2c372d;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
+  --shadow-lift:0 8px 22px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.3);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html{background:var(--paper)}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--f-display);font-weight:500;letter-spacing:-.01em;text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:clamp(1.9rem,1.4rem + 2vw,2.7rem)}
+h2{font-size:clamp(1.35rem,1.2rem + .7vw,1.7rem)}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:65ch}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:500 .72rem/1.3 var(--f-body);letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.muted{color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+:focus-visible{outline:2px solid var(--moss);outline-offset:2px;border-radius:4px}
+button,input,select,textarea{font:inherit;color:inherit}
+
+/* ---------- header ---------- */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--hairline)}
+.top-inner{max-width:1240px;margin:0 auto;padding:10px clamp(16px,3vw,32px);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wordmark{display:flex;align-items:center;gap:10px;margin-right:auto;text-decoration:none;color:var(--ink)}
+.wordmark svg{width:26px;height:26px;flex:none}
+.wordmark b{font:600 1.3rem/1 var(--f-display);letter-spacing:-.01em}
+.wordmark small{font:400 .72rem/1 var(--f-mono);color:var(--muted);letter-spacing:.04em}
+.tabs{display:flex;gap:4px;padding:4px;background:var(--sunken);border:1px solid var(--hairline);border-radius:999px}
+.tab{border:0;background:transparent;padding:7px 16px;border-radius:999px;font-weight:500;font-size:.92rem;cursor:pointer;color:var(--muted);transition:background var(--t),color var(--t);white-space:nowrap}
+.tab:hover{color:var(--ink)}
+.tab[aria-current="page"]{background:var(--moss);color:var(--on-moss)}
+.tools{display:flex;gap:6px;align-items:center}
+.icon-btn{border:1px solid var(--hairline);background:var(--raised);border-radius:999px;height:34px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:.85rem;color:var(--ink);transition:border-color var(--t),box-shadow var(--t)}
+.icon-btn:hover{border-color:var(--hairline-strong);box-shadow:var(--shadow)}
+.icon-btn svg{width:16px;height:16px}
+@media (max-width:720px){
+  .tabs{order:3;width:100%}
+  .tab{flex:1;padding:8px 6px}
+  .wordmark small{display:none}
+  .icon-btn .lbl{display:none}
+}
+
+main{max-width:1240px;margin:0 auto;padding:clamp(20px,3vw,36px) clamp(16px,3vw,32px) 64px}
+.banner{max-width:1240px;margin:12px auto 0;padding:0 clamp(16px,3vw,32px)}
+.banner p{max-width:none;background:color-mix(in srgb,var(--gold) 12%,var(--raised));border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);border-radius:var(--r-sm);padding:10px 14px;font-size:.9rem}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page-head p{color:var(--muted);margin-top:6px}
+
+/* ---------- common controls ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:1px solid var(--hairline-strong);background:var(--raised);padding:8px 16px;font-weight:500;font-size:.9rem;cursor:pointer;transition:background var(--t),border-color var(--t),box-shadow var(--t);color:var(--ink);text-decoration:none;white-space:nowrap}
+.btn:hover{box-shadow:var(--shadow);border-color:var(--muted)}
+.btn.primary{background:var(--moss);border-color:var(--moss);color:var(--on-moss)}
+.btn.primary:hover{box-shadow:var(--shadow-lift)}
+.btn.ghost{background:transparent;border-color:transparent;padding:6px 10px}
+.btn.ghost:hover{background:var(--sunken);box-shadow:none}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 40%,transparent)}
+.btn.small{padding:5px 11px;font-size:.82rem}
+.btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btn svg{width:16px;height:16px}
+.card{background:var(--raised);border:1px solid var(--hairline);border-radius:var(--r);box-shadow:var(--shadow);transition:box-shadow var(--t)}
+.card.lift:hover{box-shadow:var(--shadow-lift)}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--hairline-strong);background:var(--raised);border-radius:999px;padding:5px 12px;font-size:.84rem;cursor:pointer;transition:background var(--t),border-color var(--t);color:var(--ink)}
+.chip:hover{border-color:var(--muted)}
+.chip[aria-pressed="true"]{background:color-mix(in srgb,var(--c,var(--moss)) 16%,var(--raised));border-color:var(--c,var(--moss))}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none;display:inline-block}
+.pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:500;background:color-mix(in srgb,var(--c) 14%,var(--raised));border:1px solid color-mix(in srgb,var(--c) 45%,transparent);color:var(--ink);white-space:nowrap}
+.fam-alpine{--c:var(--alpine)} .fam-arctic{--c:var(--arctic)} .fam-arid{--c:var(--arid)} .fam-rainforest{--c:var(--rainforest)} .fam-ocean{--c:var(--ocean)}
+.st-Idea{--c:var(--gold)} .st-Building{--c:var(--moss)} .st-Launched{--c:var(--launched)} .st-Paused{--c:var(--paused)}
+.field{display:grid;gap:5px}
+.field label,.field .lbl{font-size:.84rem;font-weight:500}
+.field .hint{font-size:.8rem;color:var(--muted)}
+input[type=text],input[type=number],input[type=date],input[type=search],select,textarea{width:100%;background:var(--paper);border:1px solid var(--hairline-strong);border-radius:var(--r-sm);padding:8px 10px;transition:border-color var(--t),box-shadow var(--t)}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:none;border-color:var(--moss);box-shadow:0 0 0 3px color-mix(in srgb,var(--moss) 25%,transparent)}
+textarea{resize:vertical;min-height:80px}
+.err{color:var(--danger);font-size:.82rem;min-height:0}
+.err:empty{display:none}
+[aria-invalid="true"]{border-color:var(--danger)!important}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}}
+
+/* ---------- dialogs ---------- */
+dialog{border:1px solid var(--hairline);border-radius:14px;background:var(--raised);color:var(--ink);padding:0;width:min(520px,calc(100vw - 32px));box-shadow:0 24px 60px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(18,22,15,.45)}
+dialog form{display:grid;gap:14px;padding:22px}
+dialog .dlg-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:4px}
+
+/* ---------- toast ---------- */
+.toasts{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;display:grid;gap:8px;pointer-events:none;width:max-content;max-width:calc(100vw - 32px)}
+.toast{background:var(--ink);color:var(--paper);padding:10px 16px;border-radius:999px;font-size:.9rem;box-shadow:var(--shadow-lift);animation:toastIn 180ms ease-out}
+.toast.bad{background:var(--danger);color:#fff}
+@keyframes toastIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ---------- ATLAS ---------- */
+.atlas{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:24px;align-items:start}
+@media (max-width:900px){.atlas{grid-template-columns:1fr}}
+.globe-col{position:sticky;top:84px}
+@media (max-width:900px){.globe-col{position:static}}
+.globe-wrap{position:relative;aspect-ratio:1/1;width:100%;max-width:100%;max-height:min(680px,calc(100vh - 150px));margin:0 auto;border-radius:50%}
+.globe-wrap canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.globe-wrap canvas.dragging{cursor:grabbing}
+.globe-wrap::before{content:"";position:absolute;inset:6%;border-radius:50%;box-shadow:0 30px 80px -20px color-mix(in srgb,var(--moss) 40%,transparent);pointer-events:none}
+.globe-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:.8rem;padding:4px 9px;border-radius:6px;transform:translate(-50%,calc(-100% - 12px));white-space:nowrap;box-shadow:var(--shadow-lift)}
+.globe-help{text-align:center;font-size:.8rem;color:var(--muted);margin-top:6px}
+.globe-fallback{border:1px dashed var(--hairline-strong);border-radius:var(--r);padding:18px;color:var(--muted);font-size:.9rem}
+.side{display:grid;gap:18px}
+.detail{overflow:hidden}
+.scene{position:relative;aspect-ratio:16/7;max-width:100%;background:var(--sunken)}
+.scene canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.detail-body{padding:18px 20px 20px;display:grid;gap:10px}
+.detail-body .meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.coord{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.86rem;color:var(--muted)}
+.detail-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.list-card{padding:14px}
+.list-tools{display:grid;gap:10px;margin-bottom:10px}
+.fam-chips{display:flex;gap:6px;flex-wrap:wrap}
+.place-list{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:520px;overflow:auto}
+.place-row{width:100%;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;text-align:left;border:0;background:transparent;border-radius:var(--r-sm);padding:8px 10px;cursor:pointer;transition:background var(--t)}
+.place-row:hover{background:var(--sunken)}
+.place-row[aria-pressed="true"]{background:color-mix(in srgb,var(--moss) 13%,var(--raised))}
+.place-row .nm{font-weight:500}
+.place-row .terr{display:block;font-size:.78rem;color:var(--muted)}
+.place-row .coord{font-size:.76rem;text-align:right}
+.list-count{font-size:.8rem;color:var(--muted)}
+.empty{color:var(--muted);font-size:.9rem;padding:14px 4px}
+
+/* ---------- JOURNEY ---------- */
+.journey{display:grid;gap:40px}
+.sec-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sec-head .sub{color:var(--muted);font-size:.9rem;margin-top:4px}
+.stage{padding:22px 24px;display:grid;gap:16px}
+.stage-track{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stage-step{border-top:3px solid var(--hairline);padding-top:8px;font-size:.8rem;color:var(--muted)}
+.stage-step.done{border-color:color-mix(in srgb,var(--moss) 55%,transparent);color:var(--ink)}
+.stage-step.now{border-color:var(--moss);color:var(--ink);font-weight:600}
+.stage-now{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.stage-now .big{font:500 clamp(1.8rem,1.4rem + 1.6vw,2.4rem)/1.1 var(--f-display)}
+.choice{display:flex;gap:6px;flex-wrap:wrap}
+.choice input{position:absolute;opacity:0;pointer-events:none}
+.choice label{border:1px solid var(--hairline-strong);background:var(--raised);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:.9rem;transition:background var(--t),border-color var(--t),color var(--t)}
+.choice label:hover{border-color:var(--muted)}
+.choice input:checked + label{background:var(--moss);border-color:var(--moss);color:var(--on-moss)}
+.choice input:focus-visible + label{outline:2px solid var(--moss);outline-offset:2px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media (max-width:760px){.tiles{grid-template-columns:repeat(2,1fr)}}
+.tile{padding:16px 18px}
+.tile .eyebrow{margin-bottom:6px}
+.tile .val{font:500 clamp(1.4rem,1.1rem + 1.2vw,2rem)/1.1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.earn-empty{margin-top:10px;color:var(--muted);font-size:.9rem}
+.chart-card{margin-top:12px;padding:16px 18px 10px;position:relative}
+.chart-card svg{display:block;width:100%;height:auto;overflow:visible}
+.chart-card .bar-hit{cursor:default}
+.chart-card .bar-hit:focus-visible{outline:none}
+.chart-card .bar-hit:focus-visible + .bar,.chart-card .bar-hit:hover + .bar{opacity:.8}
+.chart-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--paper);font-size:.78rem;padding:5px 9px;border-radius:6px;transform:translate(-50%,-100%);white-space:nowrap;font-family:var(--f-mono)}
+.entries{margin-top:12px}
+.entries summary{cursor:pointer;font-size:.9rem;color:var(--muted);padding:4px 0}
+.entry-list{list-style:none;margin:8px 0 0;padding:0;display:grid}
+.entry-list li{display:grid;grid-template-columns:110px 1fr auto auto;gap:12px;align-items:center;padding:8px 2px;border-bottom:1px solid var(--hairline);font-size:.9rem}
+.entry-list .amt{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+@media (max-width:520px){.entry-list li{grid-template-columns:1fr auto auto}.entry-list .d{grid-column:1/-1;font-size:.78rem}}
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.proj{padding:16px 18px;display:grid;gap:10px;align-content:start}
+.proj.archived{opacity:.7}
+.proj-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.proj .desc{font-size:.92rem;color:var(--ink)}
+.proj .when{font-size:.78rem;color:var(--muted)}
+.proj-controls{display:flex;gap:6px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--hairline);padding-top:10px}
+.proj-controls select{width:auto;padding:4px 8px;font-size:.84rem}
+.books{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.book-col{padding:14px 14px 8px;background:transparent;box-shadow:none;border-style:dashed}
+.book-col h3{font-size:1rem;font-weight:500;display:flex;justify-content:space-between;align-items:baseline}
+.book-col h3 .n{font:400 .8rem var(--f-mono);color:var(--muted)}
+.book-list{list-style:none;margin:8px 0 0;padding:0}
+.book{display:grid;gap:6px;padding:10px 0;border-top:1px solid var(--hairline)}
+.book .t{font-weight:500}
+.book .a{font-size:.84rem;color:var(--muted)}
+.book-controls{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.book-controls select{width:auto;padding:3px 6px;font-size:.8rem}
+.rating{display:inline-flex;gap:3px}
+.rating button{width:14px;height:14px;padding:0;border-radius:50%;border:1.5px solid var(--moss);background:transparent;cursor:pointer}
+.rating button.on{background:var(--moss)}
+.book-note{font-size:.84rem;color:var(--muted);font-style:italic}
+.seg{display:none}
+@media (max-width:820px){
+  .books{grid-template-columns:1fr}
+  .seg{display:flex;gap:4px;padding:4px;background:var(--sunken);border:1px solid var(--hairline);border-radius:999px;margin-bottom:10px}
+  .seg button{flex:1;border:0;background:transparent;border-radius:999px;padding:6px 4px;font-size:.82rem;cursor:pointer;color:var(--muted)}
+  .seg button[aria-pressed="true"]{background:var(--raised);color:var(--ink);box-shadow:var(--shadow)}
+  .book-col[data-hide-mobile="true"]{display:none}
+}
+.goals{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media (max-width:900px){.goals{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:480px){.goals{grid-template-columns:1fr}}
+.goal{padding:12px 14px;background:var(--sunken);border:1px solid var(--hairline);border-radius:var(--r-sm)}
+.goal .eyebrow{margin-bottom:4px}
+.goal p{font-size:.86rem;color:var(--muted)}
+.goals-head h2{font-size:1.15rem}
+.timeline{list-style:none;margin:0;padding:0 0 0 18px;border-left:2px solid var(--hairline);display:grid;gap:18px}
+.timeline li{position:relative;display:grid;gap:4px}
+.timeline li::before{content:"";position:absolute;left:-25px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--raised);border:2px solid var(--moss)}
+.timeline .d{font-family:var(--f-mono);font-size:.8rem;color:var(--muted)}
+.timeline .row{justify-content:space-between;align-items:flex-start}
+
+/* ---------- TRAINING ---------- */
+.quiz{padding:24px;display:grid;gap:22px}
+.quiz fieldset{border:0;padding:0;margin:0;display:grid;gap:10px}
+.quiz legend{font:500 1.08rem/1.3 var(--f-display);padding:0;margin-bottom:10px}
+.quiz legend .qn{font:500 .8rem var(--f-mono);color:var(--gold);margin-right:8px}
+.quiz-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid var(--hairline);padding-top:18px}
+.plan-head{display:grid;gap:12px;margin-bottom:22px}
+.plan-meta{display:flex;flex-wrap:wrap;gap:8px 24px;margin:0}
+.plan-meta div{display:grid;gap:2px}
+.plan-meta dt{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.plan-meta dd{margin:0;font-weight:500}
+.week{padding:16px 18px;margin-bottom:18px}
+.week-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.week-count{font-weight:600}
+.week-count .num{font-weight:500}
+.week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.wd{border:1.5px solid var(--hairline-strong);background:var(--raised);border-radius:var(--r-sm);padding:10px 6px;display:grid;gap:3px;justify-items:center;cursor:pointer;transition:background var(--t),border-color var(--t),color var(--t);min-width:0}
+.wd .w{font-size:.74rem;text-transform:uppercase;letter-spacing:.08em}
+.wd .dn{font:500 1.15rem/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.wd .s{font-size:.7rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wd.plan{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,var(--raised))}
+.wd.rest{border-color:var(--hairline);background:var(--sunken);color:var(--muted)}
+.wd.done{background:var(--moss);border-color:var(--moss);color:var(--on-moss)}
+.wd.done .s{color:var(--on-moss);opacity:.85}
+.wd.today{box-shadow:0 0 0 2px var(--paper),0 0 0 4px color-mix(in srgb,var(--ink) 35%,transparent)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;font-size:.78rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;border:1.5px solid}
+@media (max-width:640px){
+  .week-strip{display:flex;overflow-x:auto;scroll-snap-type:x proximity;padding:4px 2px 8px}
+  .wd{flex:0 0 76px;scroll-snap-align:start}
+}
+.sessions{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px;margin-bottom:18px}
+.session{padding:16px 18px}
+.session h3{margin:2px 0 10px}
+.ex-list{list-style:none;margin:0;padding:0}
+.ex-list li{display:grid;grid-template-columns:1fr auto;gap:12px;padding:8px 0;border-top:1px solid var(--hairline);align-items:baseline}
+.ex-list .pat{display:block;font-size:.74rem;color:var(--muted)}
+.ex-list .rx{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;font-size:.88rem;white-space:nowrap}
+.howto{padding:18px 20px;display:grid;gap:12px}
+.howto h3{margin-bottom:2px}
+.howto dt{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.howto dd{margin:2px 0 0}
+.howto dl{display:grid;gap:12px;margin:0}
+.history{margin-top:18px;font-size:.9rem}
+.history ul{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:4px}
+.history li{display:flex;gap:12px}
+.history .d{font-family:var(--f-mono);color:var(--muted);min-width:96px}
+.plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
+
+.foot{max-width:1240px;margin:0 auto;padding:0 clamp(16px,3vw,32px) 28px;font-size:.78rem;color:var(--muted)}
+.loading{color:var(--muted);font-size:.9rem;padding:8px 0}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+  .card.lift:hover{box-shadow:var(--shadow)}
+}
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <a class="wordmark" href="#atlas" data-act="tab" data-tab="atlas" aria-label="The Goal, go to Atlas">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14" fill="none" style="stroke:var(--moss)" stroke-width="2"/><path d="M16 5 L19.5 16 L16 27 L12.5 16 Z" style="fill:var(--moss)"/><path d="M16 5 L19.5 16 L12.5 16 Z" style="fill:var(--gold)"/></svg>
+      <b>The Goal</b><small>field dossier</small>
+    </a>
+    <div class="tools">
+      <button class="icon-btn" type="button" data-act="export" title="Export all data as JSON">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span class="lbl">Export data</span><span class="sr-only">Export data</span>
+      </button>
+      <button class="icon-btn" type="button" id="theme-btn" data-act="theme" aria-label="Switch theme">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg><span class="lbl" id="theme-lbl">Dark</span>
+      </button>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <button class="tab" type="button" data-act="tab" data-tab="atlas" aria-current="page">Atlas</button>
+      <button class="tab" type="button" data-act="tab" data-tab="journey">The Journey</button>
+      <button class="tab" type="button" data-act="tab" data-tab="training">Training</button>
+    </nav>
+  </div>
+</header>
+<div class="banner" id="banner" hidden><p id="banner-text"></p></div>
+
+<main>
+  <!-- ================= ATLAS ================= -->
+  <section id="view-atlas" data-view="atlas">
+    <div class="page-head">
+      <div>
+        <h1>Atlas</h1>
+        <p>Wild over crowded. Every place on the list, and why it made the cut.</p>
+      </div>
+      <button class="btn primary" type="button" data-act="add-place">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a place
+      </button>
+    </div>
+    <div class="atlas">
+      <div class="globe-col">
+        <div class="globe-wrap" id="globe-wrap">
+          <div class="globe-tip" id="globe-tip" hidden></div>
+        </div>
+        <p class="globe-help" id="globe-help">Drag to turn the globe. Scroll or pinch to zoom. Tap a marker to open it.</p>
+        <p class="globe-fallback" id="globe-fallback" hidden>This device can't draw the 3D globe (WebGL is unavailable). Every place is still in the list, and choosing one opens its details.</p>
+      </div>
+      <div class="side">
+        <article class="card detail" id="detail" aria-live="polite"></article>
+        <div class="card list-card">
+          <div class="list-tools">
+            <label class="sr-only" for="place-search">Search places by name or terrain</label>
+            <input type="search" id="place-search" placeholder="Search by name or terrain" autocomplete="off">
+            <div class="fam-chips" id="fam-chips" role="group" aria-label="Filter by terrain family"></div>
+            <div class="row" style="justify-content:space-between">
+              <span class="list-count" id="list-count" aria-live="polite"></span>
+              <button class="btn ghost small" type="button" data-act="clear-filters" id="clear-filters" hidden>Clear filters</button>
+            </div>
+          </div>
+          <ul class="place-list" id="place-list" aria-label="Destinations"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= JOURNEY ================= -->
+  <section id="view-journey" data-view="journey" hidden>
+    <div class="page-head">
+      <div>
+        <h1>The Journey</h1>
+        <p>The business that pays for the road. Numbers first, stories at the bottom.</p>
+      </div>
+    </div>
+    <div class="journey">
+      <section aria-labelledby="stage-h">
+        <h2 class="sr-only" id="stage-h">Overall progress</h2>
+        <div class="card stage" id="stage"></div>
+      </section>
+
+      <section aria-labelledby="earn-h">
+        <div class="sec-head">
+          <div><h2 id="earn-h">Earnings</h2><p class="sub">US dollars, logged by hand. Weeks run Monday to Sunday.</p></div>
+          <button class="btn primary" type="button" data-act="add-income">Add income</button>
+        </div>
+        <div class="tiles" id="tiles" aria-live="polite"></div>
+        <p class="earn-empty" id="earn-empty" hidden>No income logged yet — add the first entry.</p>
+        <div class="card chart-card" id="chart-card">
+          <div class="row" style="justify-content:space-between;margin-bottom:6px">
+            <span class="eyebrow" id="chart-title">Last 7 days</span>
+          </div>
+          <div id="chart"></div>
+          <div class="chart-tip" id="chart-tip" hidden></div>
+        </div>
+        <details class="entries" id="entries" hidden>
+          <summary>All income entries</summary>
+          <ul class="entry-list" id="entry-list"></ul>
+        </details>
+      </section>
+
+      <section aria-labelledby="proj-h">
+        <div class="sec-head">
+          <div><h2 id="proj-h">Current projects</h2></div>
+          <button class="btn primary" type="button" data-act="add-project">Add project</button>
+        </div>
+        <div class="filters" style="margin-bottom:12px">
+          <div class="filters" id="proj-filters" role="group" aria-label="Filter projects by status"></div>
+          <button class="btn ghost small" type="button" data-act="toggle-archived" id="archived-btn" aria-pressed="false">Show archived</button>
+        </div>
+        <div id="projects"></div>
+      </section>
+
+      <section aria-labelledby="books-h">
+        <div class="sec-head">
+          <div><h2 id="books-h">Reading list</h2><p class="sub">What's feeding the thinking.</p></div>
+          <button class="btn" type="button" data-act="add-book">Add a book</button>
+        </div>
+        <div class="seg" id="book-seg" role="group" aria-label="Show reading list section"></div>
+        <div class="books" id="books"></div>
+      </section>
+
+      <section aria-labelledby="goals-h" class="goals-head">
+        <div class="sec-head" style="margin-bottom:10px"><h2 id="goals-h">Standing goals</h2></div>
+        <div class="goals">
+          <div class="goal"><div class="eyebrow">Income</div><p>Build the online business first — money that travels with you, not a job that waits at home.</p></div>
+          <div class="goal"><div class="eyebrow">Rhythm</div><p>Extended stretches on the road, as much as the business can support. Home base stays just as real — that's where the family gets built.</p></div>
+          <div class="goal"><div class="eyebrow">Style</div><p>The best hotel in the region, and a supercar in reach wherever the roads are worth it.</p></div>
+          <div class="goal"><div class="eyebrow">Terrain</div><p>Wild over crowded, always. A quiet trail beats a packed viewpoint every time.</p></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="log-h">
+        <div class="sec-head">
+          <div><h2 id="log-h">Field log</h2><p class="sub">The informal running record. Newest first.</p></div>
+          <button class="btn" type="button" data-act="add-log">Add entry</button>
+        </div>
+        <ol class="timeline" id="timeline"></ol>
+      </section>
+    </div>
+  </section>
+
+  <!-- ================= TRAINING ================= -->
+  <section id="view-training" data-view="training" hidden>
+    <div class="page-head">
+      <div>
+        <h1>Training</h1>
+        <p>The places on the atlas are mountains, trails and altitude. This is the part that decides whether you can actually get up them.</p>
+      </div>
+    </div>
+    <div id="training"></div>
+  </section>
+</main>
+<p class="foot" id="foot"></p>
+
+<!-- ================= DIALOGS ================= -->
+<dialog id="dlg-place" aria-labelledby="place-title">
+  <form id="form-place" novalidate>
+    <div class="dlg-head"><h2 id="place-title">Add a place</h2></div>
+    <div class="field"><label for="pf-name">Name</label><input type="text" id="pf-name" maxlength="80" required><span class="err" id="pf-name-err"></span></div>
+    <div class="grid2">
+      <div class="field"><label for="pf-lat">Latitude</label><input type="number" id="pf-lat" step="any" inputmode="decimal" placeholder="e.g. 46.5"><span class="hint">−90 (south) to 90 (north)</span><span class="err" id="pf-lat-err"></span></div>
+      <div class="field"><label for="pf-lon">Longitude</label><input type="number" id="pf-lon" step="any" inputmode="decimal" placeholder="e.g. 12.1"><span class="hint">−180 (west) to 180 (east)</span><span class="err" id="pf-lon-err"></span></div>
+    </div>
+    <div class="grid2">
+      <div class="field"><label for="pf-terrain">Terrain</label><input type="text" id="pf-terrain" maxlength="60" placeholder="e.g. Granite peaks & glacier"></div>
+      <div class="field"><label for="pf-family">Family</label>
+        <select id="pf-family"><option value="alpine">Alpine</option><option value="arctic">Arctic</option><option value="arid">Arid</option><option value="rainforest">Rainforest</option><option value="ocean">Ocean</option></select></div>
+    </div>
+    <div class="field"><label for="pf-note">Note</label><textarea id="pf-note" maxlength="500" placeholder="Why this place, and what to skip."></textarea></div>
+    <span class="err" id="pf-save-err"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit" id="pf-submit">Save place</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-income" aria-labelledby="income-title">
+  <form id="form-income" novalidate>
+    <div class="dlg-head"><h2 id="income-title">Add income</h2></div>
+    <div class="grid2">
+      <div class="field"><label for="if-amount">Amount (USD)</label><input type="text" id="if-amount" inputmode="decimal" placeholder="0.00" autocomplete="off"><span class="err" id="if-amount-err"></span></div>
+      <div class="field"><label for="if-date">Date</label><input type="date" id="if-date"><span class="err" id="if-date-err"></span></div>
+    </div>
+    <div class="field"><label for="if-note">Source <span class="muted">(optional)</span></label><input type="text" id="if-note" maxlength="120" placeholder="first client, affiliate payout…"></div>
+    <span class="err" id="if-save-err"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Log income</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-project" aria-labelledby="project-title">
+  <form id="form-project" novalidate>
+    <div class="dlg-head"><h2 id="project-title">Add project</h2></div>
+    <div class="field"><label for="prf-name">Name</label><input type="text" id="prf-name" maxlength="80"><span class="err" id="prf-name-err"></span></div>
+    <div class="field"><label for="prf-status">Status</label>
+      <select id="prf-status"><option>Idea</option><option>Building</option><option>Launched</option><option>Paused</option></select></div>
+    <div class="field"><label for="prf-desc">Short description</label><textarea id="prf-desc" maxlength="280" placeholder="One or two sentences on what it is."></textarea></div>
+    <span class="err" id="prf-save-err"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save project</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-book" aria-labelledby="book-title">
+  <form id="form-book" novalidate>
+    <div class="dlg-head"><h2 id="book-title">Add a book</h2></div>
+    <div class="field"><label for="bf-title">Title</label><input type="text" id="bf-title" maxlength="160"><span class="err" id="bf-title-err"></span></div>
+    <div class="field"><label for="bf-author">Author <span class="muted">(optional)</span></label><input type="text" id="bf-author" maxlength="120"></div>
+    <div class="field"><label for="bf-status">Status</label>
+      <select id="bf-status"><option value="want">Want to Read</option><option value="reading">Currently Reading</option><option value="read">Read</option></select></div>
+    <div class="field" id="bf-rating-field"><label for="bf-rating">Rating</label>
+      <select id="bf-rating"><option value="">No rating</option><option value="1">1 of 5</option><option value="2">2 of 5</option><option value="3">3 of 5</option><option value="4">4 of 5</option><option value="5">5 of 5</option></select>
+      <span class="hint" id="bf-rating-hint">Rate it once it's marked Read.</span></div>
+    <div class="field" id="bf-note-field"><label for="bf-note">Note <span class="muted">(optional)</span></label><textarea id="bf-note" maxlength="400"></textarea></div>
+    <span class="err" id="bf-save-err"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save book</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-log" aria-labelledby="log-title">
+  <form id="form-log" novalidate>
+    <div class="dlg-head"><h2 id="log-title">Add a field log entry</h2></div>
+    <div class="field"><label for="lf-date">Date</label><input type="date" id="lf-date"><span class="err" id="lf-date-err"></span></div>
+    <div class="field"><label for="lf-note">Entry</label><textarea id="lf-note" maxlength="1200" placeholder="A new place on the atlas, a big purchase, a shift in the travel and family balance…"></textarea><span class="err" id="lf-note-err"></span></div>
+    <span class="err" id="lf-save-err"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save entry</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-export" aria-labelledby="export-title">
+  <form method="dialog">
+    <div class="dlg-head"><h2 id="export-title">Your data</h2></div>
+    <p class="muted" style="font-size:.9rem">This view can't save files, so here is the full backup as JSON. Copy it and keep it somewhere safe.</p>
+    <label class="sr-only" for="export-text">Exported data</label>
+    <textarea id="export-text" readonly style="min-height:240px;font:400 .78rem/1.45 var(--f-mono)"></textarea>
+    <div class="dlg-foot"><span class="muted" id="copy-status" aria-live="polite" style="margin-right:auto;font-size:.85rem;align-self:center"></span><button class="btn" type="button" data-act="close-dialog">Close</button><button class="btn primary" type="button" data-act="copy-export">Copy JSON</button></div>
+  </form>
+</dialog>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(() => {
+"use strict";
+
+/* ============================ utilities ============================ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const pad = (n) => String(n).padStart(2, "0");
+const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseISO = (s) => { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, (m || 1) - 1, d || 1); };
+const validISO = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s)) && !isNaN(parseISO(s));
+const todayISO = () => iso(new Date());
+const addDays = (d, n) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); x.setDate(x.getDate() + n); return x; };
+const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
+const fmtDate = (s) => parseISO(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const usd0 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 });
+const usd2 = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money = (cents) => (cents % 100 === 0 ? usd0 : usd2).format(cents / 100);
+const fmtCoord = (lat, lon) => `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? "N" : "S"} ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? "E" : "W"}`;
+const hashStr = (s) => { let h = 2166136261; for (const c of String(s)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches; };
+
+const FAMILIES = ["alpine", "arctic", "arid", "rainforest", "ocean"];
+const FAMILY_LABEL = { alpine: "Alpine", arctic: "Arctic", arid: "Arid", rainforest: "Rainforest", ocean: "Ocean" };
+const STAGES = ["Idea", "Building", "Launched", "Growing"];
+const PROJECT_STATUSES = ["Idea", "Building", "Launched", "Paused"];
+const BOOK_STATUS = { want: "Want to Read", reading: "Currently Reading", read: "Read" };
+const BOOK_EMPTY = { want: "Nothing queued up yet — add a book.", reading: "Not reading anything right now.", read: "Nothing logged as finished yet." };
+
+function toast(msg, bad = false) {
+  const el = document.createElement("div");
+  el.className = "toast" + (bad ? " bad" : "");
+  el.textContent = msg;
+  $("#toasts").appendChild(el);
+  setTimeout(() => el.remove(), bad ? 4200 : 2400);
+}
+function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
+
+/* ============================ state & storage ============================ */
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [] };
+const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones"];
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log" };
+const LOCAL_KEY = "the-goal-dossier-v1";
+let loaded = false;
+
+async function fetchSeed() {
+  try { const r = await fetch("seed.json", { cache: "no-store" }); if (!r.ok) throw 0; return await r.json(); }
+  catch (e) { return null; }
+}
+
+const store = {
+  mode: "loading", db: null,
+  async init() {
+    const claude = window.claude;
+    if (claude && typeof claude.use === "function") {
+      try { this.db = await claude.use("db"); } catch (e) { this.db = null; }
+      if (this.db) {
+        try { await this.loadDb(); this.mode = "db"; return; }
+        catch (e) { this.db = null; setBanner("The database couldn't be reached just now, so changes save in this browser only. Reload later to get back to the saved dossier."); }
+      } else {
+        setBanner("The database isn't available in this view, so changes save in this browser only.");
+      }
+    }
+    await this.loadLocal();
+  },
+  async loadDb() {
+    const db = this.db;
+    const meta = await db.doc("meta/app").get();
+    if (!meta.exists) {
+      const seed = await fetchSeed();
+      if (seed) {
+        for (const d of seed.destinations || []) { const { id, ...rest } = d; await db.collection("destinations").doc(id).set(rest); }
+        for (const m of seed.milestones || []) { const { id, ...rest } = m; await db.collection("milestones").doc(id).set(rest); }
+        await db.doc("meta/app").set({ seeded: true, seededAt: new Date().toISOString() });
+      }
+    }
+    const cols = await Promise.all(COLLECTIONS.map((c) => db.collection(c).limit(1000).get()));
+    COLLECTIONS.forEach((c, i) => { state[c] = cols[i].docs.map((d) => ({ id: d.id, ...d.data() })); });
+    const singles = await Promise.all(Object.values(SINGLE_PATHS).map((p) => db.doc(p).get()));
+    Object.keys(SINGLE_PATHS).forEach((k, i) => { const s = singles[i]; state[k] = s.exists ? { ...s.data() } : null; });
+    state.trainingLog = state.trainingLog && Array.isArray(state.trainingLog.entries) ? state.trainingLog.entries.slice() : [];
+  },
+  async loadLocal() {
+    let raw = null, ok = true;
+    try { raw = localStorage.getItem(LOCAL_KEY); } catch (e) { ok = false; }
+    if (raw) {
+      try { Object.assign(state, JSON.parse(raw)); } catch (e) { raw = null; }
+    }
+    if (!raw) {
+      const seed = await fetchSeed();
+      if (seed) { state.destinations = seed.destinations || []; state.milestones = seed.milestones || []; }
+      else setBanner("The starting list of places couldn't be loaded. You can still add places by hand.");
+    }
+    if (!Array.isArray(state.trainingLog)) state.trainingLog = [];
+    this.mode = ok ? "local" : "memory";
+    if (!ok) setBanner("This browser is blocking storage, so changes only last until this tab closes.");
+    else this.saveLocal();
+  },
+  saveLocal() {
+    if (this.mode === "memory") return;
+    try {
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog }));
+    } catch (e) {
+      this.mode = "memory";
+      setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
+    }
+  },
+  async put(col, obj) {
+    if (this.mode === "db") { const { id, ...rest } = obj; await this.db.collection(col).doc(id).set(rest); }
+    const list = state[col]; const i = list.findIndex((x) => x.id === obj.id);
+    if (i >= 0) list[i] = obj; else list.push(obj);
+    if (this.mode !== "db") this.saveLocal();
+  },
+  async remove(col, id) {
+    if (this.mode === "db") await this.db.collection(col).doc(id).delete();
+    state[col] = state[col].filter((x) => x.id !== id);
+    if (this.mode !== "db") this.saveLocal();
+  },
+  async setSingle(key, data) {
+    if (this.mode === "db") {
+      const ref = this.db.doc(SINGLE_PATHS[key]);
+      if (data === null) await ref.delete();
+      else await ref.set(key === "trainingLog" ? { entries: data } : data);
+    }
+    state[key] = data;
+    if (this.mode !== "db") this.saveLocal();
+  },
+};
+const SAVE_FAIL = "That didn't save. Check your connection and try again.";
+
+/* ============================ tabs & theme ============================ */
+let currentTab = "atlas";
+function showTab(tab) {
+  currentTab = tab;
+  $$("[data-view]").forEach((v) => (v.hidden = v.dataset.view !== tab));
+  $$(".tab").forEach((b) => b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false"));
+  if (tab === "atlas") { globe && globe.resize(); drawScene(); }
+  if (tab === "journey") renderChart();
+  window.scrollTo({ top: 0 });
+}
+function applyThemeLabel() {
+  const dark = isDark();
+  $("#theme-lbl").textContent = dark ? "Light" : "Dark";
+  $("#theme-btn").setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+}
+function onThemeChange() { applyThemeLabel(); globe && globe.recolor(); drawScene(); renderChart(); }
+try { const t = localStorage.getItem("the-goal-theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onThemeChange);
+
+/* ============================ ATLAS ============================ */
+const atlasUI = { selectedId: null, search: "", families: new Set(), confirmDelete: false, editingId: null };
+const sortedPlaces = () => state.destinations.slice().sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || String(a.name).localeCompare(b.name));
+function visiblePlaces() {
+  const q = atlasUI.search.trim().toLowerCase();
+  return sortedPlaces().filter((p) =>
+    (atlasUI.families.size === 0 || atlasUI.families.has(p.family)) &&
+    (!q || String(p.name).toLowerCase().includes(q) || String(p.terrain || "").toLowerCase().includes(q)));
+}
+function renderFamilyChips() {
+  $("#fam-chips").innerHTML = FAMILIES.map((f) =>
+    `<button type="button" class="chip fam-${f}" data-act="fam" data-fam="${f}" aria-pressed="${atlasUI.families.has(f)}"><span class="dot"></span>${FAMILY_LABEL[f]}</button>`).join("");
+}
+function renderPlaceList() {
+  const list = visiblePlaces();
+  const total = state.destinations.length;
+  const filtered = atlasUI.families.size > 0 || atlasUI.search.trim() !== "";
+  $("#clear-filters").hidden = !filtered;
+  $("#list-count").textContent = filtered ? `${list.length} of ${total} places` : `${total} ${total === 1 ? "place" : "places"}`;
+  if (!total) { $("#place-list").innerHTML = `<li class="empty">No places on the atlas yet — add the first one.</li>`; return; }
+  if (!list.length) { $("#place-list").innerHTML = `<li class="empty">Nothing matches those filters. Try a different search or clear the filters.</li>`; return; }
+  $("#place-list").innerHTML = list.map((p) => `
+    <li><button type="button" class="place-row fam-${esc(p.family)}" data-act="select" data-id="${esc(p.id)}" aria-pressed="${p.id === atlasUI.selectedId}">
+      <span class="dot" aria-hidden="true"></span>
+      <span><span class="nm">${esc(p.name)}</span><span class="terr">${esc(p.terrain || FAMILY_LABEL[p.family] || "")}</span></span>
+      <span class="coord">${fmtCoord(p.lat, p.lon)}</span>
+    </button></li>`).join("");
+}
+function renderDetail() {
+  const p = state.destinations.find((x) => x.id === atlasUI.selectedId);
+  const el = $("#detail");
+  if (!p) {
+    el.innerHTML = `<div class="scene"><canvas id="scene" aria-hidden="true"></canvas></div><div class="detail-body"><p class="muted">${loaded ? "Choose a place on the globe or in the list." : "Opening the dossier…"}</p></div>`;
+    drawScene();
+    return;
+  }
+  el.innerHTML = `
+    <div class="scene"><canvas id="scene" aria-hidden="true"></canvas></div>
+    <div class="detail-body">
+      <h2>${esc(p.name)}</h2>
+      <div class="meta"><span class="coord">${fmtCoord(p.lat, p.lon)}</span><span class="pill fam-${esc(p.family)}"><span class="dot" aria-hidden="true"></span>${esc(p.terrain || FAMILY_LABEL[p.family])}</span></div>
+      ${p.note ? `<p>${esc(p.note)}</p>` : ""}
+      <div class="detail-actions">
+        ${atlasUI.confirmDelete
+          ? `<span class="muted" style="font-size:.88rem;align-self:center">Delete ${esc(p.name)} from the atlas?</span><button class="btn small danger" type="button" data-act="delete-place-yes">Delete</button><button class="btn small" type="button" data-act="delete-place-no">Keep it</button>`
+          : `<button class="btn small" type="button" data-act="edit-place">Edit</button><button class="btn small ghost" type="button" data-act="delete-place">Delete</button>`}
+      </div>
+      <span class="err" id="place-err"></span>
+    </div>`;
+  drawScene();
+}
+function selectPlace(id, { fly = true } = {}) {
+  atlasUI.selectedId = id; atlasUI.confirmDelete = false;
+  renderDetail(); renderPlaceList();
+  const p = state.destinations.find((x) => x.id === id);
+  if (globe && p) { globe.setSelected(id); if (fly) globe.flyTo(p.lat, p.lon); }
+}
+function renderAtlas() {
+  if (atlasUI.selectedId && !state.destinations.some((d) => d.id === atlasUI.selectedId)) atlasUI.selectedId = null;
+  if (!atlasUI.selectedId && state.destinations.length) atlasUI.selectedId = sortedPlaces()[0].id;
+  renderFamilyChips(); renderPlaceList(); renderDetail();
+  if (globe) { globe.setMarkers(state.destinations); globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); globe.setSelected(atlasUI.selectedId); }
+}
+
+/* ---------- terrain scenes (generated, no images) ---------- */
+function drawScene() {
+  const c = $("#scene"); if (!c || !c.offsetParent) return;
+  const p = state.destinations.find((x) => x.id === atlasUI.selectedId);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = Math.max(1, Math.round(c.clientWidth * dpr)), H = Math.max(1, Math.round(c.clientHeight * dpr));
+  c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const dark = isDark();
+  if (!p) { g.fillStyle = cssVar("--sunken"); g.fillRect(0, 0, W, H); return; }
+  const R = rng(hashStr(p.id + p.name));
+  const fn = { alpine: sceneAlpine, arid: sceneArid, arctic: sceneArctic, rainforest: sceneRainforest, ocean: sceneOcean }[p.family] || sceneAlpine;
+  fn(g, W, H, R, dark);
+}
+function vGrad(g, H, stops) { const gr = g.createLinearGradient(0, 0, 0, H); stops.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; }
+function ridge(W, base, amp, R, n) {
+  const pts = [[0, base - R() * amp * .4]];
+  for (let i = 1; i <= n; i++) {
+    const x = (i / n) * W + (R() - .5) * (W / n) * .5;
+    const peak = i % 2 === 1;
+    pts.push([x, peak ? base - amp * (.55 + R() * .45) : base - amp * (.1 + R() * .3)]);
+  }
+  pts.push([W, base - R() * amp * .4]);
+  return pts;
+}
+function fillPoly(g, pts, W, H, fill) { g.beginPath(); g.moveTo(0, H); pts.forEach(([x, y]) => g.lineTo(x, y)); g.lineTo(W, H); g.closePath(); g.fillStyle = fill; g.fill(); }
+function sceneAlpine(g, W, H, R, dark) {
+  g.fillStyle = vGrad(g, H, dark ? [[0, "#0e1a22"], [1, "#2a3a3a"]] : [[0, "#b9cfd6"], [1, "#eef1e8"]]); g.fillRect(0, 0, W, H);
+  if (!dark) { g.fillStyle = "rgba(255,255,255,.7)"; g.beginPath(); g.arc(W * (.7 + R() * .2), H * .22, H * .07, 0, 7); g.fill(); }
+  else { g.fillStyle = "rgba(240,240,220,.85)"; g.beginPath(); g.arc(W * (.75 + R() * .15), H * .2, H * .05, 0, 7); g.fill(); }
+  const layers = dark
+    ? [["#34464a", "#c9d4d6"], ["#26363a", "#dfe7e8"], ["#1a2628", "#eef3f3"], ["#121c1a", null]]
+    : [["#9fb2b4", "#f3f6f6"], ["#7b918f", "#fbfcfc"], ["#566d64", "#ffffff"], ["#3f5b45", null]];
+  layers.forEach(([rock, snow], i) => {
+    const base = H * (.62 + i * .12), amp = H * (.5 - i * .1);
+    const pts = ridge(W, base, amp, R, 5 + i * 2 + Math.floor(R() * 3));
+    fillPoly(g, pts, W, H, rock);
+    if (snow) {
+      g.save(); g.beginPath(); g.moveTo(0, H); pts.forEach(([x, y]) => g.lineTo(x, y)); g.lineTo(W, H); g.closePath(); g.clip();
+      const line = base - amp * (.5 + R() * .12);
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(W, 0);
+      for (let x = W; x >= 0; x -= W / 28) g.lineTo(x, line + (R() - .3) * amp * .18);
+      g.closePath(); g.fillStyle = snow; g.fill(); g.restore();
+    }
+  });
+}
+function sceneArid(g, W, H, R, dark) {
+  g.fillStyle = vGrad(g, H, dark ? [[0, "#1b1522"], [.6, "#4a3226"], [1, "#6a432a"]] : [[0, "#f1dcb4"], [1, "#f7ecd6"]]); g.fillRect(0, 0, W, H);
+  g.fillStyle = dark ? "rgba(255,210,150,.85)" : "rgba(214,120,50,.85)"; g.beginPath(); g.arc(W * (.2 + R() * .6), H * .3, H * .1, 0, 7); g.fill();
+  const cols = dark ? [["#6b4027", "#3e2419"], ["#7c4a2b", "#472a1b"], ["#8f5530", "#4f2d1b"], ["#9e5f34", "#55301c"]]
+                    : [["#e2b77c", "#c98e52"], ["#d9a466", "#b87a41"], ["#cf8f4f", "#a4652f"], ["#c07a3b", "#8f5324"]];
+  cols.forEach(([lit, shade], i) => {
+    const base = H * (.5 + i * .14), f1 = 1 + R() * 2, f2 = 3 + R() * 3, ph = R() * 6, amp = H * (.09 + i * .02);
+    const y = (x) => base - Math.abs(Math.sin((x / W) * Math.PI * f1 + ph)) * amp - Math.sin((x / W) * Math.PI * f2 + ph) * amp * .25;
+    g.beginPath(); g.moveTo(0, H); for (let x = 0; x <= W; x += 4) g.lineTo(x, y(x)); g.lineTo(W, H); g.closePath();
+    const gr = g.createLinearGradient(0, base - amp, W, H); gr.addColorStop(0, lit); gr.addColorStop(1, shade); g.fillStyle = gr; g.fill();
+    g.beginPath(); for (let x = 0; x <= W; x += 4) g[x ? "lineTo" : "moveTo"](x, y(x)); g.strokeStyle = dark ? "rgba(255,200,150,.25)" : "rgba(255,240,215,.7)"; g.lineWidth = Math.max(1, H * .006); g.stroke();
+  });
+}
+function sceneArctic(g, W, H, R, dark) {
+  g.fillStyle = vGrad(g, H, dark ? [[0, "#050a12"], [1, "#132330"]] : [[0, "#0d1b2a"], [1, "#2a4a5a"]]); g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 140; i++) { g.fillStyle = `rgba(255,255,255,${.3 + R() * .6})`; const s = R() * 1.6 + .4; g.fillRect(R() * W, R() * H * .7, s, s); }
+  g.save(); g.globalCompositeOperation = "lighter";
+  const hues = [["rgba(90,240,170,", 3], ["rgba(90,200,220,", 2], ["rgba(170,120,230,", 1]];
+  hues.forEach(([col, k]) => {
+    const base = H * (.3 + R() * .2), amp = H * .12, f = 1 + R() * 2, ph = R() * 6, height = H * (.22 + R() * .15);
+    for (let x = 0; x < W; x += 2) {
+      const y = base + Math.sin((x / W) * Math.PI * f + ph) * amp + Math.sin((x / W) * 13 + ph) * amp * .15;
+      const gr = g.createLinearGradient(0, y, 0, y - height);
+      const a = (.05 + .05 * Math.sin(x / 40 + ph)) * (k / 2);
+      gr.addColorStop(0, col + (a * 2.2) + ")"); gr.addColorStop(1, col + "0)");
+      g.fillStyle = gr; g.fillRect(x, y - height, 2, height);
+    }
+  });
+  g.restore();
+  const hill = (base, amp, col) => { g.beginPath(); g.moveTo(0, H); for (let x = 0; x <= W; x += 6) g.lineTo(x, base - Math.sin(x / W * 3 + R()) * amp * .3 - amp * .2); g.lineTo(W, H); g.closePath(); g.fillStyle = col; g.fill(); };
+  hill(H * .84, H * .08, dark ? "#2b3d4a" : "#9fb8c6");
+  hill(H * .92, H * .06, dark ? "#3a4f5c" : "#dce8ee");
+  g.fillStyle = dark ? "#07100c" : "#12251c";
+  for (let i = 0; i < 16; i++) { const x = R() * W, b = H * (.86 + R() * .08), h = H * (.07 + R() * .08), w = h * .35; g.beginPath(); g.moveTo(x, b - h); g.lineTo(x + w, b); g.lineTo(x - w, b); g.closePath(); g.fill(); }
+}
+function sceneRainforest(g, W, H, R, dark) {
+  g.fillStyle = vGrad(g, H, dark ? [[0, "#0c1712"], [1, "#1c2c20"]] : [[0, "#d9e6d6"], [1, "#eef3e8"]]); g.fillRect(0, 0, W, H);
+  const rows = dark ? ["#223a28", "#1b3221", "#15291a", "#0f2014", "#0a170e"] : ["#9bbf94", "#6fa06a", "#4a8450", "#2f6a3b", "#1b5028"];
+  rows.forEach((col, i) => {
+    const base = H * (.36 + i * .15), r0 = H * (.06 + i * .025);
+    g.fillStyle = col;
+    g.fillRect(0, base, W, H - base);
+    for (let x = -r0; x < W + r0; x += r0 * (.9 + R() * .6)) {
+      const r = r0 * (.7 + R() * .6);
+      g.beginPath(); g.arc(x, base - r * (.2 + R() * .5), r, 0, 7); g.fill();
+    }
+    if (i < rows.length - 1) {
+      const m = g.createLinearGradient(0, base - r0, 0, base + r0 * 1.5);
+      m.addColorStop(0, "rgba(255,255,255,0)"); m.addColorStop(.6, dark ? "rgba(160,190,170,.10)" : "rgba(255,255,255,.35)"); m.addColorStop(1, "rgba(255,255,255,0)");
+      g.fillStyle = m; g.fillRect(0, base - r0, W, r0 * 2.5);
+    }
+  });
+}
+function sceneOcean(g, W, H, R, dark) {
+  const bg = g.createRadialGradient(W / 2, H / 2, H * .1, W / 2, H / 2, W * .7);
+  bg.addColorStop(0, dark ? "#123a5c" : "#2f7fb5"); bg.addColorStop(1, dark ? "#061526" : "#154a7a");
+  g.fillStyle = bg; g.fillRect(0, 0, W, H);
+  g.strokeStyle = dark ? "rgba(160,200,240,.08)" : "rgba(255,255,255,.12)"; g.lineWidth = 1.2;
+  for (let i = 0; i < 26; i++) { const x = R() * W, y = R() * H, l = W * (.03 + R() * .05); g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + l / 2, y - 4, x + l, y); g.stroke(); }
+  const cx = W * (.45 + R() * .1), cy = H * .52, rx = Math.min(W * .3, H * .75), ry = H * .34, rot = (R() - .5) * .5;
+  g.save(); g.translate(cx, cy); g.rotate(rot);
+  g.fillStyle = dark ? "#1f6d86" : "#5fc4d6"; g.beginPath(); g.ellipse(0, 0, rx * 1.12, ry * 1.18, 0, 0, 7); g.fill();
+  g.fillStyle = dark ? "#2a8ea3" : "#8ee0e4"; g.beginPath(); g.ellipse(0, 0, rx * .95, ry * .92, 0, 0, 7); g.fill();
+  let a = 0; g.lineCap = "round";
+  while (a < Math.PI * 2) {
+    const seg = .5 + R() * .9, gap = .08 + R() * .18, end = Math.min(a + seg, Math.PI * 2);
+    g.beginPath(); g.ellipse(0, 0, rx, ry, 0, a, end); g.strokeStyle = dark ? "#cdbf97" : "#f4ead0"; g.lineWidth = H * .045; g.stroke();
+    if (R() > .55) { const m = (a + end) / 2; g.fillStyle = dark ? "#3f6b45" : "#4f8f55"; g.beginPath(); g.arc(Math.cos(m) * rx, Math.sin(m) * ry, H * .022, 0, 7); g.fill(); }
+    a = end + gap;
+  }
+  g.restore();
+}
+
+/* ---------- globe (three.js) ---------- */
+const LAND_MASK = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADofwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPj/n////2MAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/++f///x8AACABgGkAAOABAAAAAAAAAAAAAAAAWPw//v///wMAAD8AAAAAAAA4AAAAAAAAAAAAAAAHAMAB/P///w8AAAwAAAAAAAgwAAAAAAAAAAAAAAC8cxgDAP7//wcAAAAAAIAHAMD/DwD0AAAAAAAAAOACAAAAAPz//wcAAAAAAGAAAPz/AQAAAAAAAAAAAOA/Y7UDAPD/vwEAAAAAABjAwP//9z9AAAAAA4AAAED8A2P/AeD/fwMAAAAAABDg9v///z//HwCAAPj/A0/8X4PkB9j//wAAAPA/AADj/v///////wc9A/7///8Hwp6hB8D/DwAAAPj/Y+z//f//////////N/D///////+Bf+D/AQAAAP6/x/+//v//////////GP7//////7/wJ+AfAH4AAD5++P//////////////AOD//////8sCH8AfAAwAwL////////////////9/APz//////wNxDIAPAAAI8M////////////////8fAPjf/////wHwAwAOAAAA+M///////////////+ADAPAB+P///wHwMwAAAAAA+A////////////9/YhgAAIAC4P///wPgfwAAAAAQABf///////////8fAB4AACAAAP///x/ofwAAAAAwYMb///////////8PAB8AAAQAgP7////5/wEAAABMwOD///////////8DAA8AAAAAAPz////5/wcAAADs8P////////////8/AAcAAAAAAPj////7/wMAAADi+f////////////+/AAEAAAAAAPj/////jwAAAAAw/v////////////+/gAAAAAAAAOD/////Gw4AAACA//////////////8fAAAAAAAAAOD/////HxAAAACA//////////////8fAAAAAAAAAOD/////PwAAAACA//9P/vj///////8PAAAAAAAAAOD/////EwAAAACA//wHfPz////////HAAAAAAAAAOD/////AQAAAAD8g/EH8Pj////////gAAAAAAAAAOD///9/AAAAAAD8Aebn+fH//////z8AAAAAAAAAAOD///9/AAAAAAD8AGD+//H//////xpgAAAAAAAAAMD///8/AAAAAAD8AMT8//H/////fzggAAAAAAAAAID///8fAAAAAAAQdADs//v//////zE4AAAAAAAAAID///8fAAAAAACwfwBD/////////zA/AAAAAAAAAAD+//8HAAAAAAD4fwAA/////////0AHAAAAAAAAAAD8//8DAAAAAAD8/2OA/////////4EAAAAAAAAAAADo//8DAAAAAAD+/+///////////wEAAAAAAAAAAAD4/xkCAAAAAAD+//////z//////wEAAAAAAAAAAADYfwACAAAAAID///8///n//////wAAAAAAAAAAAACgfwAGAAAAAMD///9//8H//////wAAAAAAAAAAAAAgfwAAAAAAAMD///9//jPg////fwAAAAAAAAAAAAAAfgAAAAAAAOD//////H/A////PwEAAAAAAAAAAAAAfAAIAAAAAOD//////f/A/+//BwAAAAAAAAAAAAAAfDBwAAAAAOD/////+X8A/sN/AAAAAAAAAAAAAAAA+DgAAwAAAOD/////+T8A/oA/AwAAAAAAAAAAAAAA4B8AAAAAAOD/////8x8AfoB/AAMAAAAAAAAAAAAAgPwAAAAAAOD/////8wcAPgD+AAEAAAAAAAAAAAAAAPgBAAAAAOD/////7wEAHAD+AQEAAAAAAAAAAAAAAMAAAAAAAOD/////PwAAHAD8AQAAAAAAAAAAAAAAAICAAgAAAOD/////HwMAGADgAQ4AAAAAAAAAAAAAAADBfgAAAID//////wMAOABAAAAAAAAAAAAAAAAAAADy/wAAAID//////wEAKAAEAAwAAAAAAAAAAAAAAADw/wEAAAD//////wEAYAAIAAgAAAAAAAAAAAAAAADw/x8AAAB88P///wAAAIAZ4AAAAAAAAAAAAAAAAADg/z8AAAAAwP///wAAAAAbMAAAAAAAAAAAAAAAAADw/z8AAAAAgP//PwAAAAAWfCAAAAAAAAAAAAAAAAD4/z8AAAAAwP//HwAAAAAMficAAAAAAAAAAAAAAAD8//8BAAAAwP//DwAAAAAYPiAFAAAAAAAAAAAAAAD8//8DAAAAwP//BwAAAAA8vgEZAAAAAAAAAAAAAAD8//8/AAAAgP//BwAAAABwMBL+AAAAAAAAAAAAAAD8////AAAAAP//BwAAAABgAADwAQAAAAAAAAAAAAD4////AQAAAP//AwAAAADAAADiAwAAAAAAAAAAAAD4////AQAAAP7/AwAAAAAAHATwBgAAAAAAAAAAAADw////AAAAAP7/AwAAAAAAAAQADAAAAAAAAAAAAADw//9/AAAAAP7/BwAAAAAAAIAAAAAAAAAAAAAAAADg//9/AAAAAP7/BwAAAAAAAICHAAAAAAAAAAAAAADg//8/AAAAAP//BwEAAAAAANDHAAAAAAAAAAAAAADA//8/AAAAAP//hwMAAAAAAPjHAQAAAAAAAAAAAAAA//8/AAAAAP//4QEAAAAAAP7fAQAAAAAAAAAAAAAA/v8/AAAAAP//4AEAAAAAAP7/AwAAAAAAAAAAAAAA/v8fAAAAAP5/wEAAAAAAgP//BwAAAAAAAAAAAAAA/v8fAAAAAP7/4AAAAAAA4P//D0AAAAAAAAAAAAAA/v8DAAAAAPz/4AAAAAAA8P//HwAAAAAAAAAAAAAA/v8AAAAAAPx/YAAAAAAA8P//PwAAAAAAAAAAAAAA/v8AAAAAAPw/AAAAAAAA+P//PwAAAAAAAAAAAAAA/v8AAAAAAPw/AAAAAAAA8P//PwAAAAAAAAAAAAAA/38AAAAAAPgfAAAAAAAA4P//PwAAAAAAAAAAAAAA/z8AAAAAAPAPAAAAAAAA4P//PwAAAAAAAAAAAAAA/x8AAAAAAPAHAAAAAAAA4B/+PwAAAAAAAAAAAAAA/w8AAAAAAPABAAAAAAAA4AP0HwAAAAAAAAAAAAAA/wMAAAAAAAAAAAAAAAAAAADwDwAIAAAAAAAAAACA/wMAAAAAAAAAAAAAAAAAAADgDwAQAAAAAAAAAACA/wEAAAAAAAAAAAAAAAAAAADAAgBwAAAAAAAAAACAfwAAAAAAAAAAAAAAAAAAAAAAAAAwAAAAAAAAAACAHwAAAAAAAAAAAAAAAAAAAAAABwAQAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAABgAMAAAAAAAAAACADwAAAAAAAAAAAAAAAAAAAAAAAAADAAAAAAAAAACABwAAAAAAAAAAAAAAAAAAAAAAAIADAAAAAAAAAADADwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADABwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAwEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAD0AAPD/Htw/AAAAAAAAAAAAAAAAGAAAAAAAAAAA8P9/4P//////AwAAAAAAAAAAAAAAPwAAAAAAAADA/f8/+P///////wcAAAAAAAAAAAAAewAAAAAK//////8///////////8AAAAAAAAACAAA+AAAAMD///////////////////8BAAAAAEAo8P//fwAAAMD//////////////////z8AAAAA////////HwAAAP///////////////////w8AAICB//////8fAAAA/P///////////////////x8AAAj///////8MBMAD/////////////////////x8AAADw//////8fgPAH8P///////////////////wMAAAD+////////DwDw/////////////////////w8AwIP/////////f/7///////////////////////8A/8D/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////";
+let globe = null;
+function createGlobe(container) {
+  if (typeof THREE === "undefined") return null;
+  let renderer;
+  try {
+    const test = document.createElement("canvas");
+    if (!(test.getContext("webgl") || test.getContext("experimental-webgl"))) return null;
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (e) { return null; }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0x000000, 0);
+  const canvas = renderer.domElement;
+  canvas.setAttribute("aria-hidden", "true");
+  container.insertBefore(canvas, container.firstChild);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 100);
+  let dist = 3.15; const MIN_D = 1.75, MAX_D = 5.2;
+  camera.position.set(0, 0, dist);
+  const world = new THREE.Group(); world.rotation.order = "XYZ"; scene.add(world);
+
+  const sphereMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  world.add(new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), sphereMat));
+
+  const toVec = (lat, lon, r = 1) => { const la = lat * Math.PI / 180, lo = lon * Math.PI / 180; return new THREE.Vector3(r * Math.cos(la) * Math.sin(lo), r * Math.sin(la), r * Math.cos(la) * Math.cos(lo)); };
+
+  // graticule
+  const gpts = [];
+  for (let lat = -60; lat <= 60; lat += 30) for (let lon = -180; lon < 180; lon += 3) { gpts.push(toVec(lat, lon, 1.001), toVec(lat, lon + 3, 1.001)); }
+  for (let lon = -180; lon < 180; lon += 30) for (let lat = -87; lat < 87; lat += 3) { gpts.push(toVec(lat, lon, 1.001), toVec(lat + 3, lon, 1.001)); }
+  const gridMat = new THREE.LineBasicMaterial({ color: 0xcccccc, transparent: true, opacity: .8 });
+  world.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(gpts), gridMat));
+
+  // land dots from bitmask (1.5° grid)
+  const bin = atob(LAND_MASK); const STEP = 1.5, GW = 240, GH = 120; const pos = [];
+  for (let r = 0; r < GH; r++) {
+    const lat = 90 - STEP / 2 - r * STEP; const every = Math.max(1, Math.round(1 / Math.cos(lat * Math.PI / 180)));
+    for (let c = 0; c < GW; c++) {
+      const i = r * GW + c;
+      if ((bin.charCodeAt(i >> 3) >> (i & 7)) & 1) { if (c % every) continue; const v = toVec(lat, -180 + STEP / 2 + c * STEP, 1.003); pos.push(v.x, v.y, v.z); }
+    }
+  }
+  const dotGeo = new THREE.BufferGeometry(); dotGeo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  const dc = document.createElement("canvas"); dc.width = dc.height = 32; const dg = dc.getContext("2d"); dg.fillStyle = "#fff"; dg.beginPath(); dg.arc(16, 16, 14, 0, 7); dg.fill();
+  const dotMat = new THREE.PointsMaterial({ size: 0.019, map: new THREE.CanvasTexture(dc), transparent: true, alphaTest: .4, color: 0x777777 });
+  world.add(new THREE.Points(dotGeo, dotMat));
+
+  // markers
+  const markerGroup = new THREE.Group(); world.add(markerGroup);
+  let markers = new Map(); let selectedId = null; let visibleSet = null;
+  const Z = new THREE.Vector3(0, 0, 1);
+  const discGeo = new THREE.CircleGeometry(0.028, 24), ringGeo = new THREE.CircleGeometry(0.041, 24), haloGeo = new THREE.RingGeometry(0.046, 0.058, 40), hitGeo = new THREE.CircleGeometry(0.075, 12);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+  function famColor(f) { return new THREE.Color(cssVar("--" + (FAMILIES.includes(f) ? f : "alpine")) || "#3f5b45"); }
+  function setMarkers(list) {
+    markers.forEach((m) => { markerGroup.remove(m.group); m.discMat.dispose(); m.haloMat.dispose(); });
+    markers = new Map();
+    list.forEach((p) => {
+      const group = new THREE.Group();
+      const n = toVec(p.lat, p.lon, 1).normalize();
+      group.position.copy(n.clone().multiplyScalar(1.012));
+      group.quaternion.setFromUnitVectors(Z, n);
+      const discMat = new THREE.MeshBasicMaterial({ color: famColor(p.family) });
+      const haloMat = new THREE.MeshBasicMaterial({ color: famColor(p.family), transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false });
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      const disc = new THREE.Mesh(discGeo, discMat); disc.position.z = .001;
+      const halo = new THREE.Mesh(haloGeo, haloMat); halo.position.z = .002;
+      const hit = new THREE.Mesh(hitGeo, hitMat); hit.position.z = .003; hit.userData.id = p.id;
+      group.add(ring, disc, halo, hit);
+      markerGroup.add(group);
+      markers.set(p.id, { group, discMat, haloMat, halo, hit, name: p.name, family: p.family });
+    });
+    applyVisible();
+  }
+  function applyVisible() { markers.forEach((m, id) => { m.group.visible = !visibleSet || visibleSet.has(id); }); }
+  function recolor() {
+    sphereMat.color.set(cssVar("--globe-sea"));
+    dotMat.color.set(cssVar("--globe-land"));
+    gridMat.color.set(cssVar("--globe-grid"));
+    ringMat.color.set(cssVar("--raised"));
+    markers.forEach((m) => { const c = famColor(m.family); m.discMat.color.copy(c); m.haloMat.color.copy(c); });
+  }
+
+  // rotation state
+  let yaw = 0, pitch = 0.35, tYaw = null, tPitch = null, vYaw = 0, vPitch = 0;
+  let lastInteract = 0; const IDLE_MS = 4000;
+  const clampPitch = (p) => Math.max(-1.25, Math.min(1.25, p));
+  function flyTo(lat, lon) {
+    let target = -lon * Math.PI / 180;
+    let d = ((target - yaw) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+    tYaw = yaw + d; tPitch = clampPitch(lat * Math.PI / 180);
+    vYaw = vPitch = 0; lastInteract = performance.now();
+    if (reduceMotion.matches) { yaw = tYaw; pitch = tPitch; tYaw = tPitch = null; }
+  }
+
+  // pointer handling
+  const pointers = new Map(); let dragging = false, moved = 0, pinchStart = 0, pinchDist = dist, lastX = 0, lastY = 0, lastT = 0;
+  const tip = $("#globe-tip");
+  const raycaster = new THREE.Raycaster(); const ndc = new THREE.Vector2();
+  function pick(clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    const hits = [];
+    markers.forEach((m) => { if (m.group.visible) hits.push(m.hit); });
+    const res = raycaster.intersectObjects(hits, false);
+    const wp = new THREE.Vector3(), camDir = camera.position.clone().normalize();
+    for (const r of res) {
+      r.object.getWorldPosition(wp);
+      if (wp.clone().normalize().dot(camDir) > 0.18) return r.object.userData.id;
+    }
+    return null;
+  }
+  canvas.addEventListener("pointerdown", (e) => {
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinchStart = Math.hypot(a.x - b.x, a.y - b.y); pinchDist = dist; }
+    dragging = true; moved = 0; lastX = e.clientX; lastY = e.clientY; lastT = performance.now();
+    tYaw = tPitch = null; vYaw = vPitch = 0; lastInteract = performance.now();
+    tip.hidden = true;
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dragging && pointers.size === 2) {
+      const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinchStart > 0) { dist = Math.max(MIN_D, Math.min(MAX_D, pinchDist * pinchStart / d)); }
+      moved += 10; lastInteract = performance.now(); return;
+    }
+    if (dragging) {
+      const dx = e.clientX - lastX, dy = e.clientY - lastY; const now = performance.now(); const dt = Math.max(1, now - lastT);
+      moved += Math.abs(dx) + Math.abs(dy);
+      if (moved > 4) canvas.classList.add("dragging");
+      const k = 0.0055 * (dist / 3.15);
+      yaw += dx * k; pitch = clampPitch(pitch + dy * k);
+      vYaw = (dx * k) / dt * 16; vPitch = (dy * k) / dt * 16;
+      lastX = e.clientX; lastY = e.clientY; lastT = now; lastInteract = now;
+      return;
+    }
+    if (e.pointerType === "mouse") {
+      const id = pick(e.clientX, e.clientY);
+      canvas.style.cursor = id ? "pointer" : "";
+      if (id) {
+        const m = markers.get(id); const rect = canvas.getBoundingClientRect(), wrap = container.getBoundingClientRect();
+        tip.textContent = m.name; tip.hidden = false;
+        tip.style.left = (e.clientX - wrap.left) + "px"; tip.style.top = (e.clientY - wrap.top) + "px";
+      } else tip.hidden = true;
+    }
+  });
+  const end = (e) => {
+    const wasClick = dragging && moved <= 4 && pointers.size === 1;
+    pointers.delete(e.pointerId);
+    if (pointers.size === 0) { dragging = false; canvas.classList.remove("dragging"); pinchStart = 0; }
+    if (performance.now() - lastT > 80) { vYaw = vPitch = 0; }
+    if (wasClick && e.type === "pointerup") { const id = pick(e.clientX, e.clientY); if (id) selectPlace(id); }
+    lastInteract = performance.now();
+  };
+  canvas.addEventListener("pointerup", end);
+  canvas.addEventListener("pointercancel", end);
+  canvas.addEventListener("pointerleave", () => { if (!dragging) tip.hidden = true; });
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    dist = Math.max(MIN_D, Math.min(MAX_D, dist * Math.exp(e.deltaY * 0.0012)));
+    lastInteract = performance.now();
+  }, { passive: false });
+
+  function resize() {
+    const w = container.clientWidth, h = container.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(container);
+
+  let t0 = performance.now();
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (currentTab !== "atlas" || document.hidden) return;
+    const dt = Math.min(64, now - t0); t0 = now;
+    if (tYaw !== null) {
+      yaw += (tYaw - yaw) * 0.09; pitch += (tPitch - pitch) * 0.09;
+      if (Math.abs(tYaw - yaw) < 0.001 && Math.abs(tPitch - pitch) < 0.001) { tYaw = tPitch = null; }
+    } else if (!dragging) {
+      if (Math.abs(vYaw) > 1e-5 || Math.abs(vPitch) > 1e-5) {
+        yaw += vYaw; pitch = clampPitch(pitch + vPitch); vYaw *= 0.93; vPitch *= 0.93;
+      } else if (!reduceMotion.matches && now - lastInteract > IDLE_MS) {
+        yaw += dt * 0.00006;
+      }
+    }
+    world.rotation.set(pitch, yaw, 0);
+    camera.position.z += (dist - camera.position.z) * 0.2;
+    markers.forEach((m, id) => {
+      if (id === selectedId) {
+        if (reduceMotion.matches) { m.halo.scale.setScalar(1.15); m.haloMat.opacity = .85; }
+        else { const ph = (now % 1600) / 1600; m.halo.scale.setScalar(1 + ph * 1.1); m.haloMat.opacity = .9 * (1 - ph); }
+      } else if (m.haloMat.opacity) { m.haloMat.opacity = 0; }
+    });
+    renderer.render(scene, camera);
+  }
+  recolor(); resize(); requestAnimationFrame(frame);
+  return {
+    setMarkers(list) { setMarkers(list); },
+    setVisible(set) { visibleSet = set; applyVisible(); },
+    setSelected(id) { selectedId = id; },
+    flyTo, recolor, resize,
+  };
+}
+
+/* ---------- place form ---------- */
+function validatePlaceField(which) {
+  const input = $("#pf-" + which), err = $("#pf-" + which + "-err");
+  let msg = "";
+  if (which === "name") { if (!input.value.trim()) msg = "Give the place a name."; }
+  else {
+    const raw = input.value.trim(); const v = Number(raw); const [lo, hi] = which === "lat" ? [-90, 90] : [-180, 180];
+    const label = which === "lat" ? "Latitude" : "Longitude";
+    if (raw === "" || !Number.isFinite(v)) msg = `${label} has to be a number.`;
+    else if (v < lo || v > hi) msg = `${label} has to be between ${lo} and ${hi}`;
+  }
+  err.textContent = msg; input.setAttribute("aria-invalid", msg ? "true" : "false");
+  if (msg) input.setAttribute("aria-describedby", err.id); else input.removeAttribute("aria-describedby");
+  return !msg;
+}
+function openPlaceForm(p) {
+  atlasUI.editingId = p ? p.id : null;
+  $("#place-title").textContent = p ? `Edit ${p.name}` : "Add a place";
+  $("#pf-name").value = p ? p.name : ""; $("#pf-lat").value = p ? p.lat : ""; $("#pf-lon").value = p ? p.lon : "";
+  $("#pf-terrain").value = p ? (p.terrain || "") : ""; $("#pf-family").value = p ? p.family : "alpine"; $("#pf-note").value = p ? (p.note || "") : "";
+  ["name", "lat", "lon", "save"].forEach((k) => { $("#pf-" + k + "-err").textContent = ""; const i = $("#pf-" + k); i && i.removeAttribute("aria-invalid"); });
+  openDialog("#dlg-place", "#pf-name");
+}
+["name", "lat", "lon"].forEach((k) => $("#pf-" + k).addEventListener("input", () => { if ($("#pf-" + k).getAttribute("aria-invalid") === "true" || k !== "name") validatePlaceField(k); }));
+$("#form-place").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const ok = ["name", "lat", "lon"].map(validatePlaceField).every(Boolean);
+  if (!ok) { $("#form-place [aria-invalid='true']").focus(); return; }
+  const existing = state.destinations.find((d) => d.id === atlasUI.editingId);
+  const slug = $("#pf-name").value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "place";
+  const obj = {
+    id: existing ? existing.id : `${slug}-${uid().slice(-5)}`,
+    name: $("#pf-name").value.trim(), lat: Number($("#pf-lat").value), lon: Number($("#pf-lon").value),
+    terrain: $("#pf-terrain").value.trim(), family: $("#pf-family").value, note: $("#pf-note").value.trim(),
+    order: existing ? existing.order : Math.max(0, ...state.destinations.map((d) => d.order || 0)) + 1,
+    createdAt: existing ? existing.createdAt : new Date().toISOString(),
+  };
+  try { await store.put("destinations", obj); }
+  catch (err) { $("#pf-save-err").textContent = SAVE_FAIL; return; }
+  closeDialogs();
+  atlasUI.selectedId = obj.id;
+  renderAtlas(); selectPlace(obj.id);
+  toast(existing ? `${obj.name} updated` : `${obj.name} added to the atlas`);
+});
+
+/* ============================ JOURNEY ============================ */
+const jUI = { stageEditing: false, projectFilter: "All", showArchived: false, editingDesc: null, bookTab: "want", editingBook: null, confirm: null };
+
+function renderStage() {
+  const s = state.stage && STAGES.includes(state.stage.stage) ? state.stage : null;
+  const el = $("#stage");
+  if (jUI.stageEditing) {
+    const cur = s ? s.stage : "";
+    el.innerHTML = `
+      <form id="stage-form" class="stage-form" style="display:grid;gap:14px" novalidate>
+        <fieldset style="border:0;padding:0;margin:0"><legend class="eyebrow" style="margin-bottom:8px">Where the business stands</legend>
+          <div class="choice">${STAGES.map((st) => `<input type="radio" name="stage" id="stage-${st}" value="${st}" ${st === cur ? "checked" : ""}><label for="stage-${st}">${st}</label>`).join("")}</div>
+        </fieldset>
+        <div class="field"><label for="stage-desc">What's true right now</label><textarea id="stage-desc" maxlength="400" placeholder="One or two plain sentences. What exists, what's working, what isn't yet.">${esc(s ? s.description : "")}</textarea></div>
+        <span class="err" id="stage-err"></span>
+        <div class="row"><button class="btn primary" type="submit">Save status</button><button class="btn" type="button" data-act="stage-cancel">Cancel</button></div>
+      </form>`;
+    $("#stage-form").addEventListener("submit", saveStage);
+    return;
+  }
+  const idx = s ? STAGES.indexOf(s.stage) : -1;
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;align-items:flex-start">
+      <div style="display:grid;gap:8px">
+        <span class="eyebrow">Where the business stands</span>
+        <div class="stage-now"><span class="big">${s ? esc(s.stage) : "Not started yet."}</span>${s && s.updatedAt ? `<span class="muted" style="font-size:.84rem">Updated ${fmtDate(s.updatedAt.slice(0, 10))}</span>` : ""}</div>
+      </div>
+      <button class="btn" type="button" data-act="stage-edit">${s ? "Update status" : "Set the stage"}</button>
+    </div>
+    ${s && s.description ? `<p>${esc(s.description)}</p>` : (!s ? `<p class="muted">Set a stage when there's something real to report. No percentages, only what's actually true.</p>` : "")}
+    <div class="stage-track" aria-hidden="true">${STAGES.map((st, i) => `<div class="stage-step ${i < idx ? "done" : i === idx ? "now" : ""}">${st}</div>`).join("")}</div>`;
+}
+async function saveStage(e) {
+  e.preventDefault();
+  const picked = $("#stage-form input[name=stage]:checked");
+  if (!picked) { $("#stage-err").textContent = "Pick a stage first."; return; }
+  const data = { stage: picked.value, description: $("#stage-desc").value.trim(), updatedAt: new Date().toISOString() };
+  try { await store.setSingle("stage", data); } catch (err) { $("#stage-err").textContent = SAVE_FAIL; return; }
+  jUI.stageEditing = false; renderStage(); toast("Status saved");
+}
+
+function incomeTotals() {
+  const now = new Date(); const t = todayISO();
+  const mon = iso(mondayOf(now)), sun = iso(addDays(mondayOf(now), 6));
+  const ym = t.slice(0, 7);
+  const out = { today: 0, week: 0, month: 0, all: 0 };
+  state.income.forEach((e) => {
+    const c = Number(e.cents) || 0;
+    out.all += c;
+    if (e.date === t) out.today += c;
+    if (e.date >= mon && e.date <= sun) out.week += c;
+    if (String(e.date).slice(0, 7) === ym) out.month += c;
+  });
+  return out;
+}
+function renderEarnings() {
+  const t = incomeTotals();
+  const tiles = [["Today", t.today], ["This week", t.week], ["This month", t.month], ["All-time", t.all]];
+  $("#tiles").innerHTML = tiles.map(([l, v]) => `<div class="card tile"><div class="eyebrow">${l}</div><div class="val">${money(v)}</div></div>`).join("");
+  $("#earn-empty").hidden = state.income.length > 0;
+  const entries = state.income.slice().sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  $("#entries").hidden = !entries.length;
+  $("#entry-list").innerHTML = entries.map((e) => `
+    <li><span class="d mono muted">${fmtDate(e.date)}</span><span>${esc(e.note || "—")}</span><span class="amt">${money(e.cents)}</span>
+    ${jUI.confirm === "income:" + e.id
+      ? `<span class="row" style="gap:4px"><button class="btn small danger" type="button" data-act="del-income-yes" data-id="${esc(e.id)}">Delete</button><button class="btn small" type="button" data-act="confirm-no">Keep</button></span>`
+      : `<button class="btn ghost small" type="button" data-act="del-income" data-id="${esc(e.id)}" aria-label="Delete ${esc(money(e.cents))} entry from ${fmtDate(e.date)}">Delete</button>`}</li>`).join("");
+  renderChart();
+}
+function niceStep(raw) { const m = Math.pow(10, Math.floor(Math.log10(raw))); const n = raw / m; return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * m; }
+function renderChart() {
+  const host = $("#chart"); if (!host || !host.offsetParent) return;
+  const today = new Date(); const tISO = todayISO();
+  const earliest = state.income.reduce((m, e) => (e.date < m ? e.date : m), tISO);
+  const spanDays = Math.round((parseISO(tISO) - parseISO(earliest)) / 864e5);
+  const weekly = state.income.length > 0 && spanDays >= 14;
+  const buckets = [];
+  if (weekly) {
+    const mon = mondayOf(today);
+    for (let i = 7; i >= 0; i--) { const s = addDays(mon, -7 * i); buckets.push({ from: iso(s), to: iso(addDays(s, 6)), label: s.toLocaleDateString("en-US", { month: "short", day: "numeric" }), long: `Week of ${s.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`, v: 0 }); }
+  } else {
+    for (let i = 6; i >= 0; i--) { const d = addDays(today, -i); buckets.push({ from: iso(d), to: iso(d), label: d.toLocaleDateString("en-US", { weekday: "short" }), long: d.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" }), v: 0 }); }
+  }
+  state.income.forEach((e) => { const b = buckets.find((b) => e.date >= b.from && e.date <= b.to); if (b) b.v += Number(e.cents) || 0; });
+  $("#chart-title").textContent = weekly ? "Last 8 weeks" : "Last 7 days";
+  const maxD = Math.max(0, ...buckets.map((b) => b.v)) / 100;
+  const step = Math.max(25, niceStep(Math.max(maxD, 100) / 4)); const top = step * 4;
+  const W = Math.max(280, host.clientWidth), H = 190, L = 54, Rr = 6, T = 10, B = 26;
+  const pw = W - L - Rr, ph = H - T - B, band = pw / buckets.length, bw = Math.min(40, band * .56);
+  const y = (v) => T + ph - (v / top) * ph;
+  const fmtTick = (v) => v >= 1000 ? "$" + (v / 1000).toLocaleString("en-US", { maximumFractionDigits: 1 }) + "k" : "$" + v.toLocaleString("en-US");
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${weekly ? "Income per week, last 8 weeks" : "Income per day, last 7 days"}">`;
+  for (let i = 0; i <= 4; i++) { const v = step * i, yy = y(v); s += `<line x1="${L}" x2="${W - Rr}" y1="${yy}" y2="${yy}" style="stroke:var(--hairline)" stroke-width="1" ${i === 0 ? "" : 'stroke-dasharray="2 4"'}/><text x="${L - 8}" y="${yy + 4}" text-anchor="end" font-size="11" style="fill:var(--muted)" font-family="IBM Plex Mono, monospace">${fmtTick(v)}</text>`; }
+  buckets.forEach((b, i) => {
+    const cx = L + band * i + band / 2, v = b.v / 100, h = (v / top) * ph, x0 = cx - bw / 2, y0 = T + ph;
+    const r = Math.min(4, h, bw / 2);
+    s += `<rect class="bar-hit" x="${L + band * i}" y="${T}" width="${band}" height="${ph}" fill="transparent" tabindex="0" data-i="${i}" aria-label="${esc(b.long)}: ${esc(money(b.v))}"/>`;
+    if (h > 0) s += `<path class="bar" d="M${x0},${y0} V${y0 - h + r} Q${x0},${y0 - h} ${x0 + r},${y0 - h} H${x0 + bw - r} Q${x0 + bw},${y0 - h} ${x0 + bw},${y0 - h + r} V${y0} Z" style="fill:var(--moss)" pointer-events="none"/>`;
+    else s += `<g></g>`;
+    s += `<text x="${cx}" y="${H - 8}" text-anchor="middle" font-size="11" style="fill:${b.to === tISO || (weekly && i === buckets.length - 1) ? "var(--ink)" : "var(--muted)"}" font-family="Public Sans, sans-serif">${esc(b.label)}</text>`;
+  });
+  s += `</svg>`;
+  host.innerHTML = s;
+  const tip = $("#chart-tip");
+  const show = (el) => { const b = buckets[+el.dataset.i]; const i = +el.dataset.i; const cx = L + band * i + band / 2; const h = (b.v / 100 / top) * ph; tip.textContent = `${b.long} · ${money(b.v)}`; tip.hidden = false; const sx = host.getBoundingClientRect(), cr = $("#chart-card").getBoundingClientRect(); const scale = sx.width / W; tip.style.left = (sx.left - cr.left + cx * scale) + "px"; tip.style.top = (sx.top - cr.top + (T + ph - h) * scale - 8) + "px"; };
+  $$(".bar-hit", host).forEach((el) => { el.addEventListener("pointerenter", () => show(el)); el.addEventListener("focus", () => show(el)); el.addEventListener("pointerleave", () => (tip.hidden = true)); el.addEventListener("blur", () => (tip.hidden = true)); });
+}
+function parseAmount(raw) {
+  const s = String(raw).trim().replace(/[$,\s]/g, "");
+  if (!s) return { err: "Enter an amount, like 250 or 49.99." };
+  if (!/^-?\d*\.?\d+$/.test(s) && !/^-?\d+\.$/.test(s)) return { err: "Use numbers only, like 250 or 49.99." };
+  const v = Number(s);
+  if (!Number.isFinite(v)) return { err: "Use numbers only, like 250 or 49.99." };
+  if (v <= 0) return { err: "The amount has to be more than $0." };
+  if (/\.\d{3,}$/.test(s)) return { err: "Use at most two decimal places (cents)." };
+  return { cents: Math.round(v * 100) };
+}
+$("#form-income").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const a = parseAmount($("#if-amount").value);
+  $("#if-amount-err").textContent = a.err || ""; $("#if-amount").setAttribute("aria-invalid", a.err ? "true" : "false");
+  const date = $("#if-date").value;
+  const dErr = validISO(date) ? "" : "Pick a date.";
+  $("#if-date-err").textContent = dErr;
+  if (a.err) { $("#if-amount").focus(); return; }
+  if (dErr) { $("#if-date").focus(); return; }
+  const obj = { id: uid(), cents: a.cents, date, note: $("#if-note").value.trim(), createdAt: new Date().toISOString() };
+  try { await store.put("income", obj); } catch (err) { $("#if-save-err").textContent = SAVE_FAIL; return; }
+  closeDialogs(); renderEarnings(); toast(`${money(obj.cents)} logged`);
+});
+$("#if-amount").addEventListener("input", () => { if ($("#if-amount").getAttribute("aria-invalid") === "true") { const a = parseAmount($("#if-amount").value); $("#if-amount-err").textContent = a.err || ""; $("#if-amount").setAttribute("aria-invalid", a.err ? "true" : "false"); } });
+
+function renderProjects() {
+  $("#proj-filters").innerHTML = ["All", ...PROJECT_STATUSES].map((s) =>
+    `<button type="button" class="chip ${s === "All" ? "" : "st-" + s}" data-act="proj-filter" data-status="${s}" aria-pressed="${jUI.projectFilter === s}">${s === "All" ? "" : '<span class="dot" aria-hidden="true"></span>'}${s}</button>`).join("");
+  const archivedCount = state.projects.filter((p) => p.archived).length;
+  const ab = $("#archived-btn");
+  ab.hidden = archivedCount === 0 && !jUI.showArchived;
+  ab.textContent = jUI.showArchived ? "Hide archived" : `Show archived (${archivedCount})`;
+  ab.setAttribute("aria-pressed", String(jUI.showArchived));
+  const list = state.projects
+    .filter((p) => (jUI.showArchived || !p.archived) && (jUI.projectFilter === "All" || p.status === jUI.projectFilter))
+    .sort((a, b) => (a.archived ? 1 : 0) - (b.archived ? 1 : 0) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  const el = $("#projects");
+  if (!state.projects.filter((p) => !p.archived).length && !jUI.showArchived) { el.innerHTML = `<p class="empty">No projects yet — add the one you're actually working on.</p>`; return; }
+  if (!list.length) { el.innerHTML = `<p class="empty">No ${jUI.projectFilter === "All" ? "" : jUI.projectFilter.toLowerCase() + " "}projects right now.</p>`; return; }
+  el.innerHTML = `<div class="proj-grid">${list.map((p) => `
+    <article class="card lift proj ${p.archived ? "archived" : ""}">
+      <div class="proj-top"><h3>${esc(p.name)}</h3><span class="pill st-${esc(p.status)}"><span class="dot" aria-hidden="true"></span>${esc(p.status)}</span></div>
+      ${jUI.editingDesc === p.id
+        ? `<form class="desc-form" data-id="${esc(p.id)}" style="display:grid;gap:8px"><label class="sr-only" for="desc-${esc(p.id)}">Description for ${esc(p.name)}</label><textarea id="desc-${esc(p.id)}" maxlength="280">${esc(p.description || "")}</textarea><span class="err" id="desc-err-${esc(p.id)}"></span><div class="row"><button class="btn small primary" type="submit">Save</button><button class="btn small" type="button" data-act="desc-cancel">Cancel</button></div></form>`
+        : `<p class="desc">${p.description ? esc(p.description) : '<span class="muted">No description yet.</span>'}</p>`}
+      <span class="when">${p.archived ? "Archived · " : ""}Started ${fmtDate(p.createdAt.slice(0, 10))}</span>
+      <div class="proj-controls">
+        <label class="sr-only" for="st-${esc(p.id)}">Status for ${esc(p.name)}</label>
+        <select id="st-${esc(p.id)}" data-act="proj-status" data-id="${esc(p.id)}">${PROJECT_STATUSES.map((s) => `<option ${s === p.status ? "selected" : ""}>${s}</option>`).join("")}</select>
+        ${jUI.editingDesc === p.id ? "" : `<button class="btn ghost small" type="button" data-act="desc-edit" data-id="${esc(p.id)}">Edit description</button>`}
+        <button class="btn ghost small" type="button" data-act="proj-archive" data-id="${esc(p.id)}">${p.archived ? "Restore" : "Archive"}</button>
+      </div>
+      <span class="err" id="proj-err-${esc(p.id)}"></span>
+    </article>`).join("")}</div>`;
+  $$(".desc-form", el).forEach((f) => f.addEventListener("submit", async (e) => {
+    e.preventDefault(); const p = state.projects.find((x) => x.id === f.dataset.id); if (!p) return;
+    const updated = { ...p, description: $("textarea", f).value.trim() };
+    try { await store.put("projects", updated); } catch (err) { $("#desc-err-" + p.id).textContent = SAVE_FAIL; return; }
+    jUI.editingDesc = null; renderProjects(); toast("Description saved");
+  }));
+  if (jUI.editingDesc) { const ta = $(`#desc-${CSS.escape(jUI.editingDesc)}`); ta && ta.focus(); }
+}
+$("#form-project").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = $("#prf-name").value.trim();
+  $("#prf-name-err").textContent = name ? "" : "Give the project a name.";
+  $("#prf-name").setAttribute("aria-invalid", name ? "false" : "true");
+  if (!name) { $("#prf-name").focus(); return; }
+  const obj = { id: uid(), name, status: $("#prf-status").value, description: $("#prf-desc").value.trim(), createdAt: new Date().toISOString(), archived: false };
+  try { await store.put("projects", obj); } catch (err) { $("#prf-save-err").textContent = SAVE_FAIL; return; }
+  closeDialogs(); jUI.projectFilter = "All"; renderProjects(); toast(`${name} added`);
+});
+
+function renderBooks() {
+  $("#book-seg").innerHTML = Object.entries(BOOK_STATUS).map(([k, l]) => `<button type="button" data-act="book-tab" data-k="${k}" aria-pressed="${jUI.bookTab === k}">${l}</button>`).join("");
+  $("#books").innerHTML = Object.entries(BOOK_STATUS).map(([k, label]) => {
+    const list = state.books.filter((b) => b.status === k).sort((a, b) => k === "read" ? String(b.finishedAt || "").localeCompare(String(a.finishedAt || "")) : String(b.addedAt).localeCompare(String(a.addedAt)));
+    return `<div class="card book-col" data-hide-mobile="${jUI.bookTab !== k}">
+      <h3>${label}<span class="n">${list.length}</span></h3>
+      ${list.length ? `<ul class="book-list">${list.map((b) => `
+        <li class="book">
+          <div><div class="t">${esc(b.title)}</div>${b.author ? `<div class="a">${esc(b.author)}</div>` : ""}</div>
+          ${k === "read" ? `<div class="rating" role="group" aria-label="Rating for ${esc(b.title)}">${[1, 2, 3, 4, 5].map((n) => `<button type="button" class="${(b.rating || 0) >= n ? "on" : ""}" data-act="rate" data-id="${esc(b.id)}" data-n="${n}" aria-label="Rate ${n} of 5" aria-pressed="${(b.rating || 0) === n}"></button>`).join("")}</div>` : ""}
+          ${b.note ? `<div class="book-note">${esc(b.note)}</div>` : ""}
+          ${k === "read" && b.finishedAt ? `<div class="a mono" style="font-size:.76rem">Finished ${fmtDate(b.finishedAt)}</div>` : ""}
+          <div class="book-controls">
+            <label class="sr-only" for="bs-${esc(b.id)}">Move ${esc(b.title)}</label>
+            <select id="bs-${esc(b.id)}" data-act="book-status" data-id="${esc(b.id)}">${Object.entries(BOOK_STATUS).map(([v, l]) => `<option value="${v}" ${v === b.status ? "selected" : ""}>${l}</option>`).join("")}</select>
+            ${jUI.confirm === "book:" + b.id
+              ? `<button class="btn small danger" type="button" data-act="del-book-yes" data-id="${esc(b.id)}">Delete</button><button class="btn small" type="button" data-act="confirm-no">Keep</button>`
+              : `<button class="btn ghost small" type="button" data-act="edit-book" data-id="${esc(b.id)}">Edit</button><button class="btn ghost small" type="button" data-act="del-book" data-id="${esc(b.id)}">Delete</button>`}
+          </div>
+          <span class="err" id="book-err-${esc(b.id)}"></span>
+        </li>`).join("")}</ul>` : `<p class="empty">${BOOK_EMPTY[k]}</p>`}
+    </div>`;
+  }).join("");
+}
+function openBookForm(b) {
+  jUI.editingBook = b ? b.id : null;
+  $("#book-title").textContent = b ? "Edit book" : "Add a book";
+  $("#bf-title").value = b ? b.title : ""; $("#bf-author").value = b ? (b.author || "") : "";
+  $("#bf-status").value = b ? b.status : "want"; $("#bf-rating").value = b && b.rating ? String(b.rating) : ""; $("#bf-note").value = b ? (b.note || "") : "";
+  $("#bf-rating-field").hidden = !b; $("#bf-note-field").hidden = !b;
+  $("#bf-title-err").textContent = ""; $("#bf-save-err").textContent = "";
+  syncRatingField();
+  openDialog("#dlg-book", "#bf-title");
+}
+function syncRatingField() { const isRead = $("#bf-status").value === "read"; $("#bf-rating").disabled = !isRead; $("#bf-rating-hint").hidden = isRead; }
+$("#bf-status").addEventListener("change", syncRatingField);
+$("#form-book").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = $("#bf-title").value.trim();
+  $("#bf-title-err").textContent = title ? "" : "A title is needed.";
+  $("#bf-title").setAttribute("aria-invalid", title ? "false" : "true");
+  if (!title) { $("#bf-title").focus(); return; }
+  const prev = state.books.find((b) => b.id === jUI.editingBook);
+  const status = $("#bf-status").value;
+  const obj = {
+    id: prev ? prev.id : uid(), title, author: $("#bf-author").value.trim(), status,
+    note: prev ? $("#bf-note").value.trim() : "",
+    rating: status === "read" && prev && $("#bf-rating").value ? Number($("#bf-rating").value) : null,
+    addedAt: prev ? prev.addedAt : todayISO(),
+    finishedAt: status === "read" ? (prev && prev.finishedAt ? prev.finishedAt : todayISO()) : null,
+  };
+  try { await store.put("books", obj); } catch (err) { $("#bf-save-err").textContent = SAVE_FAIL; return; }
+  closeDialogs(); jUI.bookTab = status; renderBooks(); toast(prev ? "Book updated" : `${title} added`);
+});
+
+function renderTimeline() {
+  const list = state.milestones.slice().sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  $("#timeline").innerHTML = list.length ? list.map((m) => `
+    <li><div class="row"><span class="d">${fmtDate(m.date)}</span>
+      ${jUI.confirm === "log:" + m.id
+        ? `<span class="row" style="gap:4px"><button class="btn small danger" type="button" data-act="del-log-yes" data-id="${esc(m.id)}">Delete</button><button class="btn small" type="button" data-act="confirm-no">Keep</button></span>`
+        : `<button class="btn ghost small" type="button" data-act="del-log" data-id="${esc(m.id)}" aria-label="Delete entry from ${fmtDate(m.date)}">Delete</button>`}</div>
+      <p>${esc(m.note)}</p></li>`).join("") : `<li><p class="muted">No entries yet.</p></li>`;
+}
+$("#form-log").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const date = $("#lf-date").value, note = $("#lf-note").value.trim();
+  $("#lf-date-err").textContent = validISO(date) ? "" : "Pick a date.";
+  $("#lf-note-err").textContent = note ? "" : "Write something for the entry.";
+  if (!validISO(date)) { $("#lf-date").focus(); return; }
+  if (!note) { $("#lf-note").focus(); return; }
+  const obj = { id: uid(), date, note, createdAt: new Date().toISOString() };
+  try { await store.put("milestones", obj); } catch (err) { $("#lf-save-err").textContent = SAVE_FAIL; return; }
+  closeDialogs(); renderTimeline(); toast("Entry added to the field log");
+});
+
+function renderJourney() { renderStage(); renderEarnings(); renderProjects(); renderBooks(); renderTimeline(); }
+
+/* ============================ TRAINING ============================ */
+const QUESTIONS = [
+  { key: "goal", q: "What's the goal right now?", opts: [["muscle", "Build muscle"], ["lean", "Lean out"], ["general", "General fitness"], ["endurance", "Endurance for the trail"]] },
+  { key: "experience", q: "How much training have you actually done?", opts: [["new", "New to it"], ["onoff", "On and off"], ["consistent", "Consistent for a year or more"]] },
+  { key: "days", q: "How many days a week can you really commit?", opts: [["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]] },
+  { key: "equipment", q: "What do you have to train with?", opts: [["gym", "Full gym"], ["home", "Dumbbells and bands at home"], ["bw", "Bodyweight only"]] },
+  { key: "length", q: "How long is a realistic session?", opts: [["30", "30 minutes"], ["45", "45 minutes"], ["60", "60+ minutes"]] },
+];
+const label = (key, v) => { const q = QUESTIONS.find((x) => x.key === key); const o = q && q.opts.find((o) => o[0] === v); return o ? o[1] : ""; };
+const BANK = {
+  squat: { gym: ["Goblet squat", "Barbell back squat", "Front squat"], home: ["Bodyweight squat", "Dumbbell goblet squat", "Bulgarian split squat"], bw: ["Bodyweight squat", "Split squat", "Assisted pistol squat"] },
+  hinge: { gym: ["Kettlebell deadlift", "Barbell Romanian deadlift", "Barbell deadlift"], home: ["Dumbbell Romanian deadlift", "Single-leg dumbbell RDL", "Band good morning"], bw: ["Glute bridge", "Single-leg glute bridge", "Nordic curl progression"] },
+  hpush: { gym: ["Machine chest press", "Dumbbell bench press", "Barbell bench press"], home: ["Band chest press", "Dumbbell floor press", "Dumbbell bench press"], bw: ["Incline push-up", "Push-up", "Deficit push-up"] },
+  vpush: { gym: ["Machine shoulder press", "Dumbbell shoulder press", "Barbell overhead press"], home: ["Band overhead press", "Seated dumbbell press", "Standing dumbbell press"], bw: ["Pike push-up", "Elevated pike push-up", "Wall-supported handstand push-up"] },
+  hpull: { gym: ["Seated cable row", "Dumbbell row", "Barbell row"], home: ["Band row", "Single-arm dumbbell row", "Chest-supported dumbbell row"], bw: ["Table row (feet on floor)", "Inverted row", "Feet-elevated inverted row"] },
+  vpull: { gym: ["Lat pulldown", "Assisted pull-up", "Pull-up"], home: ["Band pulldown", "Doorframe row", "Band-assisted pull-up"], bw: ["Doorframe row", "Negative pull-up", "Pull-up"] },
+  core: { gym: ["Cable Pallof press", "Hanging knee raise", "Weighted plank"], home: ["Band Pallof press", "Dumbbell dead bug", "Weighted plank"], bw: ["Dead bug", "Plank", "Hollow body hold"] },
+  carry: { gym: ["Farmer's carry", "Heavy farmer's carry", "Loaded carry with sled push"], home: ["Dumbbell farmer's carry", "Suitcase carry", "Double overhead carry"], bw: ["Loaded backpack walk", "Bear crawl", "Hill sprints"] },
+};
+const PATTERN_LABEL = { squat: "Squat", hinge: "Hinge", hpush: "Horizontal push", vpush: "Vertical push", hpull: "Horizontal pull", vpull: "Vertical pull", core: "Core", carry: "Carry / conditioning" };
+const POOLS = {
+  "Full Body A": ["squat", "hpush", "hpull", "core", "hinge"],
+  "Full Body B": ["hinge", "vpush", "vpull", "core", "carry"],
+  "Full Body C": ["squat", "hpull", "vpush", "core", "hinge"],
+  "Upper A": ["hpush", "hpull", "vpush", "core", "vpull"],
+  "Upper B": ["vpush", "vpull", "hpull", "core", "hpush"],
+  "Lower A": ["squat", "carry", "core", "hinge"],
+  "Lower B": ["hinge", "carry", "core", "squat"],
+  "Push": ["hpush", "vpush", "core"],
+  "Pull": ["hpull", "vpull", "core"],
+  "Legs": ["squat", "hinge", "carry"],
+  "Upper": ["hpush", "vpull", "core"],
+  "Lower": ["hinge", "carry", "core"],
+};
+const SPLITS = {
+  "2": { name: "Full Body A / B", sessions: ["Full Body A", "Full Body B"], weekdays: [0, 3] },
+  "3": { name: "Full Body A / B / C", sessions: ["Full Body A", "Full Body B", "Full Body C"], weekdays: [0, 2, 4] },
+  "4": { name: "Upper / Lower", sessions: ["Upper A", "Lower A", "Upper B", "Lower B"], weekdays: [0, 1, 3, 4] },
+  "5": { name: "Push / Pull / Legs / Upper / Lower", sessions: ["Push", "Pull", "Legs", "Upper", "Lower"], weekdays: [0, 1, 2, 4, 5] },
+};
+const GOALS = {
+  muscle: { sets: 4, reps: "6-10", rest: "90-120s", prog: "Add a rep before you add weight. Once every set hits the top of the range with clean form, put the weight up and start again at the bottom.", cond: "Optional: 10 minutes easy walking after the session. It helps recovery, it won't cost you muscle." },
+  lean: { sets: 3, reps: "10-15", rest: "45-60s", prog: "Keep the weight steady and shorten the rest before you add load. The point is density, not maximum weight.", cond: "Finish with 10 minutes: 30 seconds hard, 90 seconds easy, on a bike, rower, or hill." },
+  general: { sets: 3, reps: "8-12", rest: "60-90s", prog: "When all sets hit 12 clean reps, add a little weight. No rush.", cond: "Add one longer walk or hike on a rest day. That's the whole cardio requirement." },
+  endurance: { sets: 3, reps: "12-20", rest: "45s", prog: "Chase reps and shorter rest, not heavier weight. Strength here is about holding a pace under a pack.", cond: "Add 25-40 minutes of easy zone 2 work on two non-training days — a run, a ride, or a loaded hike." },
+};
+const WARMUP = "Warm up 5-10 minutes before every session. Add weight only when every set finishes with clean form — a rep that looks bad is a rep that costs you later.";
+const EXP_INDEX = { new: 0, onoff: 1, consistent: 2 };
+const COUNT = { "30": 3, "45": 4, "60": 5 };
+
+function validAnswers(a) { return !!a && QUESTIONS.every((q) => q.opts.some((o) => o[0] === a[q.key])); }
+function buildSession(name, count, expIdx, equip, goal) {
+  const pool = POOLS[name]; const hasCore = pool.includes("core");
+  const main = pool.filter((p) => p !== "core");
+  const slots = hasCore ? count - 1 : count;
+  const alt = (i) => (i === 0 ? 1 : i - 1);
+  const picks = main.slice(0, slots).map((p) => ({ p, idx: expIdx, rep: false }));
+  let k = 0;
+  const repeatable = main.filter((p) => p !== "carry");
+  while (picks.length < slots && repeatable.length) { const p = repeatable[k % repeatable.length]; picks.push({ p, idx: alt(expIdx), rep: true }); k++; }
+  const ordered = [];
+  picks.filter((x) => !x.rep && x.p !== "carry").forEach((x) => { ordered.push(x); picks.filter((r) => r.rep && r.p === x.p).forEach((r) => ordered.push(r)); });
+  picks.filter((x) => x.p === "carry").forEach((x) => ordered.push(x));
+  if (hasCore && count >= 1) ordered.push({ p: "core", idx: expIdx });
+  const g = GOALS[goal];
+  return {
+    name,
+    exercises: ordered.map(({ p, idx }) => ({
+      pattern: p, name: BANK[p][equip][idx],
+      prescription: p === "core" ? `${g.sets} × 30-45s` : p === "carry" ? `${g.sets} × 40m` : `${g.sets} × ${g.reps}`,
+    })),
+  };
+}
+function generatePlan(a) {
+  const split = SPLITS[a.days]; const g = GOALS[a.goal];
+  return {
+    version: 1, answers: { ...a }, split: split.name, weekdays: split.weekdays.slice(),
+    goal: label("goal", a.goal), rest: g.rest, progression: g.prog, conditioning: g.cond, warmup: WARMUP,
+    sessions: split.sessions.map((s) => buildSession(s, COUNT[a.length], EXP_INDEX[a.experience], a.equipment, a.goal)),
+    builtAt: new Date().toISOString(),
+  };
+}
+function validPlan(p, a) {
+  if (!p || !validAnswers(a) || !Array.isArray(p.sessions) || typeof p.split !== "string") return false;
+  if (p.sessions.length !== Number(a.days)) return false;
+  if (!Array.isArray(p.weekdays) || p.weekdays.length !== p.sessions.length) return false;
+  return p.sessions.every((s) => s && typeof s.name === "string" && Array.isArray(s.exercises) && s.exercises.length > 0 &&
+    s.exercises.every((x) => x && typeof x.name === "string" && typeof x.prescription === "string"));
+}
+const tUI = { rebuilding: false, draft: {} };
+function renderTraining() {
+  const el = $("#training");
+  if (!loaded) { el.innerHTML = `<p class="loading">Opening the training plan…</p>`; return; }
+  const hasPlan = validPlan(state.plan, state.answers);
+  if (!hasPlan || tUI.rebuilding) return renderQuiz(el, hasPlan);
+  renderPlan(el);
+}
+function renderQuiz(el, hasPlan) {
+  const d = tUI.draft;
+  const complete = QUESTIONS.every((q) => d[q.key]);
+  el.innerHTML = `
+    <form class="card quiz" id="quiz" novalidate>
+      <div>
+        <span class="eyebrow">${hasPlan ? "Rebuild the plan" : "Five questions"}</span>
+        <h2 style="margin-top:6px">${hasPlan ? "Change what's different. The rest stays as it was." : "Set up the plan"}</h2>
+        <p class="muted" style="margin-top:6px">The plan is built from rules, not luck. The same answers always give the same plan. Your logged sessions are kept whatever you change.</p>
+      </div>
+      ${QUESTIONS.map((q, i) => `
+        <fieldset><legend><span class="qn">${i + 1}/5</span>${esc(q.q)}</legend>
+          <div class="choice">${q.opts.map(([v, l]) => `<input type="radio" name="${q.key}" id="q-${q.key}-${v}" value="${v}" ${d[q.key] === v ? "checked" : ""}><label for="q-${q.key}-${v}">${esc(l)}</label>`).join("")}</div>
+        </fieldset>`).join("")}
+      <div class="quiz-foot">
+        <button class="btn primary" type="submit" id="build-btn" ${complete ? "" : "disabled"} aria-describedby="build-note">Build my plan</button>
+        ${hasPlan ? `<button class="btn" type="button" data-act="quiz-cancel">Keep the current plan</button>` : ""}
+        <span class="muted" id="build-note" style="font-size:.88rem">${complete ? "Ready." : "Answer all five to build the plan"}</span>
+        <span class="err" id="quiz-err"></span>
+      </div>
+    </form>`;
+  const form = $("#quiz");
+  form.addEventListener("change", (e) => {
+    if (e.target.name) tUI.draft[e.target.name] = e.target.value;
+    const ok = QUESTIONS.every((q) => tUI.draft[q.key]);
+    $("#build-btn").disabled = !ok; $("#build-note").textContent = ok ? "Ready." : "Answer all five to build the plan";
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const a = {}; QUESTIONS.forEach((q) => (a[q.key] = tUI.draft[q.key]));
+    if (!validAnswers(a)) return;
+    const plan = generatePlan(a);
+    try { await store.setSingle("answers", a); await store.setSingle("plan", plan); }
+    catch (err) { $("#quiz-err").textContent = SAVE_FAIL; return; }
+    tUI.rebuilding = false; renderTraining(); window.scrollTo({ top: 0 }); toast("Plan built");
+  });
+}
+function weekInfo() {
+  const plan = state.plan; const mon = mondayOf(new Date()); const tISO = todayISO();
+  const days = []; for (let i = 0; i < 7; i++) { const d = addDays(mon, i); days.push({ i, d, iso: iso(d) }); }
+  const logged = new Map(state.trainingLog.filter((e) => e && validISO(e.date)).map((e) => [e.date, e]));
+  days.forEach((x) => {
+    x.planIdx = plan.weekdays.indexOf(x.i);
+    x.planned = x.planIdx >= 0 ? plan.sessions[x.planIdx].name : null;
+    x.done = logged.get(x.iso) || null; x.today = x.iso === tISO;
+  });
+  return { days, count: days.filter((x) => x.done).length, target: plan.sessions.length };
+}
+function renderPlan(el) {
+  const p = state.plan, a = state.answers;
+  const w = weekInfo();
+  const history = state.trainingLog.filter((e) => e && validISO(e.date)).slice().sort((x, y) => y.date.localeCompare(x.date));
+  el.innerHTML = `
+    <div class="plan-head">
+      <span class="eyebrow">${esc(p.split)}</span>
+      <h2 style="font-size:clamp(1.6rem,1.3rem + 1.2vw,2.2rem)">${esc(p.goal)}</h2>
+      <dl class="plan-meta">
+        <div><dt>Days a week</dt><dd class="num">${esc(a.days)}</dd></div>
+        <div><dt>Session</dt><dd>${esc(label("length", a.length))}</dd></div>
+        <div><dt>Equipment</dt><dd>${esc(label("equipment", a.equipment))}</dd></div>
+        <div><dt>Experience</dt><dd>${esc(label("experience", a.experience))}</dd></div>
+        <div><dt>Rest between sets</dt><dd class="num">${esc(p.rest)}</dd></div>
+      </dl>
+    </div>
+    <section class="card week" aria-labelledby="week-h">
+      <div class="week-head">
+        <h3 id="week-h" class="week-count" aria-live="polite">This week — <span class="num">${w.count}</span> of <span class="num">${w.target}</span> sessions</h3>
+        <span class="muted" style="font-size:.84rem">Tap a day to mark it trained. Tap again to undo.</span>
+      </div>
+      <div class="week-strip" id="week-strip">
+        ${w.days.map((x) => {
+          const cls = x.done ? "done" : x.planned ? "plan" : "rest";
+          const sub = x.done ? x.done.session : x.planned || "Rest";
+          const st = x.done ? `trained, ${x.done.session}` : x.planned ? `planned, ${x.planned}, not trained yet` : "rest day";
+          return `<button type="button" class="wd ${cls} ${x.today ? "today" : ""}" data-act="toggle-day" data-date="${x.iso}" aria-pressed="${!!x.done}" aria-label="${x.d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}${x.today ? ", today" : ""}: ${esc(st)}">
+            <span class="w">${x.today ? "Today" : x.d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${x.d.getDate()}</span><span class="s">${esc(sub)}</span></button>`;
+        }).join("")}
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><i style="background:color-mix(in srgb,var(--gold) 10%,var(--raised));border-color:var(--gold)"></i>Planned, not yet trained</span>
+        <span><i style="background:var(--moss);border-color:var(--moss)"></i>Trained</span>
+        <span><i style="background:var(--sunken);border-color:var(--hairline)"></i>Rest day</span>
+      </div>
+      <span class="err" id="week-err"></span>
+    </section>
+    <div class="sessions">
+      ${p.sessions.map((s, i) => `
+        <article class="card lift session">
+          <span class="eyebrow">Day ${i + 1} · ${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}</span>
+          <h3>${esc(s.name)}</h3>
+          <ol class="ex-list">${s.exercises.map((x) => `<li><span>${esc(x.name)}<span class="pat">${esc(PATTERN_LABEL[x.pattern] || "")}</span></span><span class="rx">${esc(x.prescription)}</span></li>`).join("")}</ol>
+        </article>`).join("")}
+    </div>
+    <article class="card howto">
+      <h3>How to run it</h3>
+      <dl>
+        <div><dt>Progression</dt><dd>${esc(p.progression)}</dd></div>
+        <div><dt>Conditioning</dt><dd>${esc(p.conditioning)}</dd></div>
+        <div><dt>Every session</dt><dd>${esc(WARMUP)}</dd></div>
+      </dl>
+    </article>
+    <div class="plan-actions">
+      <button class="btn" type="button" data-act="rebuild">Rebuild plan</button>
+      <span class="muted" style="font-size:.84rem">Your answers stay selected. Training history is kept.</span>
+    </div>
+    <div class="history">
+      <span class="eyebrow">Training log · ${history.length} ${history.length === 1 ? "session" : "sessions"} logged</span>
+      ${history.length ? `<ul>${history.slice(0, 8).map((e) => `<li><span class="d">${fmtDate(e.date)}</span><span>${esc(e.session)}</span></li>`).join("")}</ul>` : `<p class="muted" style="margin-top:6px">No sessions logged yet. Mark a day in the week above when you train.</p>`}
+    </div>`;
+  const strip = $("#week-strip"); const td = $(".wd.today", strip);
+  if (td && strip.scrollWidth > strip.clientWidth) strip.scrollLeft = Math.max(0, td.offsetLeft - strip.offsetLeft - 8);
+}
+async function toggleDay(date) {
+  const log = state.trainingLog.slice();
+  const i = log.findIndex((e) => e.date === date);
+  let msg;
+  if (i >= 0) { log.splice(i, 1); msg = "Session unmarked"; }
+  else {
+    const w = weekInfo(); const x = w.days.find((d) => d.iso === date);
+    const session = x && x.planned ? x.planned : state.plan.sessions[w.count % state.plan.sessions.length].name;
+    log.push({ date, session, loggedAt: new Date().toISOString() }); msg = `${session} logged`;
+  }
+  try { await store.setSingle("trainingLog", log); } catch (err) { $("#week-err").textContent = SAVE_FAIL; return; }
+  renderTraining(); const b = $(`.wd[data-date="${date}"]`); b && b.focus(); toast(msg);
+}
+
+/* ============================ dialogs & export ============================ */
+function openDialog(sel, focusSel) {
+  const d = $(sel); $$(".err", d).forEach((e) => (e.textContent = ""));
+  $$("[aria-invalid]", d).forEach((e) => e.removeAttribute("aria-invalid"));
+  if (typeof d.showModal === "function") d.showModal(); else d.setAttribute("open", "");
+  if (focusSel) setTimeout(() => $(focusSel).focus(), 30);
+}
+function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
+
+function exportJSON() {
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog } = state;
+  return JSON.stringify({
+    app: "The Goal", exportedAt: new Date().toISOString(),
+    destinations, projects,
+    income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
+    readingList: books, milestones, currentStage: stage,
+    training: { answers, activePlan: plan, completedSessions: trainingLog },
+  }, null, 2);
+}
+async function doExport() {
+  const json = exportJSON(); const filename = `the-goal-backup-${todayISO()}.json`;
+  if (window.claude && typeof window.claude.use === "function") {
+    let dl = null; try { dl = await window.claude.use("downloads"); } catch (e) {}
+    if (dl) {
+      try { await dl.save({ filename, data: json }); toast("Backup saved"); return; }
+      catch (e) { if (e && e.code === "declined") { toast("Export cancelled"); return; } if (e && e.code === "rate_limited") { toast("A save prompt is already open"); return; } }
+    }
+    return showExportFallback(json);
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    const a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    toast("Backup downloaded");
+  } catch (e) { showExportFallback(json); }
+}
+function showExportFallback(json) { $("#export-text").value = json; $("#copy-status").textContent = ""; openDialog("#dlg-export"); }
+
+/* ============================ event wiring ============================ */
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-act]"); if (!b || b.tagName === "SELECT") return;
+  const act = b.dataset.act, id = b.dataset.id;
+  switch (act) {
+    case "tab": e.preventDefault(); showTab(b.dataset.tab); break;
+    case "theme": {
+      const next = isDark() ? "light" : "dark"; document.documentElement.dataset.theme = next;
+      try { localStorage.setItem("the-goal-theme", next); } catch (err) {}
+      onThemeChange(); break;
+    }
+    case "export": doExport(); break;
+    case "copy-export": {
+      const ta = $("#export-text");
+      try { await navigator.clipboard.writeText(ta.value); $("#copy-status").textContent = "Copied."; }
+      catch (err) { ta.focus(); ta.select(); $("#copy-status").textContent = "Selected. Press Ctrl+C or ⌘C to copy."; }
+      break;
+    }
+    case "close-dialog": closeDialogs(); break;
+    // atlas
+    case "select": selectPlace(id); break;
+    case "fam": { const f = b.dataset.fam; atlasUI.families.has(f) ? atlasUI.families.delete(f) : atlasUI.families.add(f); renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); $(`[data-fam="${f}"]`).focus(); break; }
+    case "clear-filters": atlasUI.families.clear(); atlasUI.search = ""; $("#place-search").value = ""; renderFamilyChips(); renderPlaceList(); globe && globe.setVisible(null); break;
+    case "add-place": openPlaceForm(null); break;
+    case "edit-place": openPlaceForm(state.destinations.find((d) => d.id === atlasUI.selectedId)); break;
+    case "delete-place": atlasUI.confirmDelete = true; renderDetail(); $("[data-act=delete-place-no]").focus(); break;
+    case "delete-place-no": atlasUI.confirmDelete = false; renderDetail(); break;
+    case "delete-place-yes": {
+      const p = state.destinations.find((d) => d.id === atlasUI.selectedId); if (!p) break;
+      try { await store.remove("destinations", p.id); } catch (err) { $("#place-err").textContent = SAVE_FAIL; break; }
+      atlasUI.selectedId = null; atlasUI.confirmDelete = false; renderAtlas(); toast(`${p.name} removed`); break;
+    }
+    // journey
+    case "stage-edit": jUI.stageEditing = true; renderStage(); { const c = $("#stage-form input:checked") || $("#stage-form input"); c && c.focus(); } break;
+    case "stage-cancel": jUI.stageEditing = false; renderStage(); break;
+    case "add-income": $("#form-income").reset(); $("#if-date").value = todayISO(); openDialog("#dlg-income", "#if-amount"); break;
+    case "del-income": jUI.confirm = "income:" + id; renderEarnings(); break;
+    case "del-income-yes": try { await store.remove("income", id); jUI.confirm = null; renderEarnings(); toast("Entry deleted"); } catch (err) { toast(SAVE_FAIL, true); } break;
+    case "confirm-no": jUI.confirm = null; renderEarnings(); renderBooks(); renderTimeline(); break;
+    case "add-project": $("#form-project").reset(); openDialog("#dlg-project", "#prf-name"); break;
+    case "proj-filter": jUI.projectFilter = b.dataset.status; renderProjects(); $(`[data-status="${b.dataset.status}"]`).focus(); break;
+    case "toggle-archived": jUI.showArchived = !jUI.showArchived; renderProjects(); $("#archived-btn").focus(); break;
+    case "desc-edit": jUI.editingDesc = id; renderProjects(); break;
+    case "desc-cancel": jUI.editingDesc = null; renderProjects(); break;
+    case "proj-archive": {
+      const p = state.projects.find((x) => x.id === id); if (!p) break;
+      try { await store.put("projects", { ...p, archived: !p.archived }); } catch (err) { $("#proj-err-" + id).textContent = SAVE_FAIL; break; }
+      renderProjects(); toast(p.archived ? `${p.name} restored` : `${p.name} archived`); break;
+    }
+    case "add-book": openBookForm(null); break;
+    case "edit-book": openBookForm(state.books.find((x) => x.id === id)); break;
+    case "del-book": jUI.confirm = "book:" + id; renderBooks(); break;
+    case "del-book-yes": try { await store.remove("books", id); jUI.confirm = null; renderBooks(); toast("Book deleted"); } catch (err) { $("#book-err-" + id).textContent = SAVE_FAIL; } break;
+    case "book-tab": jUI.bookTab = b.dataset.k; renderBooks(); $(`[data-act=book-tab][data-k="${b.dataset.k}"]`).focus(); break;
+    case "rate": {
+      const bk = state.books.find((x) => x.id === id); if (!bk) break; const n = Number(b.dataset.n);
+      try { await store.put("books", { ...bk, rating: bk.rating === n ? null : n }); } catch (err) { $("#book-err-" + id).textContent = SAVE_FAIL; break; }
+      renderBooks(); const nb = $(`[data-act=rate][data-id="${CSS.escape(id)}"][data-n="${n}"]`); nb && nb.focus(); toast("Rating saved"); break;
+    }
+    case "add-log": $("#form-log").reset(); $("#lf-date").value = todayISO(); openDialog("#dlg-log", "#lf-note"); break;
+    case "del-log": jUI.confirm = "log:" + id; renderTimeline(); break;
+    case "del-log-yes": try { await store.remove("milestones", id); jUI.confirm = null; renderTimeline(); toast("Entry deleted"); } catch (err) { toast(SAVE_FAIL, true); } break;
+    // training
+    case "rebuild": tUI.rebuilding = true; tUI.draft = { ...(state.answers || {}) }; renderTraining(); window.scrollTo({ top: 0 }); break;
+    case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
+    case "toggle-day": toggleDay(b.dataset.date); break;
+  }
+});
+document.addEventListener("change", async (e) => {
+  const t = e.target;
+  if (t.dataset.act === "proj-status") {
+    const p = state.projects.find((x) => x.id === t.dataset.id); if (!p) return;
+    try { await store.put("projects", { ...p, status: t.value }); } catch (err) { $("#proj-err-" + p.id).textContent = SAVE_FAIL; t.value = p.status; return; }
+    renderProjects(); const s = $("#st-" + CSS.escape(p.id)); s && s.focus(); toast(`${p.name} is now ${t.value}`);
+  }
+  if (t.dataset.act === "book-status") {
+    const bk = state.books.find((x) => x.id === t.dataset.id); if (!bk) return;
+    const status = t.value;
+    const upd = { ...bk, status, finishedAt: status === "read" ? (bk.finishedAt || todayISO()) : null, rating: status === "read" ? bk.rating || null : null };
+    try { await store.put("books", upd); } catch (err) { $("#book-err-" + bk.id).textContent = SAVE_FAIL; t.value = bk.status; return; }
+    jUI.bookTab = status; renderBooks(); toast(`Moved to ${BOOK_STATUS[status]}`);
+  }
+});
+$("#place-search").addEventListener("input", (e) => { atlasUI.search = e.target.value; renderPlaceList(); globe && globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); });
+$$("dialog").forEach((d) => d.addEventListener("click", (e) => { if (e.target === d) closeDialogs(); }));
+let rT; window.addEventListener("resize", () => { clearTimeout(rT); rT = setTimeout(() => { drawScene(); renderChart(); }, 120); });
+
+/* ============================ boot ============================ */
+applyThemeLabel();
+globe = createGlobe($("#globe-wrap"));
+if (!globe) { $("#globe-wrap").hidden = true; $("#globe-help").hidden = true; $("#globe-fallback").hidden = false; $(".place-list").style.maxHeight = "none"; }
+renderAtlas(); renderJourney(); renderTraining();
+store.init().then(() => {
+  loaded = true;
+  if (validAnswers(state.answers)) tUI.draft = { ...state.answers };
+  renderAtlas(); renderJourney(); renderTraining();
+  if (globe && atlasUI.selectedId) { const p = state.destinations.find((d) => d.id === atlasUI.selectedId); p && globe.flyTo(p.lat, p.lon); }
+  $("#foot").textContent = store.mode === "db" ? "Saved to the dossier's database." : store.mode === "local" ? "Saved in this browser." : "Not saved: storage is unavailable here.";
+});
+})();
+</script>

@@ -1,0 +1,233 @@
+{
+  "version": 1,
+  "destinations": [
+    {
+      "id": "kazakhstan",
+      "name": "Kazakhstan",
+      "lat": 43.2,
+      "lon": 79.1,
+      "family": "arid",
+      "terrain": "Steppe & canyon",
+      "note": "Central Asia's empty quarter — Charyn Canyon, steppe horizons, the Tian Shan foothills. Barely on anyone's circuit.",
+      "order": 1,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "finnish-lapland",
+      "name": "Finnish Lapland",
+      "lat": 68.9,
+      "lon": 27,
+      "family": "arctic",
+      "terrain": "Arctic tundra & taiga",
+      "note": "Aurora season, reindeer country, silence you can actually hear. Go when the lakes are frozen solid.",
+      "order": 2,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "dolomites",
+      "name": "The Dolomites, Italy",
+      "lat": 46.5,
+      "lon": 12.1,
+      "family": "alpine",
+      "terrain": "Limestone alpine peaks",
+      "note": "Via ferrata and rifugios above the treeline. Shoulder season, not the August crowds.",
+      "order": 3,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "american-wild",
+      "name": "The American Wild",
+      "lat": 44.6,
+      "lon": -110.5,
+      "family": "alpine",
+      "terrain": "Rockies & high desert",
+      "note": "Still narrowing the region — the Tetons, the Pacific Northwest, Alaska's interior. One at a time, not a road-trip checklist.",
+      "order": 4,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "brazil",
+      "name": "Brazil",
+      "lat": -3.1,
+      "lon": -60,
+      "family": "rainforest",
+      "terrain": "Rainforest & river",
+      "note": "The Amazon basin over the beach towns — where the river is the road.",
+      "order": 5,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "peru",
+      "name": "Peru",
+      "lat": -13.2,
+      "lon": -72.5,
+      "family": "alpine",
+      "terrain": "High Andes & cloud forest",
+      "note": "Machu Picchu is the excuse; the Andes and the trail in are the actual point.",
+      "order": 6,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "maldives",
+      "name": "Maldives",
+      "lat": 3.2,
+      "lon": 73.2,
+      "family": "ocean",
+      "terrain": "Coral atolls & reef",
+      "note": "The outer atolls, not the resort strip off Malé. Empty sandbars over infinity pools.",
+      "order": 7,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "thailand",
+      "name": "Thailand",
+      "lat": 8.9,
+      "lon": 98.5,
+      "family": "rainforest",
+      "terrain": "Karst & rainforest",
+      "note": "National parks over Bangkok and Phuket — Khao Sok, the quiet islands nobody's flying into yet.",
+      "order": 8,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "japan",
+      "name": "Japan",
+      "lat": 36.3,
+      "lon": 137.7,
+      "family": "alpine",
+      "terrain": "Alpine valleys & volcanic north",
+      "note": "The Japanese Alps and Hokkaido's wilder north — still deciding which. Tokyo and Kyoto aren't the trip.",
+      "order": 9,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "hawaii",
+      "name": "Hawaii",
+      "lat": 19.4,
+      "lon": -155.3,
+      "family": "ocean",
+      "terrain": "Volcanic coast & rainforest",
+      "note": "Big Island lava fields and Waipiʻo Valley over the Waikiki strip. Active ground, not a resort loop.",
+      "order": 10,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "austria",
+      "name": "Austria",
+      "lat": 47.1,
+      "lon": 12.8,
+      "family": "alpine",
+      "terrain": "High Alps & glacier valleys",
+      "note": "Hohe Tauern and the Grossglockner road — a different range and pace from the Dolomites next door.",
+      "order": 11,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "france",
+      "name": "France",
+      "lat": 45.9,
+      "lon": 6.9,
+      "family": "alpine",
+      "terrain": "Glacial peaks",
+      "note": "The French Alps and Corsica's GR20 over the Chamonix tour buses — Mont Blanc without the queue.",
+      "order": 12,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "iceland",
+      "name": "Iceland",
+      "lat": 64.4,
+      "lon": -16.9,
+      "family": "arctic",
+      "terrain": "Glacier & volcanic highland",
+      "note": "The interior highlands over the Ring Road — Landmannalaugar, Vatnajökull's ice caves, geothermal steam with nobody around.",
+      "order": 13,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "patagonia",
+      "name": "Patagonia",
+      "lat": -50.9,
+      "lon": -73,
+      "family": "alpine",
+      "terrain": "Granite peaks & glacier",
+      "note": "Torres del Paine and the ice fields — the trekking capital of the far south, still mostly empty once you're past the first ridge.",
+      "order": 14,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "new-zealand",
+      "name": "New Zealand",
+      "lat": -45.4,
+      "lon": 167.7,
+      "family": "alpine",
+      "terrain": "Fjord & alpine wild",
+      "note": "Fiordland over Queenstown — Milford Track terrain without the day-trip buses.",
+      "order": 15,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "georgia",
+      "name": "Georgia",
+      "lat": 43,
+      "lon": 42.7,
+      "family": "alpine",
+      "terrain": "High Caucasus villages",
+      "note": "Svaneti's stone towers under 5,000-meter peaks — Europe's wildest mountains, barely discovered yet.",
+      "order": 16,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "faroe-islands",
+      "name": "Faroe Islands",
+      "lat": 62,
+      "lon": -6.8,
+      "family": "ocean",
+      "terrain": "Sea cliffs & storm coast",
+      "note": "Eighteen islands, no crowds, cliffs that drop straight into the North Atlantic. Weather does whatever it wants.",
+      "order": 17,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "bhutan",
+      "name": "Bhutan",
+      "lat": 27.5,
+      "lon": 90.4,
+      "family": "alpine",
+      "terrain": "Himalayan wild, tourism-capped",
+      "note": "The only country that caps visitor numbers on purpose — Himalayan wilderness that stays wilderness.",
+      "order": 18,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "mongolia",
+      "name": "Mongolia",
+      "lat": 44.2,
+      "lon": 103.7,
+      "family": "arid",
+      "terrain": "Steppe & Gobi cliffs",
+      "note": "The Gobi's Flaming Cliffs and endless steppe — more horses than roads, more silence than anything else.",
+      "order": 19,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    },
+    {
+      "id": "namibia",
+      "name": "Namibia",
+      "lat": -24.7,
+      "lon": 15.3,
+      "family": "arid",
+      "terrain": "Desert dunes & wildlife",
+      "note": "Sossusvlei's red dunes and Etosha's waterholes — some of the darkest night skies left on Earth.",
+      "order": 20,
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    }
+  ],
+  "milestones": [
+    {
+      "id": "dossier-opened",
+      "date": "2026-09-24",
+      "note": "Dossier opened. Twenty places on the atlas so far, all favoring wild terrain over crowded ones. The plan: build the online business first, then spend real, extended stretches out in the world, with a home base that stays just as real.",
+      "createdAt": "2026-09-24T00:00:00.000Z"
+    }
+  ]
+}
