@@ -2048,8 +2048,63 @@ const ASSISTANTS = {
 const TAB_AI = { atlas: "atlas", journey: "sterling", training: "summit" };
 
 const ai = { notes: [], open: null, busy: false, ctl: null, sample: undefined, tools: false, blocked: "", chats: {} };
-function loadChat(id) { if (ai.chats[id]) return ai.chats[id]; let c = []; try { c = JSON.parse(localStorage.getItem("the-goal-chat-" + id) || "[]"); } catch (e) {} ai.chats[id] = Array.isArray(c) ? c.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") : []; return ai.chats[id]; }
-function saveChat(id) { try { localStorage.setItem("the-goal-chat-" + id, JSON.stringify(ai.chats[id].slice(-30))); } catch (e) {} }
+const CHAT_IDS = ["atlas", "sterling", "summit"];
+const chatKey = (id) => "the-goal-chat-" + id;
+const cleanChat = (c) => Array.isArray(c) ? c.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+  .map((m) => ({ role: m.role, content: m.content, ...(m.cut ? { cut: true } : {}), ...(Array.isArray(m.notes) && m.notes.length ? { notes: m.notes.map(String) } : {}) })) : [];
+function localChat(id) { try { return cleanChat(JSON.parse(localStorage.getItem(chatKey(id)) || "[]")); } catch (e) { return []; } }
+function loadChat(id) { if (!ai.chats[id]) ai.chats[id] = localChat(id); return ai.chats[id]; }
+// chats live in the viewer's private database area (data/users/<id>/) so they follow them across devices
+const chatSync = { ref: null, queue: {}, failed: false };
+function trimChat(msgs) {
+  let out = msgs.slice(-40);
+  const size = (x) => new Blob([JSON.stringify(x)]).size;
+  while (out.length > 2 && size(out) > 200000) out = out.slice(2);
+  return out;
+}
+function saveChat(id) {
+  const msgs = trimChat(cleanChat(ai.chats[id] || []));
+  try { localStorage.setItem(chatKey(id), JSON.stringify(msgs)); } catch (e) {}
+  if (!chatSync.ref) return;
+  const ref = chatSync.ref(id);
+  chatSync.queue[id] = (chatSync.queue[id] || Promise.resolve())
+    .then(() => ref.set({ messages: msgs, updatedAt: new Date().toISOString() }))
+    .then(() => { if (chatSync.failed) { chatSync.failed = false; aiStatusRefresh(); } })
+    .catch(() => { chatSync.failed = true; aiStatusRefresh(); });
+}
+function applyRemoteChat(id, data) {
+  if (ai.busy && ai.open === id) return; // our own answer is still streaming; our write follows
+  const msgs = cleanChat(data && data.messages);
+  if (JSON.stringify(ai.chats[id] || []) === JSON.stringify(msgs)) return;
+  ai.chats[id] = msgs;
+  try { localStorage.setItem(chatKey(id), JSON.stringify(msgs)); } catch (e) {}
+  if (ai.open === id) renderAI();
+}
+async function chatSyncInit() {
+  if (store.mode !== "db" || !store.db || !window.claude) return;
+  let user = null; try { user = await window.claude.use("user"); } catch (e) {}
+  const uid = user ? await user.id() : null;
+  if (!uid) return;
+  const db = store.db, ref = (id) => db.doc(`data/users/${uid}/chat-${id}`);
+  try {
+    for (const id of CHAT_IDS) {
+      const snap = await ref(id).get();
+      if (snap.exists) applyRemoteChat(id, snap.data());
+      else { const local = localChat(id); if (local.length) await ref(id).set({ messages: trimChat(local), updatedAt: new Date().toISOString() }); }
+    }
+  } catch (e) { return; }
+  chatSync.ref = ref;
+  CHAT_IDS.forEach((id) => ref(id).onSnapshot((s) => { if (s.exists) applyRemoteChat(id, s.data()); else applyRemoteChat(id, { messages: [] }); }, () => {}));
+  aiStatusRefresh();
+}
+function aiStatusText(A) {
+  if (ai.blocked) return ai.blocked;
+  if (ai.sample === undefined) return "Connecting…";
+  if (chatSync.failed) return `${A.name} answers using your Claude account. This chat couldn't sync just now; it's kept in this browser and will sync after the next message.`;
+  return `${A.name} answers using your Claude account. ${chatSync.ref ? "Chats sync across your devices." : "Chats are saved in this browser."}`;
+}
+function aiStatusRefresh() { const s = $("#ai-status"); if (s && ai.open && !ai.busy) { s.textContent = aiStatusText(ASSISTANTS[ai.open]); s.classList.toggle("bad", !!ai.blocked); } }
+
 
 function mdInline(s) {
   return s.replace(/`([^`]+)`/g, "<code>$1</code>")
@@ -2107,6 +2162,7 @@ function closeAI() {
 function aiNote(text) { ai.notes.push(text); const body = $("#ai-body"); if (!body) return; const d = document.createElement("div"); d.className = "ai-action"; d.textContent = text; const live = $("#ai-live"); body.insertBefore(d, live || null); }
 function renderAI() {
   const panel = $("#ai-panel"); if (!panel || !ai.open) return;
+  const prev = $("#ai-input"), draft = prev ? prev.value : "", hadFocus = prev && document.activeElement === prev;
   const A = ASSISTANTS[ai.open], chat = loadChat(ai.open);
   panel.innerHTML = `
     <div class="ai-head">
@@ -2125,10 +2181,12 @@ function renderAI() {
         <textarea id="ai-input" rows="1" placeholder="Ask ${A.name}…" ${ai.blocked ? "disabled" : ""}></textarea>
         ${ai.busy ? `<button class="btn" type="button" data-act="ai-stop">Stop</button>` : `<button class="btn primary" type="submit" ${ai.blocked ? "disabled" : ""}>Send</button>`}
       </form>
-      <div class="ai-status ${ai.blocked ? "bad" : ""}" id="ai-status">${esc(ai.blocked || (ai.sample === undefined ? "Connecting…" : `${A.name} answers using your Claude account.`))}</div>
+      <div class="ai-status ${ai.blocked ? "bad" : ""}" id="ai-status">${esc(aiStatusText(A))}</div>
     </div>`;
   const body = $("#ai-body"); body.scrollTop = body.scrollHeight;
   const ta = $("#ai-input");
+  if (draft) { ta.value = draft; ta.style.height = Math.min(160, ta.scrollHeight) + "px"; }
+  if (hadFocus) ta.focus();
   ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(160, ta.scrollHeight) + "px"; });
   ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#ai-form").requestSubmit(); } });
   $("#ai-form").addEventListener("submit", (e) => { e.preventDefault(); sendAI(ta.value); });
@@ -2149,6 +2207,7 @@ async function sendAI(text) {
   if (!ai.sample) { renderAI(); return; }
   const A = ASSISTANTS[id], chat = loadChat(id);
   chat.push({ role: "user", content: text.slice(0, 4000) }); saveChat(id);
+  { const box = $("#ai-input"); if (box) box.value = ""; }
   ai.busy = true; renderAI();
   const body = $("#ai-body");
   const live = document.createElement("div"); live.className = "msg ai"; live.id = "ai-live";
@@ -2332,6 +2391,7 @@ globe = createGlobe($("#globe-wrap"));
 if (!globe) { $("#globe-wrap").hidden = true; $("#globe-help").hidden = true; $("#globe-fallback").hidden = false; $(".place-list").style.maxHeight = "none"; }
 renderAtlas(); renderJourney(); renderTraining();
 store.init().then(() => {
+  chatSyncInit();
   loaded = true;
   if (validAnswers(state.answers)) tUI.draft = { ...state.answers };
   renderAtlas(); renderJourney(); renderTraining();
