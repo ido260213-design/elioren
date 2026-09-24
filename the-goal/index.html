@@ -363,6 +363,11 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .ai-form .btn{height:44px}
 .ai-status{font-size:.78rem;color:var(--muted);min-height:1em}
 .ai-status.bad{color:var(--danger)}
+.ai-memory{border:1px solid var(--hairline);border-radius:10px;padding:8px 12px;background:var(--paper);font-size:.88rem}
+.ai-memory summary{cursor:pointer;font-weight:500}
+.ai-memory .bubble{margin:8px 0}
+.ai-earlier{justify-self:center}
+.ai-older{font-size:.8rem;color:var(--muted);text-align:center}
 .ai-scrim{position:fixed;inset:0;z-index:24;background:rgba(18,22,15,.28)}
 @media (max-width:640px){.ai-scrim{z-index:44}}
 @media (min-width:1100px){.ai-scrim{background:transparent;pointer-events:none}}
@@ -2047,61 +2052,129 @@ const ASSISTANTS = {
 };
 const TAB_AI = { atlas: "atlas", journey: "sterling", training: "summit" };
 
-const ai = { notes: [], open: null, busy: false, ctl: null, sample: undefined, tools: false, blocked: "", chats: {} };
+const ai = { notes: [], meta: {}, show: {}, remembering: {}, open: null, busy: false, ctl: null, sample: undefined, tools: false, blocked: "", chats: {} };
 const CHAT_IDS = ["atlas", "sterling", "summit"];
-const chatKey = (id) => "the-goal-chat-" + id;
-const cleanChat = (c) => Array.isArray(c) ? c.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
-  .map((m) => ({ role: m.role, content: m.content, ...(m.cut ? { cut: true } : {}), ...(Array.isArray(m.notes) && m.notes.length ? { notes: m.notes.map(String) } : {}) })) : [];
-function localChat(id) { try { return cleanChat(JSON.parse(localStorage.getItem(chatKey(id)) || "[]")); } catch (e) { return []; } }
-function loadChat(id) { if (!ai.chats[id]) ai.chats[id] = localChat(id); return ai.chats[id]; }
-// chats live in the viewer's private database area (data/users/<id>/) so they follow them across devices
-const chatSync = { ref: null, queue: {}, failed: false };
-function trimChat(msgs) {
-  let out = msgs.slice(-40);
-  const size = (x) => new Blob([JSON.stringify(x)]).size;
-  while (out.length > 2 && size(out) > 200000) out = out.slice(2);
-  return out;
+const PAGE = 10, MAX_MSGS = 1200, WINDOW = 16, SHOW_STEP = 60, MSG_CAP = 8000;
+const chatKey = (id) => "the-goal-chat2-" + id;
+const cleanMsgs = (c) => Array.isArray(c) ? c.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string")
+  .map((m) => ({ role: m.role, content: m.content.slice(0, MSG_CAP), ...(m.cut ? { cut: true } : {}), ...(Array.isArray(m.notes) && m.notes.length ? { notes: m.notes.map(String) } : {}) })) : [];
+const metaOf = (id) => ai.meta[id] || (ai.meta[id] = { base: 0, memory: "", memoryUpTo: 0, syncedTotal: 0, syncedBase: 0, lastWrite: "" });
+const totalOf = (id) => metaOf(id).base + (ai.chats[id] || []).length;
+function localLoad(id) {
+  let d = null; try { d = JSON.parse(localStorage.getItem(chatKey(id)) || "null"); } catch (e) {}
+  if (!d) { try { const old = JSON.parse(localStorage.getItem("the-goal-chat-" + id) || "[]"); d = { base: 0, msgs: old }; } catch (e) { d = { base: 0, msgs: [] }; } }
+  const m = metaOf(id); m.base = Number(d.base) || 0; m.memory = String(d.memory || ""); m.memoryUpTo = Number(d.memoryUpTo) || 0;
+  ai.chats[id] = cleanMsgs(d.msgs);
+}
+function localSave(id) {
+  const m = metaOf(id), msgs = ai.chats[id] || [], keep = Math.min(msgs.length, 200);
+  try { localStorage.setItem(chatKey(id), JSON.stringify({ base: m.base + msgs.length - keep, msgs: msgs.slice(-keep), memory: m.memory, memoryUpTo: m.memoryUpTo })); } catch (e) {}
+}
+function loadChat(id) { if (!ai.chats[id]) localLoad(id); return ai.chats[id]; }
+
+// Chats live in the viewer's private database area: an index document per assistant plus pages of PAGE messages,
+// numbered by absolute message position, so history can grow far past one document's size limit.
+const chatSync = { idx: null, page: null, queue: {}, failed: false };
+function capChat(id) {
+  const m = metaOf(id), msgs = ai.chats[id];
+  while (msgs.length > MAX_MSGS) { msgs.splice(0, PAGE); m.base += PAGE; }
 }
 function saveChat(id) {
-  const msgs = trimChat(cleanChat(ai.chats[id] || []));
-  try { localStorage.setItem(chatKey(id), JSON.stringify(msgs)); } catch (e) {}
-  if (!chatSync.ref) return;
-  const ref = chatSync.ref(id);
-  chatSync.queue[id] = (chatSync.queue[id] || Promise.resolve())
-    .then(() => ref.set({ messages: msgs, updatedAt: new Date().toISOString() }))
-    .then(() => { if (chatSync.failed) { chatSync.failed = false; aiStatusRefresh(); } })
-    .catch(() => { chatSync.failed = true; aiStatusRefresh(); });
+  capChat(id); localSave(id);
+  if (!chatSync.idx) return;
+  const m = metaOf(id);
+  chatSync.queue[id] = (chatSync.queue[id] || Promise.resolve()).then(async () => {
+    const msgs = ai.chats[id], base = m.base, total = base + msgs.length;
+    const firstPage = Math.max(base / PAGE, Math.floor(Math.min(m.syncedTotal, Math.max(total - 1, 0)) / PAGE));
+    for (let p = firstPage; p * PAGE < total; p++) await chatSync.page(id, p).set({ messages: msgs.slice(p * PAGE - base, (p + 1) * PAGE - base) });
+    for (let p = m.syncedBase / PAGE; p < base / PAGE; p++) await chatSync.page(id, p).delete();
+    const stamp = new Date().toISOString() + "#" + uid().slice(-4); m.lastWrite = stamp;
+    await chatSync.idx(id).set({ v: 2, base, total, memory: m.memory, memoryUpTo: m.memoryUpTo, updatedAt: stamp });
+    m.syncedTotal = total; m.syncedBase = base;
+    if (chatSync.failed) { chatSync.failed = false; aiStatusRefresh(); }
+  }).catch(() => { chatSync.failed = true; aiStatusRefresh(); });
 }
-function applyRemoteChat(id, data) {
-  if (ai.busy && ai.open === id) return; // our own answer is still streaming; our write follows
-  const msgs = cleanChat(data && data.messages);
-  if (JSON.stringify(ai.chats[id] || []) === JSON.stringify(msgs)) return;
-  ai.chats[id] = msgs;
-  try { localStorage.setItem(chatKey(id), JSON.stringify(msgs)); } catch (e) {}
+function clearChat(id) {
+  const m = metaOf(id), oldBase = m.base, oldTotal = totalOf(id);
+  ai.chats[id] = []; m.base = 0; m.memoryUpTo = 0; ai.show[id] = SHOW_STEP; localSave(id);
+  if (!chatSync.idx) return;
+  chatSync.queue[id] = (chatSync.queue[id] || Promise.resolve()).then(async () => {
+    const stamp = new Date().toISOString() + "#" + uid().slice(-4); m.lastWrite = stamp;
+    await chatSync.idx(id).set({ v: 2, base: 0, total: 0, memory: m.memory, memoryUpTo: 0, updatedAt: stamp });
+    for (let p = oldBase / PAGE; p * PAGE < oldTotal; p++) await chatSync.page(id, p).delete();
+    m.syncedTotal = 0; m.syncedBase = 0;
+  }).catch(() => { chatSync.failed = true; aiStatusRefresh(); });
+}
+async function fetchPages(id, from, to) { // page numbers, inclusive
+  const nums = []; for (let p = from; p <= to; p++) nums.push(p);
+  const snaps = await Promise.all(nums.map((p) => chatSync.page(id, p).get()));
+  return snaps.flatMap((s) => cleanMsgs(s.exists ? s.data().messages : []));
+}
+async function applyRemoteIndex(id, d) {
+  const m = metaOf(id);
+  if (!d || d.updatedAt === m.lastWrite) return;
+  if (ai.busy && ai.open === id) return; // our own answer is streaming; our write follows
+  if (!ai.chats[id]) { ai.chats[id] = []; m.base = Number(d.base) || 0; } // the database copy wins over this browser's
+  const base = Number(d.base) || 0, total = Number(d.total) || 0, local = totalOf(id);
+  m.memory = String(d.memory || ""); m.memoryUpTo = Number(d.memoryUpTo) || 0;
+  if (total !== local || base !== m.base) {
+    if (base !== m.base || total < local || !ai.chats[id] || !ai.chats[id].length) {
+      ai.chats[id] = total > base ? await fetchPages(id, base / PAGE, Math.floor((total - 1) / PAGE)) : [];
+    } else {
+      const from = Math.floor(local / PAGE), extra = await fetchPages(id, from, Math.floor((total - 1) / PAGE));
+      ai.chats[id] = ai.chats[id].slice(0, from * PAGE - base).concat(extra);
+    }
+    m.base = base;
+  }
+  m.syncedTotal = total; m.syncedBase = base; m.lastWrite = d.updatedAt;
+  localSave(id);
   if (ai.open === id) renderAI();
 }
 async function chatSyncInit() {
   if (store.mode !== "db" || !store.db || !window.claude) return;
   let user = null; try { user = await window.claude.use("user"); } catch (e) {}
-  const uid = user ? await user.id() : null;
-  if (!uid) return;
-  const db = store.db, ref = (id) => db.doc(`data/users/${uid}/chat-${id}`);
+  const me = user ? await user.id() : null;
+  if (!me) return;
+  const db = store.db;
+  const idx = (id) => db.doc(`data/users/${me}/chat-${id}`);
+  const page = (id, p) => idx(id).collection("pages").doc("p" + String(p).padStart(5, "0"));
+  chatSync.idx = idx; chatSync.page = page;
   try {
     for (const id of CHAT_IDS) {
-      const snap = await ref(id).get();
-      if (snap.exists) applyRemoteChat(id, snap.data());
-      else { const local = localChat(id); if (local.length) await ref(id).set({ messages: trimChat(local), updatedAt: new Date().toISOString() }); }
+      const snap = await idx(id).get(); const d = snap.exists ? snap.data() : null;
+      if (d && d.v === 2) { metaOf(id).lastWrite = ""; await applyRemoteIndex(id, d); continue; }
+      // first run on the new layout: move over the old single-document chat, or this browser's chat
+      if (d && Array.isArray(d.messages)) { ai.chats[id] = cleanMsgs(d.messages); metaOf(id).base = 0; }
+      else loadChat(id);
+      metaOf(id).syncedTotal = 0; metaOf(id).syncedBase = metaOf(id).base;
+      if (totalOf(id) > 0 || d) saveChat(id);
     }
-  } catch (e) { return; }
-  chatSync.ref = ref;
-  CHAT_IDS.forEach((id) => ref(id).onSnapshot((s) => { if (s.exists) applyRemoteChat(id, s.data()); else applyRemoteChat(id, { messages: [] }); }, () => {}));
+  } catch (e) { chatSync.idx = chatSync.page = null; return; }
+  CHAT_IDS.forEach((id) => idx(id).onSnapshot((s) => { if (s.exists) applyRemoteIndex(id, s.data()).catch(() => {}); }, () => {}));
   aiStatusRefresh();
+  if (ai.open) renderAI();
+}
+// Long-term memory: older messages are condensed into short notes the assistant reads with every question.
+async function maybeRemember(id) {
+  const m = metaOf(id), msgs = ai.chats[id], base = m.base, total = base + msgs.length;
+  const from = Math.max(m.memoryUpTo, base), to = total - WINDOW;
+  if (!ai.sample || ai.blocked || ai.remembering[id] || to - from < 20) return;
+  ai.remembering[id] = true;
+  const A = ASSISTANTS[id];
+  const excerpt = msgs.slice(from - base, to - base).map((x) => `${x.role === "user" ? "User" : A.name}: ${x.content.slice(0, 1500)}`).join("\n\n").slice(-30000);
+  try {
+    const { text } = await ai.sample(`You keep the long-term memory notes for ${A.name} (${A.role.toLowerCase()}), an assistant for one person. Update the notes with anything durable from the conversation excerpt below: facts about them, their plans, decisions, preferences, constraints, progress and open questions. Drop small talk and anything already covered. Write terse bullet points, at most 1500 characters in total, in the language the user writes in. Reply with only the updated notes.\n\nCurrent notes:\n${m.memory || "(none yet)"}\n\nConversation excerpt:\n${excerpt}`, { modelTier: "quick", cache: false });
+    m.memory = text.trim().slice(0, 2500); m.memoryUpTo = to;
+    saveChat(id);
+    if (ai.open === id && !ai.busy) renderAI();
+  } catch (e) { /* memory is best-effort; the next exchange tries again */ }
+  finally { ai.remembering[id] = false; }
 }
 function aiStatusText(A) {
   if (ai.blocked) return ai.blocked;
   if (ai.sample === undefined) return "Connecting…";
   if (chatSync.failed) return `${A.name} answers using your Claude account. This chat couldn't sync just now; it's kept in this browser and will sync after the next message.`;
-  return `${A.name} answers using your Claude account. ${chatSync.ref ? "Chats sync across your devices." : "Chats are saved in this browser."}`;
+  return `${A.name} answers using your Claude account. ${chatSync.idx ? "Chats sync across your devices." : "Chats are saved in this browser."}`;
 }
 function aiStatusRefresh() { const s = $("#ai-status"); if (s && ai.open && !ai.busy) { s.textContent = aiStatusText(ASSISTANTS[ai.open]); s.classList.toggle("bad", !!ai.blocked); } }
 
@@ -2163,7 +2236,9 @@ function aiNote(text) { ai.notes.push(text); const body = $("#ai-body"); if (!bo
 function renderAI() {
   const panel = $("#ai-panel"); if (!panel || !ai.open) return;
   const prev = $("#ai-input"), draft = prev ? prev.value : "", hadFocus = prev && document.activeElement === prev;
-  const A = ASSISTANTS[ai.open], chat = loadChat(ai.open);
+  const A = ASSISTANTS[ai.open], chat = loadChat(ai.open), meta = metaOf(ai.open);
+  const shown = Math.min(chat.length, ai.show[ai.open] || SHOW_STEP), hidden = chat.length - shown;
+  const earlier = hidden + meta.base;
   panel.innerHTML = `
     <div class="ai-head">
       <span class="av av-${ai.open}">${GLYPHS[ai.open]}</span>
@@ -2172,8 +2247,10 @@ function renderAI() {
       <button class="btn ghost small" type="button" data-act="ai-close" aria-label="Close ${A.name}">Close</button>
     </div>
     <div class="ai-body" id="ai-body" aria-live="polite">
+      ${meta.memory ? `<details class="ai-memory"><summary>What ${A.name} remembers about you</summary><div class="bubble">${md(meta.memory)}</div><button class="btn small ghost" type="button" data-act="ai-forget">Forget this</button></details>` : ""}
+      ${hidden > 0 ? `<button class="btn small ai-earlier" type="button" data-act="ai-earlier">Show earlier messages (${hidden})</button>` : earlier > 0 ? `<p class="ai-older">Older messages were condensed into ${A.name}'s notes about you.</p>` : ""}
       ${chat.length ? "" : `<div class="ai-intro"><p>${esc(A.intro)}</p><div class="ai-starters" style="--c:var(--${ai.open === "atlas" ? "arctic" : ai.open === "sterling" ? "gold" : "moss"})">${A.starters().map((s) => `<button type="button" data-act="ai-starter">${esc(s)}</button>`).join("")}</div></div>`}
-      ${chat.map((m) => m.role === "user" ? `<div class="msg user"><div class="bubble">${esc(m.content)}</div></div>` : `${(m.notes || []).map((n) => `<div class="ai-action">${esc(n)}</div>`).join("")}<div class="msg ai"><span class="av av-${ai.open}">${GLYPHS[ai.open]}</span><div class="bubble">${md(m.content)}${m.cut ? '<p class="note">This answer was cut short. Ask for the rest.</p>' : ""}</div></div>`).join("")}
+      ${chat.slice(chat.length - shown).map((m) => m.role === "user" ? `<div class="msg user"><div class="bubble">${esc(m.content)}</div></div>` : `${(m.notes || []).map((n) => `<div class="ai-action">${esc(n)}</div>`).join("")}<div class="msg ai"><span class="av av-${ai.open}">${GLYPHS[ai.open]}</span><div class="bubble">${md(m.content)}${m.cut ? '<p class="note">This answer was cut short. Ask for the rest.</p>' : ""}</div></div>`).join("")}
     </div>
     <div class="ai-foot">
       <form class="ai-form" id="ai-form">
@@ -2214,7 +2291,7 @@ async function sendAI(text) {
   live.innerHTML = `<span class="av av-${id}">${GLYPHS[id]}</span><div class="bubble"><span class="thinking" aria-label="${A.name} is thinking"><i></i><i></i><i></i> Thinking</span></div>`;
   body.appendChild(live); body.scrollTop = body.scrollHeight;
   const bubble = $(".bubble", live);
-  const rules = `${A.persona}\n\n${SHARED_RULES}\n\n=== Their data (live from the app) ===\n${A.context()}\n\n${ai.tools && A.tools().length ? "You can change the app with the tools provided, but only when the user asks for that change. Confirm briefly what you did." : "You cannot change the app's data; tell the user where to click if they want to change something."}\n\nStay in character as ${A.name}. The conversation follows.`;
+  const rules = `${A.persona}\n\n${SHARED_RULES}\n\n=== Their data (live from the app) ===\n${A.context()}\n\n${metaOf(id).memory ? `=== What you remember from earlier conversations with them ===\n${metaOf(id).memory}\n\n` : ""}${ai.tools && A.tools().length ? "You can change the app with the tools provided, but only when the user asks for that change. Confirm briefly what you did." : "You cannot change the app's data; tell the user where to click if they want to change something."}\n\nStay in character as ${A.name}. The conversation follows.`;
   const turns = [{ role: "user", content: rules.slice(0, 40000) }, ...chat.slice(-16).map((m) => ({ role: m.role, content: m.content }))];
   if (turns[1] && turns[1].role !== "user") turns.splice(1, 1);
   ai.ctl = new AbortController(); ai.notes = [];
@@ -2235,6 +2312,7 @@ async function sendAI(text) {
     }
   } finally {
     saveChat(id); ai.busy = false; ai.ctl = null;
+    if (!status) maybeRemember(id);
     if (ai.open === id) { renderAI(); if (status) { const s = $("#ai-status"); s.textContent = status; s.classList.toggle("bad", status !== "Stopped."); } $("#ai-input") && $("#ai-input").focus(); }
   }
 }
@@ -2292,7 +2370,9 @@ document.addEventListener("click", async (e) => {
     case "export": doExport(); break;
     case "ai-open": openAI(b.dataset.ai); break;
     case "ai-close": closeAI(); break;
-    case "ai-clear": if (ai.ctl) ai.ctl.abort(); ai.chats[ai.open] = []; saveChat(ai.open); renderAI(); $("#ai-input") && $("#ai-input").focus(); break;
+    case "ai-clear": if (ai.ctl) ai.ctl.abort(); clearChat(ai.open); renderAI(); $("#ai-input") && $("#ai-input").focus(); if (metaOf(ai.open).memory) toast(`New chat. ${ASSISTANTS[ai.open].name} still remembers the key points.`); break;
+    case "ai-earlier": { const bd = $("#ai-body"), h = bd.scrollHeight; ai.show[ai.open] = (ai.show[ai.open] || SHOW_STEP) + 100; renderAI(); const nb = $("#ai-body"); nb.scrollTop = nb.scrollHeight - h; break; }
+    case "ai-forget": { const m = metaOf(ai.open); m.memory = ""; m.memoryUpTo = totalOf(ai.open); saveChat(ai.open); renderAI(); toast(`${ASSISTANTS[ai.open].name} forgot those notes`); break; }
     case "ai-starter": sendAI(b.textContent); break;
     case "ai-stop": if (ai.ctl) ai.ctl.abort(); break;
     case "copy-export": {
