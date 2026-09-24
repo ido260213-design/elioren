@@ -318,6 +318,55 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .history .d{font-family:var(--f-mono);color:var(--muted);min-width:96px}
 .plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
 
+/* ---------- AI assistants ---------- */
+.ask-btn{gap:9px;padding:6px 16px 6px 6px}
+.ask-btn .av{width:26px;height:26px}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.av{--c:var(--moss);width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 20%,var(--raised));border:1.5px solid color-mix(in srgb,var(--c) 60%,transparent);color:var(--ink)}
+.av svg{width:58%;height:58%}
+.av-atlas{--c:var(--arctic)} .av-sterling{--c:var(--gold)} .av-summit{--c:var(--moss)}
+.ai-panel{position:fixed;z-index:25;top:var(--head-h,0px);right:0;bottom:0;width:min(460px,100vw);background:var(--raised);border-left:1px solid var(--hairline);box-shadow:-20px 0 60px rgba(0,0,0,.18);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);animation:aiIn 180ms ease-out}
+@keyframes aiIn{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@media (max-width:640px){.ai-panel{z-index:45;top:auto;left:0;width:100%;height:min(88vh,100%);border-left:0;border-top:1px solid var(--hairline);border-radius:16px 16px 0 0;animation-name:aiUp}}
+@keyframes aiUp{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.ai-head{display:flex;gap:12px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--hairline)}
+.ai-head .who{flex:1;min-width:0}
+.ai-head h2{font-size:1.2rem}
+.ai-head .role{font-size:.8rem;color:var(--muted)}
+.ai-body{flex:1;overflow-y:auto;padding:16px;display:grid;gap:14px;align-content:start;overscroll-behavior:contain}
+.ai-intro{display:grid;gap:10px}
+.ai-intro p{font-size:.92rem;color:var(--muted)}
+.ai-starters{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.ai-starters button{text-align:left;border:1px solid var(--hairline-strong);background:var(--paper);border-radius:12px;padding:8px 12px;font-size:.88rem;cursor:pointer;transition:border-color var(--t),background var(--t)}
+.ai-starters button:hover{border-color:var(--c,var(--moss));background:color-mix(in srgb,var(--c,var(--moss)) 8%,var(--paper))}
+.msg{display:flex;gap:10px;align-items:flex-start;max-width:100%}
+.msg .av{width:28px;height:28px}
+.msg.user{justify-content:flex-end}
+.msg.user .bubble{background:var(--moss);color:var(--on-moss);border-radius:14px 14px 4px 14px;padding:9px 13px;max-width:85%;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.93rem}
+.msg.ai .bubble{flex:1;min-width:0;font-size:.93rem;line-height:1.6;overflow-wrap:anywhere}
+.bubble p,.bubble ul,.bubble ol{margin:0 0 .6em;max-width:none}
+.bubble ul,.bubble ol{padding-left:1.25em}
+.bubble li{margin:.15em 0}
+.bubble h4{font:600 .98rem/1.3 var(--f-display);margin:.8em 0 .35em}
+.bubble code{font:400 .85em var(--f-mono);background:var(--sunken);padding:1px 5px;border-radius:4px}
+.bubble a{color:var(--moss)}
+.bubble .note{font-size:.8rem;color:var(--muted);font-style:italic}
+.thinking{display:inline-flex;gap:4px;align-items:center;color:var(--muted);font-size:.88rem}
+.thinking i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.2s infinite both}
+.thinking i:nth-child(2){animation-delay:.2s}.thinking i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+.ai-action{font-size:.8rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+.ai-action::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.ai-foot{border-top:1px solid var(--hairline);padding:10px 12px;display:grid;gap:6px}
+.ai-form{display:flex;gap:8px;align-items:flex-end}
+.ai-form textarea{min-height:44px;max-height:160px;resize:none;border-radius:12px;padding:10px 12px;font-size:.93rem}
+.ai-form .btn{height:44px}
+.ai-status{font-size:.78rem;color:var(--muted);min-height:1em}
+.ai-status.bad{color:var(--danger)}
+.ai-scrim{position:fixed;inset:0;z-index:24;background:rgba(18,22,15,.28)}
+@media (max-width:640px){.ai-scrim{z-index:44}}
+@media (min-width:1100px){.ai-scrim{background:transparent;pointer-events:none}}
+
 .foot{max-width:1240px;margin:0 auto;padding:0 clamp(16px,3vw,32px) 28px;font-size:.78rem;color:var(--muted)}
 .loading{color:var(--muted);font-size:.9rem;padding:8px 0}
 
@@ -359,9 +408,12 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
         <p>Wild over crowded. Every place on the list, and why it made the cut.</p>
         <div class="been-line" id="been-line" aria-live="polite"></div>
       </div>
+      <div class="head-actions">
+      <button class="btn ask-btn" type="button" data-act="ai-open" data-ai="atlas"><span class="av av-atlas" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg></span>Ask Atlas</button>
       <button class="btn primary" type="button" data-act="add-place">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a place
       </button>
+      </div>
     </div>
     <div class="atlas">
       <div class="globe-col">
@@ -400,6 +452,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
         <h1>The Journey</h1>
         <p>The business that pays for the road. Numbers first, stories at the bottom.</p>
       </div>
+      <button class="btn ask-btn" type="button" data-act="ai-open" data-ai="sterling"><span class="av av-sterling" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M6 16l4-5 3 3 5-7"/><path d="M15 7h3v3"/></svg></span>Ask Sterling</button>
     </div>
     <div class="journey">
       <section aria-labelledby="stage-h">
@@ -475,6 +528,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
         <h1>Training</h1>
         <p>The places on the atlas are mountains, trails and altitude. This is the part that decides whether you can actually get up them.</p>
       </div>
+      <button class="btn ask-btn" type="button" data-act="ai-open" data-ai="summit"><span class="av av-summit" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l6-10 4 6 2-3 6 7z"/><path d="M9 9l1.5 2.5"/></svg></span>Ask Summit</button>
     </div>
     <div id="training"></div>
   </section>
@@ -709,6 +763,7 @@ const SAVE_FAIL = "That didn't save. Check your connection and try again.";
 /* ============================ tabs & theme ============================ */
 let currentTab = "atlas";
 function showTab(tab) {
+  if (typeof ai !== "undefined" && ai.open && TAB_AI[tab] !== ai.open) closeAI();
   currentTab = tab;
   $$("[data-view]").forEach((v) => (v.hidden = v.dataset.view !== tab));
   $$(".tab").forEach((b) => b.setAttribute("aria-current", b.dataset.tab === tab ? "page" : "false"));
@@ -1873,6 +1928,259 @@ async function toggleDay(date) {
   renderTraining(); const b = $(`.wd[data-date="${date}"]`); b && b.focus(); toast(msg);
 }
 
+/* ============================ AI assistants ============================ */
+const GLYPHS = {
+  atlas: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>',
+  sterling: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"/><path d="M6 16l4-5 3 3 5-7"/><path d="M15 7h3v3"/></svg>',
+  summit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 2-3 6 7z"/><path d="M9 9l1.5 2.5"/></svg>',
+};
+const GOALS_TEXT = [
+  "Income: build the online business first, money that travels with you, not a job that waits at home.",
+  "Rhythm: extended stretches on the road, as much as the business can support. Home base stays just as real; that's where the family gets built.",
+  "Style: the best hotel in the region, and a supercar in reach wherever the roads are worth it.",
+  "Terrain: wild over crowded, always. A quiet trail beats a packed viewpoint every time.",
+].join("\n");
+const SHARED_RULES = `You live inside "The Goal", a personal dossier for one person who is building an online business to fund extended stretches chasing wild, uncrowded nature around the world, while keeping a real home base to build a family.
+Their standing goals:
+${GOALS_TEXT}
+
+How to answer:
+- Reply in the same language the user writes in.
+- Be specific and practical: names, numbers, months, steps. No filler, no hype, no generic motivational talk.
+- Use short paragraphs and bullet lists. Keep most answers under about 250 words unless they ask for a full plan.
+- Use their real data below. If something important is missing, say what you would need.
+- Be honest about uncertainty. Prices, visas, permits and rules change: say when they should double-check.
+- Today's date is ${todayISO()}.`;
+
+const ASSISTANTS = {
+  atlas: {
+    name: "Atlas", tab: "atlas", role: "Master of travel",
+    intro: "I know seasons, routes, permits, remote lodges and the best hotel in each region, and how to get away from the crowds. I can also add places to your atlas and mark where you've been.",
+    persona: "You are Atlas, a master of travel and expedition planning. You know every region's seasons and weather windows, trekking routes and permits, how to reach remote places, where the crowds are and how to avoid them, altitude and safety, realistic budgets, and the single best hotel or lodge in each region. You favor wild, quiet, uncrowded nature.",
+    starters: () => {
+      const p = state.destinations.find((d) => d.id === atlasUI.selectedId);
+      const n = p ? p.name : "my next place";
+      return [`When's the best time to go to ${n}, and where exactly?`, `Plan a 10-day trip to ${n}`, "Which of my places should be next, and why?", "Suggest 3 wild places like the ones on my list"];
+    },
+    context() {
+      const sel = state.destinations.find((d) => d.id === atlasUI.selectedId);
+      const lines = sortedPlaces().map((p) => `- ${p.name} [id: ${p.id}] ${fmtCoord(p.lat, p.lon)}, ${p.family}, ${p.terrain || ""}${p.visited ? `, BEEN THERE${p.visitedOn ? " (" + p.visitedOn + ")" : ""}` : ""}. Note: ${p.note || "none"}`);
+      return `Their atlas (${state.destinations.length} places, ${state.destinations.filter((p) => p.visited).length} visited):\n${lines.join("\n")}\n\nCurrently open on screen: ${sel ? sel.name : "nothing"}.\nTraining status (for trek difficulty): ${state.answers ? `${label("experience", state.answers.experience)}, trains ${state.answers.days} days a week, goal ${label("goal", state.answers.goal)}` : "no training plan yet"}.`;
+    },
+    tools: () => [
+      { name: "add_place", description: "Add a new destination to the user's atlas and globe. Only use when the user asks to add a place. Returns the new place id.",
+        inputSchema: { type: "object", properties: { name: { type: "string" }, lat: { type: "number", description: "latitude, -90..90, one decimal is fine" }, lon: { type: "number", description: "longitude, -180..180" }, family: { type: "string", enum: FAMILIES }, terrain: { type: "string", description: "short terrain label, e.g. 'Fjord & alpine wild'" }, note: { type: "string", description: "one or two sentences in the dossier's voice: why this place, what to skip" } }, required: ["name", "lat", "lon", "family"] },
+        async execute(i) {
+          const lat = Number(i.lat), lon = Number(i.lon), fam = FAMILIES.includes(i.family) ? i.family : "alpine";
+          if (!String(i.name || "").trim()) throw new Error("name is required");
+          if (!(lat >= -90 && lat <= 90) || !(lon >= -180 && lon <= 180)) throw new Error("lat/lon out of range");
+          const slug = String(i.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "place";
+          const obj = { id: `${slug}-${uid().slice(-5)}`, name: String(i.name).trim().slice(0, 80), lat: Math.round(lat * 10) / 10, lon: Math.round(lon * 10) / 10, family: fam, terrain: String(i.terrain || "").slice(0, 60), note: String(i.note || "").slice(0, 500), visited: false, visitedOn: null, order: Math.max(0, ...state.destinations.map((d) => d.order || 0)) + 1, createdAt: new Date().toISOString() };
+          await store.put("destinations", obj);
+          renderAtlas(); selectPlace(obj.id); toast(`Atlas added ${obj.name}`);
+          aiNote(`Added ${obj.name} to your atlas`);
+          return { ok: true, id: obj.id };
+        } },
+      { name: "mark_been_there", description: "Mark a place on the atlas as visited (or not visited). Use only when the user says they have been somewhere or asks to change it. place_id comes from the atlas list.",
+        inputSchema: { type: "object", properties: { place_id: { type: "string" }, visited: { type: "boolean" }, date: { type: "string", description: "optional YYYY-MM-DD" } }, required: ["place_id", "visited"] },
+        async execute(i) {
+          const p = state.destinations.find((d) => d.id === String(i.place_id)); if (!p) throw new Error("no place with that id");
+          const v = i.visited !== false;
+          await store.put("destinations", { ...p, visited: v, visitedOn: v ? (validISO(i.date) ? String(i.date) : (p.visitedOn || todayISO())) : null });
+          renderAtlas(); toast(v ? `${p.name} marked as been there` : `${p.name} moved back to not yet`);
+          aiNote(v ? `Marked ${p.name} as been there` : `Unmarked ${p.name}`);
+          return { ok: true };
+        } },
+      { name: "show_place", description: "Open a place on the globe and in the details panel so the user can see it. place_id comes from the atlas list.",
+        inputSchema: { type: "object", properties: { place_id: { type: "string" } }, required: ["place_id"] },
+        execute(i) { const p = state.destinations.find((d) => d.id === String(i.place_id)); if (!p) throw new Error("no place with that id"); selectPlace(p.id); return { ok: true }; } },
+    ],
+  },
+  sterling: {
+    name: "Sterling", tab: "journey", role: "Master of business",
+    intro: "I think in offers, pricing, channels and cash. Tell me where the business stands and I'll tell you the next move. I can also add projects and books for you.",
+    persona: "You are Sterling, a master of business, specifically of small, profitable online businesses run by one person who travels: productized services, info products and courses, content and audience businesses, affiliate, e-commerce, SaaS. You know offer design, pricing, positioning, customer acquisition, sales, retention, cash flow, and automating so the business runs from anywhere. You are numbers-driven and direct, and you always end with the next concrete action.",
+    starters: () => ["What should I focus on this week?", "Give me 5 online business ideas that fit this life", "How should I price my first offer?", "What should I read next, and why?"],
+    context() {
+      const t = incomeTotals();
+      const st = state.stage && state.stage.stage ? `${state.stage.stage}. What's true right now: ${state.stage.description || "not written"}` : "Not started yet";
+      const projects = state.projects.map((p) => `- ${p.name} [${p.status}${p.archived ? ", archived" : ""}]: ${p.description || "no description"}`).join("\n") || "none yet";
+      const recent = state.income.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15).map((e) => `- ${e.date}: ${money(e.cents)}${e.note ? " (" + e.note + ")" : ""}`).join("\n") || "none yet";
+      const books = state.books.map((b) => `- ${b.title}${b.author ? " by " + b.author : ""} [${BOOK_STATUS[b.status]}${b.rating ? ", rated " + b.rating + "/5" : ""}]`).join("\n") || "none yet";
+      return `Business stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
+    },
+    tools: () => [
+      { name: "add_project", description: "Add a project card to the user's Current projects. Only when the user asks to add or track a project.",
+        inputSchema: { type: "object", properties: { name: { type: "string" }, status: { type: "string", enum: PROJECT_STATUSES }, description: { type: "string", description: "1-2 sentences" } }, required: ["name"] },
+        async execute(i) {
+          if (!String(i.name || "").trim()) throw new Error("name is required");
+          const obj = { id: uid(), name: String(i.name).trim().slice(0, 80), status: PROJECT_STATUSES.includes(i.status) ? i.status : "Idea", description: String(i.description || "").slice(0, 280), createdAt: new Date().toISOString(), archived: false };
+          await store.put("projects", obj); renderProjects(); toast(`Sterling added ${obj.name}`); aiNote(`Added project: ${obj.name}`);
+          return { ok: true };
+        } },
+      { name: "add_book", description: "Add a book to the user's reading list. Only when the user asks to add a book.",
+        inputSchema: { type: "object", properties: { title: { type: "string" }, author: { type: "string" }, status: { type: "string", enum: ["want", "reading", "read"] } }, required: ["title"] },
+        async execute(i) {
+          if (!String(i.title || "").trim()) throw new Error("title is required");
+          const status = ["want", "reading", "read"].includes(i.status) ? i.status : "want";
+          const obj = { id: uid(), title: String(i.title).trim().slice(0, 160), author: String(i.author || "").slice(0, 120), status, note: "", rating: null, addedAt: todayISO(), finishedAt: status === "read" ? todayISO() : null };
+          await store.put("books", obj); renderBooks(); toast(`Sterling added ${obj.title}`); aiNote(`Added book: ${obj.title}`);
+          return { ok: true };
+        } },
+    ],
+  },
+  summit: {
+    name: "Summit", tab: "training", role: "Master of fitness",
+    intro: "Strength, conditioning, form, recovery and getting your body ready for altitude and a heavy pack. I coach from your plan and your week.",
+    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
+    starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
+    context() {
+      if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice.";
+      const a = state.answers, p = state.plan, w = weekInfo();
+      const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
+      const week = w.days.map((d) => `${d.iso}${d.today ? " (today)" : ""}: ${d.done ? "trained " + d.done.session : d.planned ? "planned " + d.planned + ", not done" : "rest"}`).join("\n");
+      const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
+      return `Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.`;
+    },
+    tools: () => [],
+  },
+};
+const TAB_AI = { atlas: "atlas", journey: "sterling", training: "summit" };
+
+const ai = { notes: [], open: null, busy: false, ctl: null, sample: undefined, tools: false, blocked: "", chats: {} };
+function loadChat(id) { if (ai.chats[id]) return ai.chats[id]; let c = []; try { c = JSON.parse(localStorage.getItem("the-goal-chat-" + id) || "[]"); } catch (e) {} ai.chats[id] = Array.isArray(c) ? c.filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string") : []; return ai.chats[id]; }
+function saveChat(id) { try { localStorage.setItem("the-goal-chat-" + id, JSON.stringify(ai.chats[id].slice(-30))); } catch (e) {} }
+
+function mdInline(s) {
+  return s.replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>")
+    .replace(/(^|[\s(])_([^_\n]+)_(?=[\s.,;:!?)]|$)/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function md(src) {
+  const out = []; let list = null, para = [];
+  const flushP = () => { if (para.length) { out.push(`<p>${para.map(mdInline).join("<br>")}</p>`); para = []; } };
+  const flushL = () => { if (list) { out.push(`<${list.t}>${list.items.map((i) => `<li>${mdInline(i)}</li>`).join("")}</${list.t}>`); list = null; } };
+  esc(src).split("\n").forEach((raw) => {
+    const line = raw.trimEnd(); let m;
+    if (!line.trim()) { flushP(); flushL(); return; }
+    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { flushP(); flushL(); out.push(`<h4>${mdInline(m[1])}</h4>`); return; }
+    if ((m = line.match(/^\s*[-*•]\s+(.*)$/))) { flushP(); if (!list || list.t !== "ul") { flushL(); list = { t: "ul", items: [] }; } list.items.push(m[1]); return; }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)$/))) { flushP(); if (!list || list.t !== "ol") { flushL(); list = { t: "ol", items: [] }; } list.items.push(m[1]); return; }
+    if (list && /^\s{2,}\S/.test(raw)) { list.items[list.items.length - 1] += " " + line.trim(); return; }
+    flushL(); para.push(line);
+  });
+  flushP(); flushL();
+  return out.join("");
+}
+
+async function aiInit() {
+  if (!(window.claude && typeof window.claude.use === "function")) { ai.sample = null; ai.blocked = "The assistants work when this dossier is opened in Claude. Here they can't reach Claude."; return; }
+  try { ai.sample = await window.claude.use("sample"); } catch (e) { ai.sample = null; }
+  if (!ai.sample) { ai.blocked = "The assistants aren't available in this view."; return; }
+  try { const lim = await ai.sample.limits(); ai.tools = !!(lim && lim.tools); } catch (e) { ai.tools = false; }
+  if (ai.open) renderAI();
+}
+const aiReady = aiInit();
+
+function openAI(id) {
+  ai.open = id; loadChat(id);
+  let panel = $("#ai-panel");
+  if (!panel) {
+    panel = document.createElement("aside"); panel.id = "ai-panel"; panel.className = "ai-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-labelledby", "ai-name");
+    const scrim = document.createElement("div"); scrim.className = "ai-scrim"; scrim.id = "ai-scrim"; scrim.addEventListener("click", closeAI);
+    document.body.append(scrim, panel);
+  }
+  syncHeadH();
+  renderAI();
+  $("#ai-input") && $("#ai-input").focus();
+}
+function syncHeadH() { document.documentElement.style.setProperty("--head-h", Math.round($(".top").getBoundingClientRect().bottom) + "px"); }
+window.addEventListener("resize", () => { if (ai.open) syncHeadH(); });
+function closeAI() {
+  if (ai.ctl) ai.ctl.abort();
+  const id = ai.open; ai.open = null;
+  $("#ai-panel") && $("#ai-panel").remove(); $("#ai-scrim") && $("#ai-scrim").remove();
+  const b = id && $(`[data-act=ai-open][data-ai="${id}"]`); b && b.focus();
+}
+function aiNote(text) { ai.notes.push(text); const body = $("#ai-body"); if (!body) return; const d = document.createElement("div"); d.className = "ai-action"; d.textContent = text; const live = $("#ai-live"); body.insertBefore(d, live || null); }
+function renderAI() {
+  const panel = $("#ai-panel"); if (!panel || !ai.open) return;
+  const A = ASSISTANTS[ai.open], chat = loadChat(ai.open);
+  panel.innerHTML = `
+    <div class="ai-head">
+      <span class="av av-${ai.open}">${GLYPHS[ai.open]}</span>
+      <div class="who"><h2 id="ai-name">${A.name}</h2><div class="role">${A.role}</div></div>
+      ${chat.length ? `<button class="btn ghost small" type="button" data-act="ai-clear">New chat</button>` : ""}
+      <button class="btn ghost small" type="button" data-act="ai-close" aria-label="Close ${A.name}">Close</button>
+    </div>
+    <div class="ai-body" id="ai-body" aria-live="polite">
+      ${chat.length ? "" : `<div class="ai-intro"><p>${esc(A.intro)}</p><div class="ai-starters" style="--c:var(--${ai.open === "atlas" ? "arctic" : ai.open === "sterling" ? "gold" : "moss"})">${A.starters().map((s) => `<button type="button" data-act="ai-starter">${esc(s)}</button>`).join("")}</div></div>`}
+      ${chat.map((m) => m.role === "user" ? `<div class="msg user"><div class="bubble">${esc(m.content)}</div></div>` : `${(m.notes || []).map((n) => `<div class="ai-action">${esc(n)}</div>`).join("")}<div class="msg ai"><span class="av av-${ai.open}">${GLYPHS[ai.open]}</span><div class="bubble">${md(m.content)}${m.cut ? '<p class="note">This answer was cut short. Ask for the rest.</p>' : ""}</div></div>`).join("")}
+    </div>
+    <div class="ai-foot">
+      <form class="ai-form" id="ai-form">
+        <label class="sr-only" for="ai-input">Message ${A.name}</label>
+        <textarea id="ai-input" rows="1" placeholder="Ask ${A.name}…" ${ai.blocked ? "disabled" : ""}></textarea>
+        ${ai.busy ? `<button class="btn" type="button" data-act="ai-stop">Stop</button>` : `<button class="btn primary" type="submit" ${ai.blocked ? "disabled" : ""}>Send</button>`}
+      </form>
+      <div class="ai-status ${ai.blocked ? "bad" : ""}" id="ai-status">${esc(ai.blocked || (ai.sample === undefined ? "Connecting…" : `${A.name} answers using your Claude account.`))}</div>
+    </div>`;
+  const body = $("#ai-body"); body.scrollTop = body.scrollHeight;
+  const ta = $("#ai-input");
+  ta.addEventListener("input", () => { ta.style.height = "auto"; ta.style.height = Math.min(160, ta.scrollHeight) + "px"; });
+  ta.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#ai-form").requestSubmit(); } });
+  $("#ai-form").addEventListener("submit", (e) => { e.preventDefault(); sendAI(ta.value); });
+}
+const AI_ERR = {
+  not_granted: "Claude access wasn't allowed for this page, so the assistants are off for now. Reload the page to be asked again.",
+  sampling_disabled: "Claude isn't available on this account.", not_declared: "The assistants aren't available in this view.", capability_disabled: "The assistants aren't available in this view.", capability_removed: "The assistants aren't available in this view.",
+  rate_limited: "Too many questions at once, or your Claude usage limit was reached. Try again in a bit.",
+  session_expired: "Your Claude session ended. Sign in again, then retry.",
+  prompt_too_large: "That conversation got too long. Start a new chat.",
+  refused: "Claude couldn't help with that one. Try asking it differently.",
+  empty_completion: "No answer came back. Try rephrasing.",
+};
+async function sendAI(text) {
+  const id = ai.open; if (!id || ai.busy) return;
+  text = String(text || "").trim(); if (!text) return;
+  await aiReady;
+  if (!ai.sample) { renderAI(); return; }
+  const A = ASSISTANTS[id], chat = loadChat(id);
+  chat.push({ role: "user", content: text.slice(0, 4000) }); saveChat(id);
+  ai.busy = true; renderAI();
+  const body = $("#ai-body");
+  const live = document.createElement("div"); live.className = "msg ai"; live.id = "ai-live";
+  live.innerHTML = `<span class="av av-${id}">${GLYPHS[id]}</span><div class="bubble"><span class="thinking" aria-label="${A.name} is thinking"><i></i><i></i><i></i> Thinking</span></div>`;
+  body.appendChild(live); body.scrollTop = body.scrollHeight;
+  const bubble = $(".bubble", live);
+  const rules = `${A.persona}\n\n${SHARED_RULES}\n\n=== Their data (live from the app) ===\n${A.context()}\n\n${ai.tools && A.tools().length ? "You can change the app with the tools provided, but only when the user asks for that change. Confirm briefly what you did." : "You cannot change the app's data; tell the user where to click if they want to change something."}\n\nStay in character as ${A.name}. The conversation follows.`;
+  const turns = [{ role: "user", content: rules.slice(0, 40000) }, ...chat.slice(-16).map((m) => ({ role: m.role, content: m.content }))];
+  if (turns[1] && turns[1].role !== "user") turns.splice(1, 1);
+  ai.ctl = new AbortController(); ai.notes = [];
+  const opts = { signal: ai.ctl.signal, onText: ({ text: t }) => { if (ai.open === id) { bubble.innerHTML = md(t); const b = $("#ai-body"); if (b && b.scrollHeight - b.scrollTop - b.clientHeight < 140) b.scrollTop = b.scrollHeight; } } };
+  const tools = ai.tools ? A.tools() : [];
+  if (tools.length) opts.tools = tools; else opts.cache = false;
+  let status = "";
+  try {
+    const res = await ai.sample(turns, opts);
+    chat.push({ role: "assistant", content: res.text, cut: !!res.truncated, notes: ai.notes.slice() });
+  } catch (e) {
+    const code = e && e.code;
+    if (e && e.text && code !== "refused") chat.push({ role: "assistant", content: e.text, cut: true, notes: ai.notes.slice() });
+    if (code === "cancelled") status = "Stopped.";
+    else {
+      status = AI_ERR[code] || "Something went wrong reaching Claude. Try again.";
+      if (["not_granted", "sampling_disabled", "not_declared", "capability_disabled", "capability_removed"].includes(code)) ai.blocked = status;
+    }
+  } finally {
+    saveChat(id); ai.busy = false; ai.ctl = null;
+    if (ai.open === id) { renderAI(); if (status) { const s = $("#ai-status"); s.textContent = status; s.classList.toggle("bad", status !== "Stopped."); } $("#ai-input") && $("#ai-input").focus(); }
+  }
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && ai.open && !document.querySelector("dialog[open]")) closeAI(); });
+
 /* ============================ dialogs & export ============================ */
 function openDialog(sel, focusSel) {
   const d = $(sel); $$(".err", d).forEach((e) => (e.textContent = ""));
@@ -1923,6 +2231,11 @@ document.addEventListener("click", async (e) => {
       onThemeChange(); break;
     }
     case "export": doExport(); break;
+    case "ai-open": openAI(b.dataset.ai); break;
+    case "ai-close": closeAI(); break;
+    case "ai-clear": if (ai.ctl) ai.ctl.abort(); ai.chats[ai.open] = []; saveChat(ai.open); renderAI(); $("#ai-input") && $("#ai-input").focus(); break;
+    case "ai-starter": sendAI(b.textContent); break;
+    case "ai-stop": if (ai.ctl) ai.ctl.abort(); break;
     case "copy-export": {
       const ta = $("#export-text");
       try { await navigator.clipboard.writeText(ta.value); $("#copy-status").textContent = "Copied."; }
