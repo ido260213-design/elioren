@@ -335,6 +335,12 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .body-facts dd{margin:2px 0 0}
 .body-plan{padding:16px 20px;margin-bottom:18px;display:grid;gap:8px}
 .body-plan p{margin:0}
+.youth-rules{margin:0;padding-left:1.2em;display:grid;gap:3px}
+.profile-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 16px}
+.profile-grid .wide{grid-column:1/-1}
+.profile-grid input,.profile-grid textarea{width:100%;font:inherit;padding:9px 12px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--raised);color:var(--ink)}
+.profile-grid textarea{resize:vertical}
+.linkish{background:none;border:0;padding:0;font:inherit;color:var(--moss);text-decoration:underline;cursor:pointer}
 .why h3{margin-bottom:6px}
 .why ul{margin:0;padding-left:1.2em;display:grid;gap:3px}
 .swap{color:var(--gold);font-weight:500}
@@ -523,6 +529,9 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
       <b>The Goal</b><small>field dossier</small>
     </a>
     <div class="tools">
+      <button class="icon-btn" type="button" data-act="profile" title="About me: what the assistants know about you">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg><span class="lbl">About me</span><span class="sr-only">About me</span>
+      </button>
       <button class="icon-btn" type="button" data-act="export" title="Export all data as JSON">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v3h16v-3"/></svg><span class="lbl">Export data</span><span class="sr-only">Export data</span>
       </button>
@@ -768,6 +777,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 
 <dialog id="dlg-recipe" aria-labelledby="recipe-title" class="dlg-wide"><div class="recipe-body" id="recipe-body"></div></dialog>
 
+<dialog id="dlg-profile" aria-labelledby="profile-title" class="dlg-wide"><form id="profile-form" class="recipe-body" novalidate></form></dialog>
 <dialog id="dlg-country" aria-labelledby="country-title" class="dlg-wide"><div class="recipe-body" id="country-body"></div></dialog>
 <dialog id="dlg-photo" aria-label="Photo" class="dlg-photo"><div id="photo-body"></div></dialog>
 
@@ -828,9 +838,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null };
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null, profile: null };
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck" };
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck", profile: "meta/profile" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 const SEED_V = 2; // bump when places are added to seed.json; each place's "since" says which version added it
 const newSeedPlaces = (seed, fromV) => (seed.destinations || []).filter((d) => (d.since || 1) > fromV).map(({ since, ...d }) => d);
@@ -882,7 +892,7 @@ const store = {
     state.bizDone = state.bizDone && Array.isArray(state.bizDone.done) ? state.bizDone.done.map(String) : [];
     state.favRecipes = state.favRecipes && Array.isArray(state.favRecipes.ids) ? state.favRecipes.ids.map(String) : [];
     state.countries = state.countries && Array.isArray(state.countries.names) ? state.countries.names.map(String) : [];
-    state.bodyCheck = normBody(state.bodyCheck);
+    state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile);
   },
   async loadLocal() {
     let raw = null, ok = true;
@@ -900,7 +910,7 @@ const store = {
     if (!Array.isArray(state.myrecipes)) state.myrecipes = [];
     if (!Array.isArray(state.countries)) state.countries = [];
     if (!Array.isArray(state.photos)) state.photos = [];
-    state.bodyCheck = normBody(state.bodyCheck);
+    state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile);
     if (raw && (state.seedV || 1) < SEED_V) {
       const seed = await fetchSeed();
       if (seed) { const have = new Set(state.destinations.map((d) => d.id)); for (const d of newSeedPlaces(seed, state.seedV || 1)) if (!have.has(d.id)) state.destinations.push(d); state.seedV = SEED_V; }
@@ -912,8 +922,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -2794,7 +2804,7 @@ function generatePlan(a) {
   if (mode) why.push(`Cardio uses ${mode}.`);
   if (roadEquip) why.push(`A road version of every session, for trips where you only have ${{ gym: "a hotel gym", home: "bands and light dumbbells", bw: "your bodyweight" }[x.road]}.`);
   if (dest) why.push(`Trail prep for ${dest.name}: ${tripPlan(dest, x.tripWhen, weekdays).weeks} weeks, long hikes with a pack.`);
-  const body = state.bodyCheck, bx = {}, roadSessions = roadEquip ? build(roadEquip) : null;
+  const body = isMinor() ? null : state.bodyCheck, bx = {}, roadSessions = roadEquip ? build(roadEquip) : null;
   applyBody(body, [[sessions, a.equipment], ...(roadSessions ? [[roadSessions, roadEquip]] : [])], a.equipment, why, bx);
   if (bx.cond) cond += bx.cond;
   return {
@@ -2899,6 +2909,7 @@ function renderQuiz(el, hasPlan) {
 const bcUI = { busy: false, error: "", preview: [] };
 function renderBodyCard() {
   const el = $("#body-card"); if (!el) return;
+  if (isMinor()) { el.innerHTML = ""; return; } // photo check-ins are for adults only
   const b = state.bodyCheck, canRead = !!(ai.sample && ai.images);
   if (!b && !canRead && !bcUI.busy) { el.innerHTML = ""; return; }
   const accept = ai.images ? ai.images.mediaTypes.join(",") : "image/*";
@@ -2939,6 +2950,7 @@ function renderBodyCard() {
 }
 async function readBodyPhotos(fileList) {
   await aiReady;
+  if (isMinor()) return;
   if (!ai.sample || !ai.images) { bcUI.error = "Summit can't look at photos in this view."; renderBodyCard(); return; }
   const maxN = Math.min(2, ai.images.maxCount || 1), types = ai.images.mediaTypes || [];
   const files = [...fileList].slice(0, maxN);
@@ -2987,6 +2999,8 @@ function weekInfo() {
   return { days, count: days.filter((x) => x.done).length, target: plan.sessions.length };
 }
 function bodyPlanCard(p) {
+  if (isMinor()) return `<article class="card body-plan"><span class="eyebrow">Training at ${profileAge()}</span>
+    <ul class="youth-rules"><li>Learn every lift light first, and stop 2-3 reps before you can't do another. No max attempts.</li><li>Heavy barbell lifts only with a coach or adult watching.</li><li>Sleep 9+ hours and eat enough: at your age, food and sleep are what make you stronger. No dieting.</li></ul></article>`;
   const b = state.bodyCheck;
   if (!b) return ai.sample && ai.images ? `<div class="card personalize"><div><strong>Add a photo check-in.</strong> <span class="muted">Summit looks at your build and posture and tailors the plan. The photo isn't saved.</span></div><button class="btn small" type="button" data-act="rebuild">Add a photo</button></div>` : "";
   const stale = !p.body || p.body.at !== b.at;
@@ -3106,6 +3120,80 @@ const GOALS_TEXT = [
   "Style: the best hotel in the region, and a supercar in reach wherever the roads are worth it.",
   "Terrain: wild over crowded, always. A quiet trail beats a packed viewpoint every time.",
 ].join("\n");
+// About me: written by the user, read by all three assistants before every answer.
+const PROFILE_FIELDS = [
+  { key: "name", label: "Name", max: 60 },
+  { key: "nickname", label: "Nickname", max: 40 },
+  { key: "age", label: "Age", num: [6, 120] },
+  { key: "budget", label: "Money I have for my business ($)", num: [0, 100000000] },
+  { key: "about", label: "About me: what I love", long: true, max: 1500, ph: "Sports, music, cars, what you're learning…" },
+  { key: "dreams", label: "My dreams and goals", long: true, max: 1500, ph: "What you want your life to look like" },
+  { key: "now", label: "What I'm working on right now", long: true, max: 1500, ph: "Your current project or next step" },
+];
+function normProfile(p) {
+  if (!p || typeof p !== "object") return null;
+  const o = {};
+  for (const f of PROFILE_FIELDS) {
+    const v = p[f.key];
+    if (f.num) { const n = Number(v); if (v !== "" && v != null && Number.isFinite(n) && n >= f.num[0] && n <= f.num[1]) o[f.key] = Math.round(n); }
+    else if (typeof v === "string" && v.trim()) o[f.key] = v.trim().slice(0, f.max);
+  }
+  if (!Object.keys(o).length) return null;
+  o.updatedAt = typeof p.updatedAt === "string" ? p.updatedAt : new Date().toISOString();
+  return o;
+}
+// Age as of today: a saved age grows by the whole years since it was entered.
+function profileAge() {
+  const p = state.profile; if (!p || !p.age) return null;
+  const since = Date.parse(p.updatedAt); const yrs = Number.isFinite(since) ? Math.floor((Date.now() - since) / (365.25 * 864e5)) : 0;
+  return p.age + Math.max(0, yrs);
+}
+const isMinor = () => { const a = profileAge(); return a != null && a < 18; };
+function profileBlock() {
+  const p = state.profile;
+  if (!p) return "They haven't filled in their profile (the About me button at the top). If it would help, suggest it once.";
+  const age = profileAge();
+  return [
+    p.name && `Name: ${p.name}${p.nickname ? ` (goes by ${p.nickname})` : ""}`, !p.name && p.nickname && `Goes by: ${p.nickname}`,
+    age != null && `Age: ${age}`, p.budget != null && `Money available for their business: $${p.budget.toLocaleString("en-US")}`,
+    p.about && `About them, in their words: ${p.about}`, p.dreams && `Their dreams and goals: ${p.dreams}`, p.now && `What they're working on now: ${p.now}`,
+  ].filter(Boolean).join("\n");
+}
+const YOUTH_RULES = {
+  all: "They are {age} years old. Talk to them like a great mentor talks to a motivated teenager: respectful, direct, encouraging, never talking down. Keep safety first. Encourage them to involve a parent or guardian for anything involving money accounts, contracts, travel bookings, meeting people from the internet or sharing personal details online. Never suggest anything that isn't legal or safe for their age.",
+  summit: "Coach them as a youth athlete. Strength training is good for teens when technique comes first: learn each lift light, stop 2-3 reps before failure, no one-rep maxes, heavy barbell lifts only with a coach or adult watching. Sleep of 9 or more hours is part of training. Growing bodies need enough food: never suggest calorie cutting, fasting, weight-loss diets or supplements, and never comment on body fat or weight. Focus on performance and habits: speed, jumps, skill, strength, endurance, eating well.",
+  sterling: "They're under 18, so payment processors (Shopify Payments, Stripe, PayPal business), ad accounts, marketplaces and supplier contracts must be opened and owned by a parent or guardian, with the teen doing the work. Treat their savings carefully: suggest small tests before spending most of the budget, never borrowing, never paid courses or get-rich-quick programs. Be honest about dropshipping: thin margins, ad costs, slow shipping, refunds and consumer law. A personal brand built alongside it costs little and compounds; say so when it's relevant. Remind them not to show their face, school or location publicly without their parents' OK.",
+  atlas: "At their age, trips happen with family or trusted adults. Plan for that: family-friendly routes, school holidays, and what they can do themselves (research, budgeting, planning the route). Dream trips for when they're older are welcome too; say which is which.",
+};
+function youthRules(id) {
+  const age = profileAge(); if (age == null || age >= 18) return "";
+  return `\n\n=== Important: they are a minor ===\n${YOUTH_RULES.all.replace("{age}", age)}\n${YOUTH_RULES[id] || ""}`;
+}
+function renderProfileForm() {
+  const p = state.profile || {};
+  $("#profile-form").innerHTML = `
+    <div class="dlg-head"><div><span class="eyebrow">About me</span><h2 id="profile-title">What your assistants know about you</h2></div></div>
+    <p class="muted">Atlas, Sterling and Summit read this before every answer, so their advice fits you. Change it any time. Everything is optional.</p>
+    <div class="profile-grid">
+      ${PROFILE_FIELDS.map((f) => `<div class="field ${f.long ? "wide" : ""}"><label class="lbl" for="me-${f.key}">${esc(f.label)}</label>${f.long
+        ? `<textarea id="me-${f.key}" name="${f.key}" rows="3" maxlength="${f.max}" placeholder="${esc(f.ph || "")}">${esc(p[f.key] || "")}</textarea>`
+        : `<input id="me-${f.key}" name="${f.key}" ${f.num ? `type="number" inputmode="numeric" min="${f.num[0]}" max="${f.num[1]}"` : `type="text" maxlength="${f.max}"`} value="${esc(p[f.key] != null ? String(f.key === "age" ? profileAge() : p[f.key]) : "")}" autocomplete="off">`}</div>`).join("")}
+    </div>
+    <span class="err" id="profile-err" role="alert"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save</button></div>`;
+}
+function openProfile() { renderProfileForm(); openDialog("#dlg-profile", "#me-name"); }
+async function saveProfile() {
+  const fd = new FormData($("#profile-form")), raw = {};
+  for (const f of PROFILE_FIELDS) raw[f.key] = (fd.get(f.key) || "").toString();
+  const bad = PROFILE_FIELDS.find((f) => f.num && raw[f.key].trim() && !(Number(raw[f.key]) >= f.num[0] && Number(raw[f.key]) <= f.num[1]));
+  if (bad) { $("#profile-err").textContent = `${bad.label}: use a number from ${bad.num[0]} to ${bad.num[1].toLocaleString("en-US")}.`; return; }
+  const p = normProfile({ ...raw, updatedAt: new Date().toISOString() });
+  try { await store.setSingle("profile", p); } catch (e) { $("#profile-err").textContent = SAVE_FAIL; return; }
+  closeDialogs(); toast(p ? "Saved. All three assistants will use it." : "Profile cleared");
+  if (ai.open) renderAI();
+  if (currentTab === "training") renderTraining();
+}
 const SHARED_RULES = `You live inside "The Goal", a personal dossier for one person who is building an online business to fund extended stretches chasing wild, uncrowded nature around the world, while keeping a real home base to build a family.
 Their standing goals:
 ${GOALS_TEXT}
@@ -3116,7 +3204,8 @@ How to answer:
 - Use short paragraphs and bullet lists. Keep most answers under about 250 words unless they ask for a full plan.
 - Use their real data below. If something important is missing, say what you would need.
 - Be honest about uncertainty. Prices, visas, permits and rules change: say when they should double-check.
-- Today's date is ${todayISO()}.`;
+- Today's date is ${todayISO()}.
+- Their profile (below) is who they are right now and comes first: use their name, age, interests and dreams to make every answer fit them.`;
 
 const ASSISTANTS = {
   atlas: {
@@ -3202,7 +3291,7 @@ const ASSISTANTS = {
     persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. The app has a library of 530+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
     starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
-      const bc = state.bodyCheck ? `\nPhoto check-in (Summit's own earlier read of their photo; the photo itself isn't available): ${[state.bodyCheck.build && "build " + BODY_BUILD[state.bodyCheck.build], state.bodyCheck.bodyFat && "body fat roughly " + state.bodyCheck.bodyFat, state.bodyCheck.posture.length && "posture: " + state.bodyCheck.posture.map((k) => BODY_POSTURE[k]).join(", "), state.bodyCheck.focus.length && "focus: " + state.bodyCheck.focus.map((k) => BODY_FOCUS[k]).join(", ")].filter(Boolean).join("; ")}. Notes: ${state.bodyCheck.notes}` : "";
+      const bc = state.bodyCheck && !isMinor() ? `\nPhoto check-in (Summit's own earlier read of their photo; the photo itself isn't available): ${[state.bodyCheck.build && "build " + BODY_BUILD[state.bodyCheck.build], state.bodyCheck.bodyFat && "body fat roughly " + state.bodyCheck.bodyFat, state.bodyCheck.posture.length && "posture: " + state.bodyCheck.posture.map((k) => BODY_POSTURE[k]).join(", "), state.bodyCheck.focus.length && "focus: " + state.bodyCheck.focus.map((k) => BODY_FOCUS[k]).join(", ")].filter(Boolean).join("; ")}. Notes: ${state.bodyCheck.notes}` : "";
       if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice." + bc;
       const a = state.answers, p = state.plan, w = weekInfo();
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
@@ -3413,7 +3502,7 @@ function renderAI() {
     <div class="ai-body" id="ai-body" aria-live="polite">
       ${meta.memory ? `<details class="ai-memory"><summary>What ${A.name} remembers about you</summary><div class="bubble">${md(meta.memory)}</div><button class="btn small ghost" type="button" data-act="ai-forget">Forget this</button></details>` : ""}
       ${hidden > 0 ? `<button class="btn small ai-earlier" type="button" data-act="ai-earlier">Show earlier messages (${hidden})</button>` : earlier > 0 ? `<p class="ai-older">Older messages were condensed into ${A.name}'s notes about you.</p>` : ""}
-      ${chat.length ? "" : `<div class="ai-intro"><p>${esc(A.intro)}</p><div class="ai-starters" style="--c:var(--${ai.open === "atlas" ? "arctic" : ai.open === "sterling" ? "gold" : "moss"})">${A.starters().map((s) => `<button type="button" data-act="ai-starter">${esc(s)}</button>`).join("")}</div></div>`}
+      ${chat.length ? "" : `<div class="ai-intro"><p>${esc(A.intro)}</p>${state.profile ? "" : `<p class="muted" style="font-size:.86rem">Tip: fill in <button type="button" class="linkish" data-act="profile">About me</button> so I know who I'm talking to.</p>`}<div class="ai-starters" style="--c:var(--${ai.open === "atlas" ? "arctic" : ai.open === "sterling" ? "gold" : "moss"})">${A.starters().map((s) => `<button type="button" data-act="ai-starter">${esc(s)}</button>`).join("")}</div></div>`}
       ${chat.slice(chat.length - shown).map((m) => m.role === "user" ? `<div class="msg user"><div class="bubble">${esc(m.content)}</div></div>` : `${(m.notes || []).map((n) => `<div class="ai-action">${esc(n)}</div>`).join("")}<div class="msg ai"><span class="av av-${ai.open}">${GLYPHS[ai.open]}</span><div class="bubble">${md(m.content)}${m.cut ? '<p class="note">This answer was cut short. Ask for the rest.</p>' : ""}</div></div>`).join("")}
     </div>
     <div class="ai-foot">
@@ -3455,7 +3544,7 @@ async function sendAI(text) {
   live.innerHTML = `<span class="av av-${id}">${GLYPHS[id]}</span><div class="bubble"><span class="thinking" aria-label="${A.name} is thinking"><i></i><i></i><i></i> Thinking</span></div>`;
   body.appendChild(live); body.scrollTop = body.scrollHeight;
   const bubble = $(".bubble", live);
-  const rules = `${A.persona}\n\n${SHARED_RULES}\n\n=== Their data (live from the app) ===\n${A.context()}\n\n${metaOf(id).memory ? `=== What you remember from earlier conversations with them ===\n${metaOf(id).memory}\n\n` : ""}${ai.tools && A.tools().length ? "You can change the app with the tools provided, but only when the user asks for that change. Confirm briefly what you did." : "You cannot change the app's data; tell the user where to click if they want to change something."}\n\nStay in character as ${A.name}. The conversation follows.`;
+  const rules = `${A.persona}\n\n${SHARED_RULES}\n\n=== Their profile (About me, written by them) ===\n${profileBlock()}${youthRules(id)}\n\n=== Their data (live from the app) ===\n${A.context()}\n\n${metaOf(id).memory ? `=== What you remember from earlier conversations with them ===\n${metaOf(id).memory}\n\n` : ""}${ai.tools && A.tools().length ? "You can change the app with the tools provided, but only when the user asks for that change. Confirm briefly what you did." : "You cannot change the app's data; tell the user where to click if they want to change something."}\n\nStay in character as ${A.name}. The conversation follows.`;
   const turns = [{ role: "user", content: rules.slice(0, 40000) }, ...chat.slice(-16).map((m) => ({ role: m.role, content: m.content }))];
   if (turns[1] && turns[1].role !== "user") turns.splice(1, 1);
   ai.ctl = new AbortController(); ai.notes = [];
@@ -3727,9 +3816,9 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck, profile } = state;
   return JSON.stringify({
-    app: "The Goal", exportedAt: new Date().toISOString(),
+    app: "The Goal", exportedAt: new Date().toISOString(), profile,
     destinations, projects,
     income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
     readingList: books, milestones, currentStage: stage,
@@ -3771,6 +3860,7 @@ document.addEventListener("click", async (e) => {
       onThemeChange(); break;
     }
     case "export": doExport(); break;
+    case "profile": openProfile(); break;
     case "ai-open": openAI(b.dataset.ai); break;
     case "ai-close": closeAI(); break;
     case "ai-clear": if (ai.ctl) ai.ctl.abort(); clearChat(ai.open); renderAI(); $("#ai-input") && $("#ai-input").focus(); if (metaOf(ai.open).memory) toast(`New chat. ${ASSISTANTS[ai.open].name} still remembers the key points.`); break;
@@ -3916,6 +4006,7 @@ applyThemeLabel();
 globe = createGlobe($("#globe-wrap"));
 if (!globe) { $("#globe-wrap").hidden = true; $("#globe-help").hidden = true; $("#globe-fallback").hidden = false; $(".place-list").style.maxHeight = "none"; }
 renderAtlas(); renderJourney(); renderTraining();
+$("#profile-form").addEventListener("submit", (e) => { e.preventDefault(); saveProfile(); });
 loadCountries().then(() => { renderCountriesPanel(); refreshCountryOverlay(); });
 store.init().then(() => {
   chatSyncInit(); photoStore.init().then(() => { renderDetailPhotos(); renderCountryDialog(); });
