@@ -244,6 +244,9 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .start-form .lbl{margin:0}
 .start-form input{width:auto;max-width:190px;font:inherit;padding:6px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--raised);color:var(--ink)}
 .tab{position:relative}
+.today-card{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:16px 20px;margin-bottom:18px}
+.today-card h3,.today-card p{margin:2px 0 0}
+.today-card.due{border-color:color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 8%,var(--raised))}
 .tab-dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px var(--paper)}
 @media (max-width:560px){.store-table .c-costs{display:none}.store-table th,.store-table td{padding:8px 4px}.store-table .acts{display:grid;justify-items:end;gap:2px}.store-table .acts .btn{padding:3px 6px}.store-table{font-size:.84rem}.store-table tbody th{white-space:normal}}
 .tile .val{font:500 clamp(1.4rem,1.1rem + 1.2vw,2rem)/1.1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
@@ -3111,8 +3114,27 @@ function validPlan(p, a) {
 }
 const tUI = { rebuilding: false, draft: {}, view: "home" };
 const draftFrom = (a) => { const d = { ...(a || {}) }; if (Array.isArray(d.weekdays)) d.weekdays = d.weekdays.map(String); return d; };
+// Today's workout: a dot on the Training tab until a planned session is marked done.
+function todayWorkout() {
+  if (!validPlan(state.plan, state.answers)) return null;
+  const w = weekInfo(), t = w.days.find((d) => d.today);
+  return t ? { planned: t.planned, done: t.done, hike: t.hike, iso: t.iso, left: w.target - w.count } : null;
+}
+function updateTrainDot() {
+  const tab = $('.tab[data-tab="training"]'); if (!tab) return;
+  const t = todayWorkout(), due = !!(t && t.planned && !t.done); let dot = $(".tab-dot", tab);
+  if (due && !dot) { dot = document.createElement("span"); dot.className = "tab-dot"; tab.appendChild(dot); }
+  if (dot) { dot.hidden = !due; dot.setAttribute("role", "status"); dot.setAttribute("aria-label", due ? `Today's workout isn't done yet: ${t.planned}` : ""); }
+}
+function todayCard() {
+  const t = todayWorkout(); if (!t) return "";
+  if (t.planned && !t.done) return `<article class="card today-card due" role="status"><div><span class="eyebrow">Today</span><h3>${esc(t.planned)}</h3><p class="muted">Your session is below. Mark it done when you finish.</p></div><button class="btn primary" type="button" data-act="toggle-day" data-date="${t.iso}">Mark today done</button></article>`;
+  if (t.done) return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>Done: ${esc(t.done.session)}</h3><p class="muted">${t.left > 0 ? `${t.left} more ${t.left === 1 ? "session" : "sessions"} this week.` : "That's every session this week. Great week."}</p></div></article>`;
+  return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>${t.hike ? "Long hike day" : "Rest day from lifting"}</h3><p class="muted">${t.hike ? "Wear the boots and pack you'll travel with." : "Still move: shoot hoops, go for a walk or a ride, or stretch for 20 minutes. Rest days are when you get stronger."}</p></div></article>`;
+}
 function renderTraining() {
   const el = $("#training");
+  updateTrainDot();
   if (!loaded) { el.innerHTML = `<p class="loading">Opening the training plan…</p>`; return; }
   const hasPlan = validPlan(state.plan, state.answers);
   if (!hasPlan || tUI.rebuilding) return renderQuiz(el, hasPlan);
@@ -3316,6 +3338,7 @@ function renderPlan(el) {
       </dl>
     </div>
     ${!a.personalized ? `<div class="card personalize"><div><strong>Make this plan more personal.</strong> <span class="muted">Seven optional questions: your days, joints, sleep, cardio, travel and your next trip.</span></div><button class="btn primary small" type="button" data-act="rebuild">Answer them</button></div>` : ""}
+    ${todayCard()}
     <section class="card week" aria-labelledby="week-h">
       <div class="week-head">
         <h3 id="week-h" class="week-count" aria-live="polite">This week — <span class="num">${w.count}</span> of <span class="num">${w.target}</span> sessions</h3>
