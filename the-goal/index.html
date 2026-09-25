@@ -14,7 +14,7 @@
   --moss:#3f5b45; --gold:#8f6a2f; --on-moss:#ffffff;
   --hairline:#d9ddd2; --hairline-strong:#c3c9bc; --sunken:#eceee6;
   --launched:#1d7a4a; --paused:#7c857f; --danger:#a3372b;
-  --alpine:#3f5b45; --arctic:#23706e; --arid:#9a6a1c; --rainforest:#1b6a35; --ocean:#2c5b99;
+  --alpine:#3f5b45; --arctic:#23706e; --arid:#9a6a1c; --rainforest:#1b6a35; --ocean:#2c5b99; --city:#7b4a86;
   --globe-sea:#e3e8dc; --globe-land:#6f836f; --globe-grid:#c9d1c1;
   --shadow:0 1px 2px rgba(28,35,31,.06), 0 1px 1px rgba(28,35,31,.04);
   --shadow-lift:0 6px 18px rgba(28,35,31,.10), 0 1px 3px rgba(28,35,31,.06);
@@ -31,7 +31,7 @@
     --moss:#8fb397; --gold:#d3a75f; --on-moss:#12160f;
     --hairline:#2b332b; --hairline-strong:#3a443a; --sunken:#161b14;
     --launched:#72d69c; --paused:#8a938a; --danger:#ef8a7c;
-    --alpine:#8fb397; --arctic:#6cc3bd; --arid:#d9a95a; --rainforest:#5cc07a; --ocean:#7ea9e3;
+    --alpine:#8fb397; --arctic:#6cc3bd; --arid:#d9a95a; --rainforest:#5cc07a; --ocean:#7ea9e3; --city:#c9a0d6;
     --globe-sea:#1b231c; --globe-land:#6d8a72; --globe-grid:#2c372d;
     --shadow:0 1px 2px rgba(0,0,0,.35);
     --shadow-lift:0 8px 22px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.3);
@@ -43,7 +43,7 @@
   --moss:#8fb397; --gold:#d3a75f; --on-moss:#12160f;
   --hairline:#2b332b; --hairline-strong:#3a443a; --sunken:#161b14;
   --launched:#72d69c; --paused:#8a938a; --danger:#ef8a7c;
-  --alpine:#8fb397; --arctic:#6cc3bd; --arid:#d9a95a; --rainforest:#5cc07a; --ocean:#7ea9e3;
+  --alpine:#8fb397; --arctic:#6cc3bd; --arid:#d9a95a; --rainforest:#5cc07a; --ocean:#7ea9e3; --city:#c9a0d6;
   --globe-sea:#1b231c; --globe-land:#6d8a72; --globe-grid:#2c372d;
   --shadow:0 1px 2px rgba(0,0,0,.35);
   --shadow-lift:0 8px 22px rgba(0,0,0,.45), 0 1px 3px rgba(0,0,0,.3);
@@ -111,7 +111,7 @@ main{max-width:1240px;margin:0 auto;padding:clamp(20px,3vw,36px) clamp(16px,3vw,
 .chip[aria-pressed="true"]{background:color-mix(in srgb,var(--c,var(--moss)) 16%,var(--raised));border-color:var(--c,var(--moss))}
 .dot{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none;display:inline-block}
 .pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:500;background:color-mix(in srgb,var(--c) 14%,var(--raised));border:1px solid color-mix(in srgb,var(--c) 45%,transparent);color:var(--ink);white-space:nowrap}
-.fam-alpine{--c:var(--alpine)} .fam-arctic{--c:var(--arctic)} .fam-arid{--c:var(--arid)} .fam-rainforest{--c:var(--rainforest)} .fam-ocean{--c:var(--ocean)}
+.fam-alpine{--c:var(--alpine)} .fam-arctic{--c:var(--arctic)} .fam-arid{--c:var(--arid)} .fam-rainforest{--c:var(--rainforest)} .fam-ocean{--c:var(--ocean)} .fam-city{--c:var(--city)}
 .st-Idea{--c:var(--gold)} .st-Building{--c:var(--moss)} .st-Launched{--c:var(--launched)} .st-Paused{--c:var(--paused)}
 .field{display:grid;gap:5px}
 .field label,.field .lbl{font-size:.84rem;font-weight:500}
@@ -533,7 +533,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
     <div class="page-head">
       <div>
         <h1>Atlas</h1>
-        <p>Wild over crowded. Every place on the list, and why it made the cut.</p>
+        <p>Wild places first, plus the famous ones worth the crowds. Every place on the list, and why it made the cut.</p>
         <div class="been-line" id="been-line" aria-live="polite"></div>
       </div>
       <div class="head-actions">
@@ -691,7 +691,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
     <div class="grid2">
       <div class="field"><label for="pf-terrain">Terrain</label><input type="text" id="pf-terrain" maxlength="60" placeholder="e.g. Granite peaks & glacier"></div>
       <div class="field"><label for="pf-family">Family</label>
-        <select id="pf-family"><option value="alpine">Alpine</option><option value="arctic">Arctic</option><option value="arid">Arid</option><option value="rainforest">Rainforest</option><option value="ocean">Ocean</option></select></div>
+        <select id="pf-family"><option value="alpine">Alpine</option><option value="arctic">Arctic</option><option value="arid">Arid</option><option value="rainforest">Rainforest</option><option value="ocean">Ocean</option><option value="city">City</option></select></div>
     </div>
     <div class="field"><label for="pf-note">Note</label><textarea id="pf-note" maxlength="500" placeholder="Why this place, and what to skip."></textarea></div>
     <div class="visit-row">
@@ -799,8 +799,8 @@ const rng = (seed) => () => { seed |= 0; seed = (seed + 0x6D2B79F5) | 0; let t =
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const isDark = () => { const t = document.documentElement.dataset.theme; return t ? t === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches; };
 
-const FAMILIES = ["alpine", "arctic", "arid", "rainforest", "ocean"];
-const FAMILY_LABEL = { alpine: "Alpine", arctic: "Arctic", arid: "Arid", rainforest: "Rainforest", ocean: "Ocean" };
+const FAMILIES = ["alpine", "arctic", "arid", "rainforest", "ocean", "city"];
+const FAMILY_LABEL = { alpine: "Alpine", arctic: "Arctic", arid: "Arid", rainforest: "Rainforest", ocean: "Ocean", city: "City" };
 const STAGES = ["Idea", "Building", "Launched", "Growing"];
 const PROJECT_STATUSES = ["Idea", "Building", "Launched", "Paused"];
 const BOOK_STATUS = { want: "Want to Read", reading: "Currently Reading", read: "Read" };
@@ -820,6 +820,8 @@ const state = { destinations: [], projects: [], income: [], books: [], milestone
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos"];
 const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries" };
 const LOCAL_KEY = "the-goal-dossier-v1";
+const SEED_V = 2; // bump when places are added to seed.json; each place's "since" says which version added it
+const newSeedPlaces = (seed, fromV) => (seed.destinations || []).filter((d) => (d.since || 1) > fromV).map(({ since, ...d }) => d);
 let loaded = false;
 
 async function fetchSeed() {
@@ -848,9 +850,16 @@ const store = {
     if (!meta.exists) {
       const seed = await fetchSeed();
       if (seed) {
-        for (const d of seed.destinations || []) { const { id, ...rest } = d; await db.collection("destinations").doc(id).set(rest); }
-        for (const m of seed.milestones || []) { const { id, ...rest } = m; await db.collection("milestones").doc(id).set(rest); }
-        await db.doc("meta/app").set({ seeded: true, seededAt: new Date().toISOString() });
+        await Promise.all([...newSeedPlaces(seed, 0).map(({ id, ...rest }) => db.collection("destinations").doc(id).set(rest)), ...(seed.milestones || []).map(({ id, ...rest }) => db.collection("milestones").doc(id).set(rest))]);
+        await db.doc("meta/app").set({ seeded: true, seedV: SEED_V, seededAt: new Date().toISOString() });
+      }
+    } else if ((meta.data().seedV || 1) < SEED_V) {
+      // Top up places added to the starting list since this dossier was seeded. Ones already here are left alone.
+      const seed = await fetchSeed();
+      if (seed) {
+        const have = new Set((await db.collection("destinations").limit(1000).get()).docs.map((d) => d.id));
+        await Promise.all(newSeedPlaces(seed, meta.data().seedV || 1).filter((d) => !have.has(d.id)).map(({ id, ...rest }) => db.collection("destinations").doc(id).set(rest)));
+        await db.doc("meta/app").set({ ...meta.data(), seedV: SEED_V });
       }
     }
     const cols = await Promise.all(COLLECTIONS.map((c) => db.collection(c).limit(1000).get()));
@@ -870,7 +879,7 @@ const store = {
     }
     if (!raw) {
       const seed = await fetchSeed();
-      if (seed) { state.destinations = seed.destinations || []; state.milestones = seed.milestones || []; }
+      if (seed) { state.destinations = newSeedPlaces(seed, 0); state.milestones = seed.milestones || []; state.seedV = SEED_V; }
       else setBanner("The starting list of places couldn't be loaded. You can still add places by hand.");
     }
     if (!Array.isArray(state.trainingLog)) state.trainingLog = [];
@@ -878,6 +887,10 @@ const store = {
     if (!Array.isArray(state.myrecipes)) state.myrecipes = [];
     if (!Array.isArray(state.countries)) state.countries = [];
     if (!Array.isArray(state.photos)) state.photos = [];
+    if (raw && (state.seedV || 1) < SEED_V) {
+      const seed = await fetchSeed();
+      if (seed) { const have = new Set(state.destinations.map((d) => d.id)); for (const d of newSeedPlaces(seed, state.seedV || 1)) if (!have.has(d.id)) state.destinations.push(d); state.seedV = SEED_V; }
+    }
     this.mode = ok ? "local" : "memory";
     if (!ok) setBanner("This browser is blocking storage, so changes only last until this tab closes.");
     else this.saveLocal();
@@ -885,8 +898,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -1042,11 +1055,37 @@ const PLACE_INFO = {
   "bhutan": { best: [3, 4, 10, 11], alt: 4200, diff: 3, cost: 3, days: 8, drive: null, tip: "Visitors pay a daily Sustainable Development Fee (check the current rate) and travel with a licensed guide." },
   "mongolia": { best: [6, 7, 8, 9], alt: 2800, diff: 2, cost: 1, days: 12, drive: "Overland by 4x4 from Ulaanbaatar to the Gobi", tip: "Distances are huge and roads rough: plan a driver-guide and ger camps." },
   "namibia": { best: [5, 6, 7, 8, 9, 10], alt: 2000, diff: 2, cost: 2, days: 12, drive: "Self-drive from Sossusvlei to Etosha through Damaraland", tip: "The dry season (May to October) is best for wildlife at Etosha's waterholes." },
+  // Popular destinations (added in seed v2)
+  "paris": { best: [4,  5,  6,  9,  10], alt: 100, diff: 1, cost: 3, days: 4, drive: null, tip: "Book the Louvre, Eiffel Tower summit and Sainte-Chapelle online with a time slot. Most museums close one day a week." },
+  "rome": { best: [4,  5,  6,  9,  10], alt: 50, diff: 1, cost: 2, days: 4, drive: null, tip: "Book the Vatican Museums and the Colosseum ahead. July and August are very hot: sightsee early and late." },
+  "amalfi-coast": { best: [5,  6,  9,  10], alt: 1400, diff: 2, cost: 3, days: 5, drive: "The Amalfi Drive from Sorrento to Salerno (or take the ferry and skip the traffic)", tip: "Summer traffic on the coast road is heavy: ferries between the towns are faster. Hike the Path of the Gods from Bomerano down to Positano." },
+  "barcelona": { best: [5,  6,  9,  10], alt: 100, diff: 1, cost: 2, days: 4, drive: null, tip: "Sagrada Família and Park Güell need timed tickets. Watch for pickpockets on Las Ramblas and the metro." },
+  "lisbon": { best: [4,  5,  6,  9,  10], alt: 100, diff: 1, cost: 2, days: 4, drive: "The coast road from Cascais to Cabo da Roca and Sintra", tip: "The city is steep with slippery cobbles: bring good shoes. A day trip to Sintra is worth it; go early on a weekday." },
+  "london": { best: [5,  6,  7,  8,  9], alt: 50, diff: 1, cost: 3, days: 4, drive: null, tip: "Tap a contactless card on the Tube instead of buying tickets. Many top museums are free but some need a booked slot." },
+  "amsterdam": { best: [4,  5,  6,  9], alt: 0, diff: 1, cost: 3, days: 3, drive: null, tip: "Anne Frank House tickets are sold online only, weeks ahead. Tulip season at Keukenhof is late March to mid-May." },
+  "prague": { best: [4,  5,  6,  9,  10], alt: 250, diff: 1, cost: 1, days: 3, drive: null, tip: "Cross the Charles Bridge before 8 am to have it to yourself. Carry some Czech korunas: not every place takes euros." },
+  "santorini": { best: [5,  6,  9,  10], alt: 300, diff: 1, cost: 3, days: 4, drive: null, tip: "Walk the 10 km cliff path from Fira to Oia. Cruise ships crowd the towns midday; explore early and late." },
+  "istanbul": { best: [4,  5,  9,  10,  11], alt: 100, diff: 1, cost: 1, days: 4, drive: null, tip: "Dress modestly for mosques and avoid prayer times. Public ferries across the Bosphorus are cheap and beautiful." },
+  "marrakech": { best: [3,  4,  5,  10,  11], alt: 450, diff: 2, cost: 1, days: 5, drive: "Over the Tizi n'Tichka pass to A\u00eft Benhaddou and the desert", tip: "Agree prices before any ride or tour. A 3-day trip to the Sahara at Merzouga is worth it." },
+  "cairo": { best: [1,  2,  3,  10,  11,  12], alt: 100, diff: 2, cost: 1, days: 5, drive: null, tip: "Visit Giza at opening time to beat the heat and the crowds. Book the Nile trip to Luxor and Aswan by train or a short flight." },
+  "petra": { best: [3,  4,  5,  10,  11], alt: 1000, diff: 2, cost: 2, days: 5, drive: "The King's Highway from Amman to Petra", tip: "The Jordan Pass covers the visa and Petra entry. Allow two days for Petra: the Monastery climb is 800 steps." },
+  "dubai": { best: [1,  2,  3,  11,  12], alt: 0, diff: 1, cost: 3, days: 4, drive: null, tip: "Summer is extremely hot (40°C+): go November to March. Book Burj Khalifa at sunset well ahead." },
+  "cape-town": { best: [1,  2,  3,  11,  12], alt: 1085, diff: 2, cost: 2, days: 7, drive: "Chapman's Peak Drive and the Cape Peninsula to Cape Point", tip: "The wind (the 'Cape Doctor') can close the cable car: have a backup day. Add the Winelands for a day or two." },
+  "new-york": { best: [4,  5,  6,  9,  10,  12], alt: 10, diff: 1, cost: 3, days: 5, drive: null, tip: "Use the subway: tap a card at the gate. Walk the Brooklyn Bridge from Brooklyn toward Manhattan for the view." },
+  "banff": { best: [6,  7,  8,  9], alt: 2500, diff: 2, cost: 3, days: 7, drive: "The Icefields Parkway from Lake Louise to Jasper", tip: "Moraine Lake is closed to private cars: book the Parks Canada shuttle. Carry bear spray on the trails." },
+  "swiss-alps": { best: [1,  2,  6,  7,  8,  9], alt: 3800, diff: 2, cost: 3, days: 6, drive: null, tip: "A Swiss Travel Pass covers most trains, boats and museums. The Glacier Express runs Zermatt to St. Moritz." },
+  "tokyo": { best: [3,  4,  10,  11], alt: 50, diff: 1, cost: 2, days: 6, drive: null, tip: "Get a Suica or Pasmo card on your phone for trains. Cherry blossom (late March to early April) sells out early." },
+  "bali": { best: [4,  5,  6,  7,  8,  9,  10], alt: 1700, diff: 2, cost: 1, days: 8, drive: null, tip: "Traffic in the south is slow: base yourself in two places, not five. Dry season is April to October." },
+  "singapore": { best: [2,  3,  4,  5,  6,  7,  8], alt: 50, diff: 1, cost: 3, days: 3, drive: null, tip: "Eat at hawker centers like Maxwell or Lau Pa Sat. It's hot and humid all year: plan indoor breaks midday." },
+  "sydney": { best: [1,  2,  3,  4,  10,  11,  12], alt: 100, diff: 1, cost: 3, days: 5, drive: "The Grand Pacific Drive south over the Sea Cliff Bridge", tip: "Take the ferry to Manly for the cheapest harbour cruise. Most visitors need an Australian eTA or eVisitor visa before flying." },
+  "great-barrier-reef": { best: [6,  7,  8,  9,  10,  11], alt: 0, diff: 2, cost: 3, days: 5, drive: "The Captain Cook Highway from Cairns to Port Douglas", tip: "Stinger season (November to May) means wearing a stinger suit in the water. Pick an outer-reef trip for the clearest water." },
+  "rio": { best: [4,  5,  6,  9,  10], alt: 700, diff: 2, cost: 2, days: 5, drive: null, tip: "Hike or take the train up Corcovado early, before the clouds. Keep valuables minimal on the beach." },
+  "mexico-city": { best: [3,  4,  5,  10,  11], alt: 2240, diff: 1, cost: 1, days: 5, drive: null, tip: "The city sits at 2,240 m: take it easy on day one. Book the Frida Kahlo Museum online, often weeks ahead." },
 };
 function placeInfo(p) {
   if (PLACE_INFO[p.id]) return PLACE_INFO[p.id];
   const south = p.lat < 0;
-  const best = { alpine: south ? [12, 1, 2, 3] : [6, 7, 8, 9], arctic: south ? [12, 1, 2] : [1, 2, 3, 9], arid: [4, 5, 10, 11], rainforest: [1, 2, 3, 7, 8], ocean: [4, 5, 6, 9, 10] }[p.family] || [5, 6, 9];
+  const best = { alpine: south ? [12, 1, 2, 3] : [6, 7, 8, 9], arctic: south ? [12, 1, 2] : [1, 2, 3, 9], arid: [4, 5, 10, 11], rainforest: [1, 2, 3, 7, 8], ocean: [4, 5, 6, 9, 10], city: [4, 5, 6, 9, 10] }[p.family] || [5, 6, 9];
   return { best, alt: p.family === "alpine" ? 3000 : 1000, diff: p.family === "alpine" ? 3 : 2, cost: 2, days: 7, drive: null, tip: "", estimated: true };
 }
 const HOME_AT = { europe: [48, 10], mideast: [30, 40], namerica: [40, -95], samerica: [-15, -60], asia: [30, 105], oceania: [-30, 145], africa: [0, 20] };
@@ -1209,7 +1248,7 @@ function travelContext() {
 
 /* ---------- countries you've been to + photo albums ---------- */
 let COUNTRIES = null; // [{n, rings:[[lon,lat,...]], bbox}]
-const PLACE_COUNTRIES = { "kazakhstan": ["Kazakhstan"], "finnish-lapland": ["Finland"], "dolomites": ["Italy"], "american-wild": ["United States"], "brazil": ["Brazil"], "peru": ["Peru"], "maldives": ["Maldives"], "thailand": ["Thailand"], "japan": ["Japan"], "hawaii": ["United States"], "austria": ["Austria"], "france": ["France"], "iceland": ["Iceland"], "patagonia": ["Chile", "Argentina"], "new-zealand": ["New Zealand"], "georgia": ["Georgia"], "faroe-islands": ["Faroe Islands"], "bhutan": ["Bhutan"], "mongolia": ["Mongolia"], "namibia": ["Namibia"] };
+const PLACE_COUNTRIES = { "kazakhstan": ["Kazakhstan"], "finnish-lapland": ["Finland"], "dolomites": ["Italy"], "american-wild": ["United States"], "brazil": ["Brazil"], "peru": ["Peru"], "maldives": ["Maldives"], "thailand": ["Thailand"], "japan": ["Japan"], "hawaii": ["United States"], "austria": ["Austria"], "france": ["France"], "iceland": ["Iceland"], "patagonia": ["Chile", "Argentina"], "new-zealand": ["New Zealand"], "georgia": ["Georgia"], "faroe-islands": ["Faroe Islands"], "bhutan": ["Bhutan"], "mongolia": ["Mongolia"], "namibia": ["Namibia"], "paris": ["France"], "rome": ["Italy"], "amalfi-coast": ["Italy"], "barcelona": ["Spain"], "lisbon": ["Portugal"], "london": ["United Kingdom"], "amsterdam": ["Netherlands"], "prague": ["Czech Republic"], "santorini": ["Greece"], "istanbul": ["Turkey"], "marrakech": ["Morocco"], "cairo": ["Egypt"], "petra": ["Jordan"], "dubai": ["United Arab Emirates"], "cape-town": ["South Africa"], "new-york": ["United States"], "banff": ["Canada"], "swiss-alps": ["Switzerland"], "tokyo": ["Japan"], "bali": ["Indonesia"], "singapore": ["Singapore"], "sydney": ["Australia"], "great-barrier-reef": ["Australia"], "rio": ["Brazil"], "mexico-city": ["Mexico"] };
 async function loadCountries() {
   if (COUNTRIES) return COUNTRIES;
   try {
@@ -1444,7 +1483,7 @@ function drawScene() {
   const dark = isDark();
   if (!p) { g.fillStyle = cssVar("--sunken"); g.fillRect(0, 0, W, H); return; }
   const R = rng(hashStr(p.id + p.name));
-  const fn = { alpine: sceneAlpine, arid: sceneArid, arctic: sceneArctic, rainforest: sceneRainforest, ocean: sceneOcean }[p.family] || sceneAlpine;
+  const fn = { alpine: sceneAlpine, arid: sceneArid, arctic: sceneArctic, rainforest: sceneRainforest, ocean: sceneOcean, city: sceneCity }[p.family] || sceneAlpine;
   fn(g, W, H, R, dark);
 }
 function vGrad(g, H, stops, y0 = 0) { const gr = g.createLinearGradient(0, y0, 0, H); stops.forEach(([o, c]) => gr.addColorStop(o, c)); return gr; }
@@ -1674,6 +1713,49 @@ function sceneOcean(g, W, H, R, dark) {
   }
   g.restore();
   glow(g, W * .78, H * .22, H * .5, dark ? "rgba(160,190,230,.10)" : "rgba(255,255,240,.18)");
+  grain(g, W, H, R, .05);
+}
+
+function sceneCity(g, W, H, R, dark) {
+  g.fillStyle = vGrad(g, H, dark ? [[0, "#0a1020"], [.55, "#1d2542"], [.85, "#5a3d5c"], [1, "#9a5f5a"]] : [[0, "#6f9ccc"], [.6, "#c3d6e6"], [.9, "#f3dcc2"], [1, "#f6e6d2"]]);
+  g.fillRect(0, 0, W, H);
+  if (dark) { for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(255,255,255,${.2 + R() * .5})`; g.fillRect(R() * W, R() * H * .5, 1.2, 1.2); } glow(g, W * .8, H * .2, H * .18, "rgba(240,235,220,.5)"); g.fillStyle = "#efe9dc"; g.beginPath(); g.arc(W * .8, H * .2, H * .045, 0, 7); g.fill(); }
+  else glow(g, W * .22, H * .3, H * .6, "rgba(255,238,205,.75)");
+  const water = H * .8;
+  const layer = (base, minH, maxH, col, winCol, winP, gapP) => {
+    let x = -R() * 20;
+    const blds = [];
+    while (x < W) {
+      const bw = W * (.035 + R() * .06), bh = H * (minH + R() * (maxH - minH));
+      if (R() > gapP) blds.push([x, bw, bh]);
+      x += bw + (R() > .7 ? W * .01 : 0);
+    }
+    for (const [bx, bw, bh] of blds) {
+      const top = base - bh, kind = R();
+      g.fillStyle = col; g.fillRect(bx, top, bw, bh);
+      if (kind > .85) { g.beginPath(); g.moveTo(bx + bw * .5 - bw * .06, top); g.lineTo(bx + bw * .5, top - bh * .25); g.lineTo(bx + bw * .5 + bw * .06, top); g.fill(); }
+      else if (kind > .7) { g.beginPath(); g.arc(bx + bw / 2, top, bw / 2, Math.PI, 0); g.fill(); }
+      else if (kind > .55) { g.fillRect(bx + bw * .15, top - bh * .08, bw * .7, bh * .08); }
+      if (winCol) {
+        const cw = Math.max(2, bw / 7), ch = Math.max(2, H * .012);
+        for (let wy = top + ch * 1.5; wy < base - ch; wy += ch * 2.2) for (let wx = bx + cw; wx < bx + bw - cw; wx += cw * 2) if (R() < winP) { g.fillStyle = winCol; g.fillRect(wx, wy, cw, ch); }
+      }
+    }
+  };
+  // hills behind, then three skyline layers
+  const hill = smoothNoise(R, 3), pts = [];
+  for (let x = 0; x <= W; x += W / 60) pts.push([x, H * .5 + hill(x / W) * H * .08]);
+  pathFill(g, pts, H, dark ? "#1a2036" : "#aebfd0");
+  layer(water, .2, .5, dark ? "#262c47" : "#9fb0c4", dark ? "rgba(255,214,150,.35)" : null, .25, .1);
+  layer(water, .12, .38, dark ? "#171b2e" : "#7b8da3", dark ? "rgba(255,210,140,.6)" : "rgba(255,255,255,.25)", .35, .15);
+  layer(water, .05, .2, dark ? "#0d1020" : "#56657a", dark ? "rgba(255,200,120,.75)" : "rgba(255,250,235,.35)", .3, .2);
+  // river with reflections
+  g.fillStyle = vGrad(g, H, dark ? [[0, "#1b2340"], [1, "#0a0e1c"]] : [[0, "#7e9bb8"], [1, "#48627e"]], water); g.fillRect(0, water, W, H - water);
+  for (let i = 0; i < 90; i++) { const y = water + R() * (H - water), w = W * (.01 + R() * .05); g.fillStyle = dark ? `rgba(255,205,140,${R() * .35})` : `rgba(255,255,255,${R() * .3})`; g.fillRect(R() * W, y, w, 1.5); }
+  // a bridge
+  g.strokeStyle = dark ? "#0b0d18" : "#3f4b5c"; g.lineWidth = H * .012;
+  g.beginPath(); g.moveTo(W * .55, water - H * .022); g.lineTo(W * 1.02, water - H * .022); g.stroke();
+  const ar = H * .016; g.lineWidth = H * .005; for (let bx = W * .57; bx < W; bx += ar * 2.6) { g.beginPath(); g.arc(bx + ar, water, ar, Math.PI, 0); g.stroke(); }
   grain(g, W, H, R, .05);
 }
 
@@ -2594,6 +2676,7 @@ function tripPlan(dest, when, weekdays) {
     arid: "Heat and soft sand. Long walks on sand or trails, early starts, and practice drinking on a schedule before you're thirsty.",
     rainforest: "Heat, humidity and mud. Long humid hikes, grip and ankle stability, and a pace you can hold while soaked in sweat.",
     ocean: "Water and coastal trails. Swim or paddle twice a week, build shoulder and core endurance, and hike cliff paths with a light pack.",
+    city: "Long days on foot: 20,000+ steps on pavement, stairs and hills. Build walking endurance, strong calves and feet, and a back that's happy under a daypack all day.",
   }[dest.family] || "Long days on your feet with a pack.";
   const pack = mountain ? [6, 9, 12] : dest.family === "ocean" ? [3, 5, 7] : [5, 8, 10];
   let phases;
