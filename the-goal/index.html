@@ -236,6 +236,15 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .store-table .acts{white-space:nowrap;text-align:right}
 .store-table tbody th{font-weight:500;white-space:nowrap}
 .day-preview{margin:4px 0 0}
+.store-start,.store-remind{padding:16px 20px;margin-bottom:14px;display:grid;gap:8px}
+.store-start h3,.store-start p{margin:0}
+.store-remind{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-color:color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 8%,var(--raised))}
+.start-form{gap:8px;align-items:center;flex-wrap:wrap}
+.start-form{display:flex}
+.start-form .lbl{margin:0}
+.start-form input{width:auto;max-width:190px;font:inherit;padding:6px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--raised);color:var(--ink)}
+.tab{position:relative}
+.tab-dot{position:absolute;top:6px;right:8px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px var(--paper)}
 @media (max-width:560px){.store-table .c-costs{display:none}.store-table th,.store-table td{padding:8px 4px}.store-table .acts{display:grid;justify-items:end;gap:2px}.store-table .acts .btn{padding:3px 6px}.store-table{font-size:.84rem}.store-table tbody th{white-space:normal}}
 .tile .val{font:500 clamp(1.4rem,1.1rem + 1.2vw,2rem)/1.1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .earn-empty{margin-top:10px;color:var(--muted);font-size:.9rem}
@@ -877,7 +886,7 @@ function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textCo
 /* ============================ state & storage ============================ */
 const state = { storedays: [], destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null, profile: null };
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos", "storedays"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck", profile: "meta/profile" };
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck", profile: "meta/profile", storeSettings: "business/store" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 const SEED_V = 2; // bump when places are added to seed.json; each place's "since" says which version added it
 const newSeedPlaces = (seed, fromV) => (seed.destinations || []).filter((d) => (d.since || 1) > fromV).map(({ since, ...d }) => d);
@@ -960,8 +969,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays, storeSettings } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays, storeSettings }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -2368,17 +2377,43 @@ function deltaHtml(cur, prev, isMoney, lowerIsBetter) {
   const good = lowerIsBetter ? d < 0 : d > 0;
   return `<span class="delta ${good ? "up" : "down"}"><span aria-hidden="true">${d > 0 ? "▲" : "▼"}</span> ${isMoney ? money(Math.abs(d)) : Math.abs(d)} ${d > 0 ? "more" : "less"} than the day before</span>`;
 }
+// When the store starts, and which days since then still need logging (yesterday back, up to 7 days).
+const storeStart = () => { const d = state.storeSettings && state.storeSettings.startDate; return validISO(d) ? d : null; };
+function missingDays() {
+  const start = storeStart(); if (!start) return [];
+  const have = new Set((state.storedays || []).map((d) => d.date || d.id)), out = [];
+  for (let i = 1; i <= 7; i++) { const d = iso(addDays(parseISO(todayISO()), -i)); if (d < start) break; if (!have.has(d)) out.push(d); }
+  return out;
+}
+function updateStoreDot() {
+  const tab = $('.tab[data-tab="journey"]'); if (!tab) return;
+  const n = missingDays().length; let dot = $(".tab-dot", tab);
+  if (n && !dot) { dot = document.createElement("span"); dot.className = "tab-dot"; tab.appendChild(dot); }
+  if (dot) { dot.hidden = !n; dot.setAttribute("aria-label", n ? `${n} ${n === 1 ? "day" : "days"} of store numbers to log` : ""); dot.setAttribute("role", "status"); }
+}
+function storeStartCard() {
+  const start = storeStart(), t = todayISO();
+  const form = `<form class="row start-form" id="start-form"><label class="lbl" for="store-start">Store starts on</label><input type="date" id="store-start" value="${esc(start || "")}" min="2020-01-01"><button class="btn small" type="submit">${start ? "Change" : "Save"}</button></form>`;
+  if (!start) return `<article class="card store-start"><h3>When does your store start?</h3><p class="muted">Set the day and the app will count down, then remind you every day that still needs its numbers.</p>${form}</article>`;
+  if (start > t) { const n = Math.round((parseISO(start) - parseISO(t)) / 864e5);
+    return `<article class="card store-start"><span class="eyebrow">Launch countdown</span><h3><span class="num">${n}</span> ${n === 1 ? "day" : "days"} until your store starts</h3><p class="muted">${esc(fmtDate(start))}. From the day after, log each day's numbers here or tell Sterling. Until then, use the time to pick a product, find a supplier, and have a parent set up the store and payment accounts.</p>${form}</article>`; }
+  const miss = missingDays();
+  if (miss.length) return `<article class="card store-remind" role="status"><div><strong>${miss.length === 1 ? `${esc(miss[0] === iso(addDays(parseISO(t), -1)) ? "Yesterday" : fmtDate(miss[0]))} isn't logged yet.` : `${miss.length} days aren't logged yet.`}</strong> <span class="muted">${miss.length > 1 ? esc(miss.map((d) => parseISO(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })).join(", ")) + ". " : ""}It takes a minute, and the tips only work with every day in.</span></div><button class="btn small primary" type="button" data-act="day-add" data-date="${miss[0]}">Log ${miss[0] === iso(addDays(parseISO(t), -1)) ? "yesterday" : "it"} now</button></article>`;
+  return "";
+}
 function renderStore() {
   const el = $("#store"); if (!el) return;
+  updateStoreDot();
   const s = storeStats(), L = s.last, P = s.prev;
   const tipIcon = { good: "▲", bad: "!", warn: "!", info: "i" };
   const tipsHtml = `<article class="card store-tips"><h3>What you need right now</h3><ul>${storeTips(s).map(([k, t]) => `<li class="tip-${k}"><span class="ti" aria-hidden="true">${tipIcon[k]}</span><span><span class="sr-only">${{ good: "Good: ", bad: "Problem: ", warn: "Watch: ", info: "" }[k]}</span>${esc(t)}</span></li>`).join("")}</ul></article>`;
-  if (!s.days.length) { el.innerHTML = `${tipsHtml}<p class="muted" style="font-size:.9rem">Or tell Sterling: "Yesterday I got 3 sales for $75, spent $20 on ads and $30 on products."</p>`; return; }
+  const startHtml = storeStartCard();
+  if (!s.days.length) { el.innerHTML = `${startHtml}${storeStart() && storeStart() > s.tISO ? "" : tipsHtml}<p class="muted" style="font-size:.9rem">Or tell Sterling: "Yesterday I got 3 sales for $75, spent $20 on ads and $30 on products."</p>`; return; }
   const lp = dayProfit(L), pp = P ? dayProfit(P) : null;
   const dayName = (d) => d === s.tISO ? "Today" : d === iso(addDays(parseISO(s.tISO), -1)) ? "Yesterday" : fmtDate(d);
   const tile = (label, val, delta, cls = "") => `<div class="card tile ${cls}"><div class="eyebrow">${label}</div><div class="val">${val}</div>${delta || ""}</div>`;
   const rows = (sUI.showAll ? s.days : s.days.filter((d) => d.date >= s.from14)).slice().reverse();
-  el.innerHTML = `
+  el.innerHTML = `${startHtml}
     <p class="store-day eyebrow">Latest day: ${esc(dayName(L.date))}</p>
     <div class="tiles">
       ${tile("Profit", `<span class="${lp < 0 ? "neg" : ""}">${lp < 0 ? "−" : ""}${money(Math.abs(lp))}</span>`, deltaHtml(lp, pp, true))}
@@ -2492,12 +2527,21 @@ $("#day-form").addEventListener("submit", async (e) => {
   try { await saveStoreDay(r.day); } catch (err) { $("#day-err").textContent = SAVE_FAIL; return; }
   closeDialogs(); toast(`${fmtDate(r.day.date)} saved: ${dayProfit(r.day) < 0 ? "loss" : "profit"} ${money(Math.abs(dayProfit(r.day)))}`);
 });
+document.addEventListener("submit", async (e) => {
+  if (e.target.id !== "start-form") return;
+  e.preventDefault(); const v = $("#store-start").value;
+  if (!validISO(v)) { toast("Pick a date first", true); return; }
+  try { await store.setSingle("storeSettings", { startDate: v }); } catch (err) { toast(SAVE_FAIL, true); return; }
+  renderStore(); toast(`Store start set to ${fmtDate(v)}`);
+});
 function storeContext() {
   const s = storeStats();
-  if (!s.days.length) return "Store numbers: nothing logged yet. They can log a day on The Journey page, or tell you the numbers and you log them with log_store_day.";
+  const st = storeStart(), miss = missingDays();
+  const pre = st ? (st > s.tISO ? `Their store starts on ${st} (in ${Math.round((parseISO(st) - parseISO(s.tISO)) / 864e5)} days). Help them prepare.\n` : `Store started ${st}.${miss.length ? ` Days not logged yet: ${miss.join(", ")}. Remind them kindly and offer to log them.` : ""}\n`) : "";
+  if (!s.days.length) return pre + "Store numbers: nothing logged yet. They can log a day on The Journey page, or tell you the numbers and you log them with log_store_day.";
   const line = (d) => `- ${d.date}: ${d.orders} sales, in ${money(d.revenueC)}, products ${money(d.productC)}, ads ${money(d.adsC)}, other ${money(d.otherC)}, refunds ${money(d.refundsC)}${d.visitors != null ? `, ${d.visitors} visitors` : ""} → profit ${signMoney(dayProfit(d))}${d.note ? ` (${d.note})` : ""}`;
   const w = s.w7;
-  return `Store numbers (USD), ${s.days.length} days logged. Last 14:\n${s.days.filter((d) => d.date >= s.from14).map(line).join("\n") || "none in the last 14 days"}
+  return `${pre}Store numbers (USD), ${s.days.length} days logged. Last 14:\n${s.days.filter((d) => d.date >= s.from14).map(line).join("\n") || "none in the last 14 days"}
 Last 7 days: ${w.orders} sales, in ${money(w.revenueC)}, costs ${money(w.costs)}, profit ${signMoney(w.profit)}${w.roas != null ? `, ROAS ${w.roas.toFixed(2)}` : ""}${w.breakEvenRoas ? ` (break-even ROAS ${w.breakEvenRoas.toFixed(2)})` : ""}${w.aov != null ? `, AOV ${money(Math.round(w.aov))}` : ""}${w.cps != null ? `, ad cost per sale ${money(Math.round(w.cps))}` : ""}.
 All time: profit ${signMoney(s.all.profit)}.${s.cashC != null ? ` Money in the business now: ${money(s.cashC)} (started with ${money(s.budgetC)}).` : ""}
 The app's own tips right now: ${storeTips(s).map((t) => t[1]).join(" | ")}`;
@@ -2825,7 +2869,7 @@ function bizContext() {
   return `Business profile answers:\n${ans}\nPlan shown to them: ${p.name}; target ${usd0.format(p.target)}/month = ${p.unit}; about ${p.months} months to road-ready.\nOffer ideas: ${p.offers.join("; ") || "none"}\nRoadmap:\n${p.phases.map((ph) => `${ph.name} (months ${ph.from}-${ph.to}): ${ph.items.map((i) => (done.has(i.id) ? "[done] " : "[ ] ") + i.text).join("; ")}`).join("\n")}`;
 }
 
-function renderJourney() { renderStage(); renderEarnings(); renderStore(); renderBiz(); renderProjects(); renderBooks(); renderTimeline(); }
+function renderJourney() { updateStoreDot(); renderStage(); renderEarnings(); renderStore(); renderBiz(); renderProjects(); renderBooks(); renderTimeline(); }
 
 /* ============================ TRAINING ============================ */
 const QUESTIONS = [
@@ -4070,7 +4114,7 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck, profile, storedays } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck, profile, storedays, storeSettings } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(), profile,
     destinations, projects,
@@ -4080,7 +4124,7 @@ function exportJSON() {
     recipes: { favorites: favRecipes, myRecipes: myrecipes },
     countriesBeenTo: [...visitedCountryMap().keys()].sort(), photos: photos.map(({ id, country, placeId, caption, addedAt, assetId }) => ({ id, country, placeId, caption, addedAt, assetId: assetId || null })),
     travel: { answers: travelAnswers, plan: travelValid(travelAnswers) ? (({ trips, yearCost }) => ({ trips, yearCost }))(travelPlan(travelAnswers)) : null },
-    store: { days: (storedays || []).map(normDay).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date)).map((d) => ({ date: d.date, orders: d.orders, revenue: d.revenueC / 100, productCosts: d.productC / 100, adSpend: d.adsC / 100, otherCosts: d.otherC / 100, refunds: d.refundsC / 100, visitors: d.visitors, profit: dayProfit(d) / 100, note: d.note })) },
+    store: { startDate: storeSettings && storeSettings.startDate || null, days: (storedays || []).map(normDay).filter(Boolean).sort((a, b) => a.date.localeCompare(b.date)).map((d) => ({ date: d.date, orders: d.orders, revenue: d.revenueC / 100, productCosts: d.productC / 100, adSpend: d.adsC / 100, otherCosts: d.otherC / 100, refunds: d.refundsC / 100, visitors: d.visitors, profit: dayProfit(d) / 100, note: d.note })) },
     business: { answers: bizAnswers, plan: bizValid(bizAnswers) ? bizPlan(bizAnswers) : null, completedMilestones: bizDone },
   }, null, 2);
 }
@@ -4116,7 +4160,7 @@ document.addEventListener("click", async (e) => {
     }
     case "export": doExport(); break;
     case "profile": openProfile(); break;
-    case "day-add": openDay(); break;
+    case "day-add": openDay(b.dataset.date); break;
     case "day-edit": openDay(id); break;
     case "day-del": sUI.confirm = id; renderStore(); break;
     case "day-del-no": sUI.confirm = null; renderStore(); break;
