@@ -1379,12 +1379,13 @@ function renderCountryDialog() {
   $("#country-body").innerHTML = `
     <div class="dlg-head"><div><span class="eyebrow">${v ? "Been there" : "Country"}</span><h2 id="country-title">${esc(name)}</h2></div></div>
     ${v && v.auto.length ? `<p class="muted" style="font-size:.9rem">Colored on your globe because you've been to ${esc(v.auto.join(", "))}.</p>` : ""}
+    ${v ? "" : `<p class="muted">Been to ${esc(name)}? Mark it and it turns gold on your globe, and you can start a photo album from the trip.</p>`}
     <div class="row">
-      ${v && v.auto.length && !v.manual ? "" : `<button class="btn small been" type="button" data-act="country-toggle" aria-pressed="${!!v}">${v ? CHECK_SVG + "Been here" : "I've been here"}</button>`}
-      ${canUp ? `<label class="btn small primary file-btn"><input type="file" accept="image/*" multiple id="country-files" ${cUI.busy ? "disabled" : ""}>${cUI.busy ? esc(cUI.busy) : "Add photos"}</label>` : ""}
+      ${v && v.auto.length && !v.manual ? "" : `<button class="btn small ${v ? "been" : "primary"}" type="button" data-act="country-toggle" aria-pressed="${!!v}">${v ? CHECK_SVG + "Been here" : "I've been here"}</button>`}
+      ${canUp && v ? `<label class="btn small primary file-btn"><input type="file" accept="image/*" multiple id="country-files" ${cUI.busy ? "disabled" : ""}>${cUI.busy ? esc(cUI.busy) : "Add photos"}</label>` : ""}
     </div>
     <span class="err" id="country-err">${esc(cUI.error || "")}</span>
-    ${photos.length ? `<div class="album">${photos.map(photoTile).join("")}</div>` : `<p class="muted">${canUp ? `No photos from ${esc(name)} yet. Add some to build your album.` : "No photos yet."}</p>`}
+    ${photos.length ? `<div class="album">${photos.map(photoTile).join("")}</div>` : v ? `<p class="muted">${canUp ? `No photos from ${esc(name)} yet. Tap "Add photos" to pick some from your phone or computer.` : "No photos yet."}</p>` : ""}
     ${!photoStore.assets && canUp ? `<p class="muted" style="font-size:.8rem">Photos are saved in this browser only in this view.</p>` : ""}
     <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Close</button></div>`;
   const inp = $("#country-files"); if (inp) inp.addEventListener("change", () => { const files = inp.files; if (files && files.length) addPhotos(files, name, null); });
@@ -1430,20 +1431,29 @@ function renderCountriesPanel() {
   el.innerHTML = `
     <div class="row" style="justify-content:space-between;align-items:baseline"><h3 class="countries-h">Countries you've been to <span class="num muted">${names.length}</span></h3></div>
     ${names.length ? `<div class="cchips">${names.map((n) => { const c = photosFor(n).length; return `<button type="button" class="cchip" data-act="country-open" data-name="${esc(n)}"><span class="dot" aria-hidden="true"></span>${esc(n)}${c ? `<span class="pc num" aria-label="${c} photos">${c} ${c === 1 ? "photo" : "photos"}</span>` : ""}</button>`; }).join("")}</div>`
-      : `<p class="muted" style="font-size:.88rem">Mark a place as "Been there", click a country on the globe, or add one below. Countries you've been to turn gold on the globe.</p>`}
+      : `<p class="muted" style="font-size:.88rem">Type a country below or tap one on the globe, mark it "I've been here", then add your photos. Countries you've been to turn gold on the globe.</p>`}
     <form class="add-country" id="add-country">
       <label class="sr-only" for="add-country-in">Add a country you've been to</label>
       <input type="text" id="add-country-in" list="country-names" placeholder="Add a country you've been to" autocomplete="off">
       <datalist id="country-names">${all.map((n) => `<option value="${esc(n)}"></option>`).join("")}</datalist>
-      <button class="btn small" type="submit">Add</button>
+      <button class="btn small" type="submit">I've been there</button>
     </form>
     <span class="err" id="add-country-err"></span>`;
   $("#add-country").addEventListener("submit", async (e) => {
     e.preventDefault(); const v = $("#add-country-in").value.trim();
-    const hit = COUNTRIES && COUNTRIES.find((c) => c.n.toLowerCase() === v.toLowerCase());
+    const hit = findCountry(v);
     if (!hit) { $("#add-country-err").textContent = v ? `"${v}" isn't in the country list. Pick one of the suggestions.` : "Type a country name."; return; }
-    await setCountryManual(hit.n, true); $("#add-country-in") && $("#add-country-in").focus();
+    if (!visitedCountryMap().has(hit.n)) await setCountryManual(hit.n, true);
+    openCountry(hit.n); // straight to the album so photos can go in right away
   });
+}
+const COUNTRY_ALIAS = { "usa": "United States", "us": "United States", "america": "United States", "united states of america": "United States", "uk": "United Kingdom", "england": "United Kingdom", "scotland": "United Kingdom", "wales": "United Kingdom", "britain": "United Kingdom", "great britain": "United Kingdom", "czechia": "Czech Republic", "holland": "Netherlands", "the netherlands": "Netherlands", "uae": "United Arab Emirates", "emirates": "United Arab Emirates", "türkiye": "Turkey", "turkiye": "Turkey", "korea": "South Korea", "burma": "Myanmar" };
+function findCountry(v) {
+  if (!COUNTRIES) return null;
+  const q = v.trim().toLowerCase(); if (!q) return null;
+  const alias = COUNTRY_ALIAS[q];
+  return COUNTRIES.find((c) => c.n.toLowerCase() === (alias || q).toLowerCase())
+    || (q.length >= 4 ? COUNTRIES.filter((c) => c.n.toLowerCase().startsWith(q)).sort((a, b) => a.n.length - b.n.length)[0] : null) || null;
 }
 async function setCountryManual(name, on) {
   const s = new Set(state.countries || []); on ? s.add(name) : s.delete(name);
