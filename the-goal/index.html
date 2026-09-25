@@ -380,6 +380,40 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .pick .tip{font-size:.8rem}
 .pick .drive{font-size:.82rem}
 .pick .btn{justify-self:start}
+.train-switch{margin:-6px 0 20px}
+.kitchen-head{display:grid;gap:10px;margin-bottom:14px}
+.rsearch{display:flex;gap:8px;flex-wrap:wrap}
+.rsearch input{flex:1 1 260px;font-size:1rem;padding:11px 14px;border-radius:999px}
+.rsearch select{flex:0 1 auto;width:auto;border-radius:999px;padding:10px 12px}
+.chip:disabled{opacity:.5;cursor:not-allowed}
+.rgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.rcard{position:relative;background:var(--raised);border:1px solid var(--hairline);border-radius:var(--r);box-shadow:var(--shadow);transition:box-shadow var(--t)}
+.rcard:hover{box-shadow:var(--shadow-lift)}
+.rcard-open{all:unset;box-sizing:border-box;display:grid;gap:5px;padding:12px 44px 12px 14px;width:100%;cursor:pointer;border-radius:var(--r)}
+.rcard-open:focus-visible{outline:2px solid var(--moss);outline-offset:2px}
+.rname{font:600 1rem/1.25 var(--f-display)}
+.rmeta{font-size:.8rem;color:var(--muted)}
+.rtags{display:flex;gap:4px;flex-wrap:wrap}
+.rtag{font-size:.7rem;padding:1px 7px;border-radius:99px;background:color-mix(in srgb,var(--moss) 12%,var(--raised));border:1px solid color-mix(in srgb,var(--moss) 30%,transparent)}
+.rtag.mine{background:color-mix(in srgb,var(--gold) 16%,var(--raised));border-color:color-mix(in srgb,var(--gold) 45%,transparent)}
+.fav{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:1px solid var(--hairline);background:var(--paper);cursor:pointer;font-size:1rem;color:var(--muted);display:grid;place-items:center}
+.fav.on{color:var(--gold);border-color:var(--gold)}
+.rec-ai{margin-top:18px;display:grid;gap:8px;justify-items:start;font-size:.92rem}
+.dlg-wide{width:min(640px,calc(100vw - 32px))}
+.recipe-body{display:grid;gap:12px;padding:22px;max-height:calc(100vh - 60px);overflow:auto}
+.recipe-body h3{font-size:1.05rem;margin-top:4px}
+.macros{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.macros div{background:var(--sunken);border:1px solid var(--hairline);border-radius:var(--r-sm);padding:8px;text-align:center;display:grid}
+.macros .num{font-size:1.1rem;font-weight:500}
+.macros small{font-size:.72rem;color:var(--muted)}
+.mdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
+@media (max-width:640px){.kitchen-head .fam-chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}.kitchen-head .chip{flex:none}}
+.macro-bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--sunken)}
+.ing{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:.93rem}
+.ing label{display:flex;gap:8px;align-items:flex-start;cursor:pointer}
+.ing input{margin-top:3px;accent-color:var(--moss)}
+.ing input:checked+span{color:var(--muted);text-decoration:line-through}
+.steps{margin:0;padding-left:1.3em;display:grid;gap:6px;font-size:.93rem}
 .plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
 
 /* ---------- AI assistants ---------- */
@@ -608,7 +642,12 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
       </div>
       <button class="btn ask-btn" type="button" data-act="ai-open" data-ai="summit"><span class="av av-summit" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l6-10 4 6 2-3 6 7z"/><path d="M9 9l1.5 2.5"/></svg></span>Ask Summit</button>
     </div>
+    <div class="seg-toggle train-switch" role="group" aria-label="Training section">
+      <button type="button" data-act="train-sec" data-v="plan" aria-pressed="true">Training plan</button>
+      <button type="button" data-act="train-sec" data-v="recipes" aria-pressed="false">Healthy recipes</button>
+    </div>
     <div id="training"></div>
+    <div id="kitchen" hidden></div>
   </section>
 </main>
 <p class="foot" id="foot"></p>
@@ -689,6 +728,8 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
   </form>
 </dialog>
 
+<dialog id="dlg-recipe" aria-labelledby="recipe-title" class="dlg-wide"><div class="recipe-body" id="recipe-body"></div></dialog>
+
 <dialog id="dlg-export" aria-labelledby="export-title">
   <form method="dialog">
     <div class="dlg-head"><h2 id="export-title">Your data</h2></div>
@@ -746,9 +787,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null };
-const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers" };
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [] };
+const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes"];
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 let loaded = false;
 
@@ -789,6 +830,7 @@ const store = {
     Object.keys(SINGLE_PATHS).forEach((k, i) => { const s = singles[i]; state[k] = s.exists ? { ...s.data() } : null; });
     state.trainingLog = state.trainingLog && Array.isArray(state.trainingLog.entries) ? state.trainingLog.entries.slice() : [];
     state.bizDone = state.bizDone && Array.isArray(state.bizDone.done) ? state.bizDone.done.map(String) : [];
+    state.favRecipes = state.favRecipes && Array.isArray(state.favRecipes.ids) ? state.favRecipes.ids.map(String) : [];
   },
   async loadLocal() {
     let raw = null, ok = true;
@@ -802,6 +844,8 @@ const store = {
       else setBanner("The starting list of places couldn't be loaded. You can still add places by hand.");
     }
     if (!Array.isArray(state.trainingLog)) state.trainingLog = [];
+    if (!Array.isArray(state.favRecipes)) state.favRecipes = [];
+    if (!Array.isArray(state.myrecipes)) state.myrecipes = [];
     this.mode = ok ? "local" : "memory";
     if (!ok) setBanner("This browser is blocking storage, so changes only last until this tab closes.");
     else this.saveLocal();
@@ -809,8 +853,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -831,7 +875,7 @@ const store = {
     if (this.mode === "db") {
       const ref = this.db.doc(SINGLE_PATHS[key]);
       if (data === null) await ref.delete();
-      else await ref.set(key === "trainingLog" ? { entries: data } : key === "bizDone" ? { done: data } : data);
+      else await ref.set(key === "trainingLog" ? { entries: data } : key === "bizDone" ? { done: data } : key === "favRecipes" ? { ids: data } : data);
     }
     state[key] = data;
     if (this.mode !== "db") this.saveLocal();
@@ -2634,7 +2678,7 @@ const ASSISTANTS = {
   summit: {
     name: "Summit", tab: "training", role: "Master of fitness",
     intro: "Strength, conditioning, form, recovery and getting your body ready for altitude and a heavy pack. I coach from your plan and your week.",
-    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
+    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. The app has a library of 374+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
     starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
       if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice.";
@@ -2644,7 +2688,7 @@ const ASSISTANTS = {
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
       return `Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("A steep 1-hour hike feels: " + xlabel("hike", x.hike)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.road) out.push("On the road they have: " + xlabel("road", x.road)); if (p.recovery) out.push("Recovery note: " + p.recovery); if (p.trip) out.push(`Next trip: ${p.trip.name} (${p.trip.family}), about ${p.trip.weeks} weeks out. Trail prep phases: ${p.trip.phases.map((ph) => `${ph.name} weeks ${ph.from}-${ph.to}: long hike ${ph.hike}, pack ${ph.pack}`).join("; ")}.`); if (p.sessionsRoad) out.push("Road version sessions: " + p.sessionsRoad.map((s) => s.name + ": " + s.exercises.map((e) => e.name).join(", ")).join(" | ")); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}`;
     },
-    tools: () => [],
+    tools: () => summitRecipeTools(),
   },
 };
 const TAB_AI = { atlas: "atlas", journey: "sterling", training: "summit" };
@@ -2915,6 +2959,240 @@ async function sendAI(text) {
 }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && ai.open && !document.querySelector("dialog[open]")) closeAI(); });
 
+/* ============================ KITCHEN: healthy recipes ============================ */
+const REC_CATS = [["all", "All"], ["breakfast", "Breakfast"], ["starter", "Starters & salads"], ["main", "Mains"], ["snack", "Snacks"], ["dessert", "Desserts"], ["drink", "Drinks & smoothies"]];
+const REC_FILTERS = [["hp", "High protein"], ["veg", "Vegetarian"], ["vgn", "Vegan"], ["gf", "Gluten-free"], ["df", "Dairy-free"], ["lc", "Low carb"], ["quick", "Under 20 min"], ["mp", "Meal prep"], ["trail", "Trail food"]];
+const TAG_LABEL = Object.fromEntries(REC_FILTERS);
+const REC_SORTS = [["match", "Best match"], ["protein", "Most protein"], ["kcal", "Fewest calories"], ["time", "Quickest"], ["ratio", "Most protein per calorie"]];
+// words people search for → the words recipes actually use
+const REC_SYN = {
+  pasta: ["pasta", "spaghetti", "penne", "fusilli", "orzo", "linguine", "lasagna", "macaroni", "gnocchi", "pappardelle", "ditalini", "shells", "rigatoni", "tagliatelle", "carbonara"],
+  noodle: ["noodle", "soba", "ramen", "udon", "pho", "vermicelli", "pad thai"],
+  steak: ["steak", "sirloin", "ribeye", "flank", "rump", "skirt", "tagliata", "lomo saltado"],
+  beef: ["beef", "steak", "sirloin", "ribeye", "flank", "mince", "bison", "venison", "jerky", "bolognese", "ragu"],
+  meat: ["beef", "steak", "chicken", "turkey", "pork", "lamb", "duck", "bison", "venison", "ham", "sausage", "chorizo"],
+  fish: ["fish", "salmon", "cod", "tuna", "trout", "sea bass", "halibut", "mackerel", "swordfish", "sardine", "ceviche", "moqueca"],
+  seafood: ["shrimp", "prawn", "mussel", "clam", "scallop", "crab", "seafood"],
+  shrimp: ["shrimp", "prawn"], prawn: ["shrimp", "prawn"],
+  rice: ["rice", "risotto", "paella", "congee", "bibimbap", "poke"],
+  egg: ["egg", "omelette", "frittata", "shakshuka", "quiche", "menemen", "tamagoyaki"],
+  soup: ["soup", "pho", "ramen", "chowder", "gazpacho", "minestrone", "avgolemono", "stew"],
+  salad: ["salad", "tabbouleh", "fattoush", "slaw", "nicoise"],
+  curry: ["curry", "masala", "dal", "tikka", "tagine", "palak"],
+  taco: ["taco", "burrito", "fajita", "enchilada", "quesadilla"], mexican: ["mexican"],
+  burger: ["burger"], sandwich: ["wrap", "toast", "burger", "bagel", "pita", "sandwich"],
+  chocolate: ["chocolate", "cocoa", "brownie"], cake: ["cake", "brownie", "loaf", "muffin", "cheesecake", "blondie"],
+  cookie: ["cookie", "biscuit"], "ice cream": ["ice cream", "nice cream", "sorbet", "granita", "frozen"],
+  smoothie: ["smoothie", "shake", "lassi"], shake: ["shake", "smoothie"], coffee: ["coffee", "espresso", "cold brew", "latte"],
+  oat: ["oat", "porridge", "muesli", "granola"], oatmeal: ["oat", "porridge"], pancake: ["pancake", "waffle"],
+  potato: ["potato"], avocado: ["avocado", "guacamole"], bean: ["bean", "chickpea", "lentil", "edamame"], chickpea: ["chickpea", "hummus", "falafel"],
+  cheese: ["cheese", "feta", "parmesan", "mozzarella", "ricotta", "halloumi", "paneer", "burrata", "cheddar", "cottage"],
+  yogurt: ["yogurt", "skyr", "kefir", "labneh", "tzatziki"],
+};
+const REC_WORD_TAG = { vegan: "vgn", vegetarian: "veg", veggie: "veg", "plant-based": "vgn", keto: "lc", "low-carb": "lc", lowcarb: "lc", quick: "quick", fast: "quick", easy: "quick", "meal-prep": "mp", "high-protein": "hp", "gluten-free": "gf", glutenfree: "gf", "dairy-free": "df", trail: "trail", hiking: "trail", hike: "trail" };
+const REC_WORD_CAT = { breakfast: "breakfast", brunch: "breakfast", starter: "starter", appetizer: "starter", salad: null, main: "main", dinner: "main", lunch: "main", snack: "snack", dessert: "dessert", sweet: "dessert", drink: "drink", smoothie: null };
+const REC_STOP = new Set(["with", "and", "a", "an", "the", "recipe", "recipes", "healthy", "for", "of", "in", "some", "me", "i", "want", "something", "dish", "food", "meal"]);
+const kUI = { section: "plan", q: "", cat: "all", filters: new Set(), sort: "match", shown: 24, loading: false, error: "", ai: null };
+let RECIPES = null, REC_INDEX = null;
+async function loadRecipes() {
+  if (RECIPES || kUI.loading) return;
+  kUI.loading = true; renderKitchen();
+  try { const r = await fetch("recipes.json"); if (!r.ok) throw 0; const d = await r.json(); RECIPES = d.recipes || []; kUI.error = ""; }
+  catch (e) { kUI.error = "The recipe library couldn't load right now. Check your connection and try again."; }
+  kUI.loading = false;
+  REC_INDEX = null; renderKitchen();
+}
+function allRecipes() { return (RECIPES || []).concat((state.myrecipes || []).map((r) => ({ ...r, mine: true }))); }
+function recHay(r) { return { name: r.name.toLowerCase(), rest: [r.cuisine, r.cat, (r.ing || []).join(" "), (r.tags || []).map((t) => TAG_LABEL[t] || t).join(" ")].join(" ").toLowerCase() }; }
+function parseQuery(q) {
+  let s = " " + q.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, " ") + " ";
+  s = s.replace(/ gluten free /g, " gluten-free ").replace(/ dairy free /g, " dairy-free ").replace(/ low carb /g, " low-carb ").replace(/ high protein /g, " high-protein ").replace(/ meal prep /g, " meal-prep ").replace(/ plant based /g, " plant-based ").replace(/ ice cream /g, " ice_cream ");
+  const words = s.split(/\s+/).filter((w) => w && !REC_STOP.has(w)).map((w) => w.replace("ice_cream", "ice cream"));
+  const tags = new Set(), terms = []; let cat = null;
+  words.forEach((w) => {
+    if (REC_WORD_TAG[w]) tags.add(REC_WORD_TAG[w]);
+    else if (w === "protein") tags.add("hp");
+    else if (REC_WORD_CAT[w]) cat = REC_WORD_CAT[w];
+    else terms.push(w);
+  });
+  return { tags, cat, terms };
+}
+function termVariants(t) {
+  const base = t.length > 4 && t.endsWith("es") && !t.endsWith("oes") ? [t, t.slice(0, -2), t.slice(0, -1)] : t.length > 3 && t.endsWith("s") ? [t, t.slice(0, -1)] : [t];
+  const out = new Set(base); base.forEach((b) => (REC_SYN[b] || []).forEach((x) => out.add(x)));
+  return [...out];
+}
+function goalFit(r) {
+  const a = state.answers; if (!validAnswers(a)) return true;
+  const big = r.cat === "main" || r.cat === "breakfast";
+  if (a.goal === "muscle") return r.tags.includes("hp");
+  if (a.goal === "lean") return r.tags.includes("hp") && r.kcal <= (big ? 480 : 250);
+  if (a.goal === "endurance") return r.c * 4 / Math.max(1, r.kcal) >= 0.4 || r.tags.includes("trail");
+  return r.kcal <= (big ? 600 : 300);
+}
+function searchRecipes(opts = kUI) {
+  const favs = new Set(state.favRecipes || []);
+  const q = parseQuery(opts.q || "");
+  const cat = opts.cat !== "all" ? opts.cat : q.cat;
+  const need = new Set([...(opts.filters || []), ...q.tags]);
+  const res = [];
+  for (const r of allRecipes()) {
+    if (cat && r.cat !== cat) continue;
+    let ok = true;
+    for (const f of need) {
+      if (f === "fav") { if (!favs.has(r.id)) { ok = false; break; } }
+      else if (f === "mine") { if (!r.mine) { ok = false; break; } }
+      else if (f === "goal") { if (!goalFit(r)) { ok = false; break; } }
+      else if (!(r.tags || []).includes(f)) { ok = false; break; }
+    }
+    if (!ok) continue;
+    const h = r._hay || (r._hay = recHay(r));
+    let score = 0;
+    for (const t of q.terms) {
+      const vs = termVariants(t); let hit = 0;
+      for (const v of vs) { if (h.name.includes(v)) { hit = Math.max(hit, v === t ? 6 : 5); } else if (h.rest.includes(v)) hit = Math.max(hit, 1); }
+      if (!hit) { ok = false; break; } score += hit;
+    }
+    if (!ok) continue;
+    res.push({ r, score });
+  }
+  const by = { protein: (x, y) => y.r.p - x.r.p, kcal: (x, y) => x.r.kcal - y.r.kcal, time: (x, y) => x.r.time - y.r.time, ratio: (x, y) => y.r.p / y.r.kcal - x.r.p / x.r.kcal, match: (x, y) => y.score - x.score || (favs.has(y.r.id) - favs.has(x.r.id)) || (x.score ? y.r.p - x.r.p : 0) || x.r.name.localeCompare(y.r.name) };
+  res.sort(by[opts.sort] || by.match);
+  return res.map((x) => x.r);
+}
+function catLabel(c) { return (REC_CATS.find((x) => x[0] === c) || [c, c])[1]; }
+function recCard(r, favs) {
+  return `<article class="rcard">
+    <button type="button" class="rcard-open" data-act="rec-open" data-id="${esc(r.id)}"><span class="eyebrow">${esc(catLabel(r.cat))} · ${esc(r.cuisine)}</span><span class="rname">${esc(r.name)}</span>
+      <span class="rmeta num">${r.time} min · ${r.kcal} kcal · ${r.p} g protein</span>
+      <span class="rtags">${(r.tags || []).filter((t) => ["hp", "vgn", "veg", "gf", "lc", "trail"].includes(t)).filter((t, i, a) => !(t === "veg" && a.includes("vgn"))).slice(0, 3).map((t) => `<span class="rtag">${esc(TAG_LABEL[t])}</span>`).join("")}${r.mine ? `<span class="rtag mine">Mine</span>` : ""}</span></button>
+    <button type="button" class="fav ${favs.has(r.id) ? "on" : ""}" data-act="rec-fav" data-id="${esc(r.id)}" aria-pressed="${favs.has(r.id)}" aria-label="${favs.has(r.id) ? "Remove from" : "Add to"} favorites: ${esc(r.name)}">${favs.has(r.id) ? "★" : "☆"}</button>
+  </article>`;
+}
+function renderKitchen() {
+  const el = $("#kitchen"); if (!el || el.hidden) return;
+  if (!RECIPES && !kUI.error) { el.innerHTML = `<p class="loading">Opening the recipe library…</p>`; loadRecipes(); return; }
+  const favs = new Set(state.favRecipes || []);
+  const list = RECIPES ? searchRecipes() : [];
+  const hasGoal = validAnswers(state.answers);
+  const q = kUI.q.trim();
+  const prevFocus = document.activeElement && document.activeElement.id === "rec-q";
+  const caret = prevFocus ? document.activeElement.selectionStart : null;
+  el.innerHTML = `
+    <div class="kitchen-head">
+      <label class="sr-only" for="rec-q">Search recipes</label>
+      <div class="rsearch"><input type="search" id="rec-q" placeholder="Search anything: pasta, steak, vegan curry, chocolate…" value="${esc(kUI.q)}" autocomplete="off">
+        <select id="rec-sort" aria-label="Sort recipes">${REC_SORTS.map(([v, l]) => `<option value="${v}" ${kUI.sort === v ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+      <div class="fam-chips" role="group" aria-label="Category">${REC_CATS.map(([v, l]) => `<button type="button" class="chip" data-act="rec-cat" data-v="${v}" aria-pressed="${kUI.cat === v}">${esc(l)}</button>`).join("")}</div>
+      <div class="fam-chips" role="group" aria-label="Filters">
+        ${REC_FILTERS.map(([v, l]) => `<button type="button" class="chip" data-act="rec-filter" data-v="${v}" aria-pressed="${kUI.filters.has(v)}">${esc(l)}</button>`).join("")}
+        <button type="button" class="chip" style="--c:var(--gold)" data-act="rec-filter" data-v="goal" aria-pressed="${kUI.filters.has("goal")}" ${hasGoal ? "" : "disabled title=\"Build a training plan first\""}>Fits my goal${hasGoal ? `: ${esc(label("goal", state.answers.goal).toLowerCase())}` : ""}</button>
+        <button type="button" class="chip" style="--c:var(--gold)" data-act="rec-filter" data-v="fav" aria-pressed="${kUI.filters.has("fav")}">★ Favorites <span class="mono">${favs.size}</span></button>
+        ${(state.myrecipes || []).length ? `<button type="button" class="chip" data-act="rec-filter" data-v="mine" aria-pressed="${kUI.filters.has("mine")}">My recipes <span class="mono">${state.myrecipes.length}</span></button>` : ""}
+      </div>
+      <div class="row" style="justify-content:space-between"><span class="list-count" aria-live="polite">${kUI.error ? "" : `${list.length} of ${allRecipes().length} recipes`}</span>${q || kUI.cat !== "all" || kUI.filters.size ? `<button class="btn ghost small" type="button" data-act="rec-clear">Clear search</button>` : ""}</div>
+    </div>
+    ${kUI.error ? `<p class="err">${esc(kUI.error)}</p><button class="btn small" type="button" data-act="rec-retry">Try again</button>` : ""}
+    <div class="rgrid">${list.slice(0, kUI.shown).map((r) => recCard(r, favs)).join("")}</div>
+    ${list.length > kUI.shown ? `<button class="btn" type="button" data-act="rec-more" style="margin-top:14px">Show more (${list.length - kUI.shown} left)</button>` : ""}
+    ${!kUI.error && RECIPES ? `<div class="rec-ai">
+      ${list.length ? "" : `<p><strong>No recipes match${q ? ` “${esc(q)}”` : ""}${kUI.filters.size || kUI.cat !== "all" ? " with these filters" : ""}.</strong> Try another word or fewer filters.</p>`}
+      ${q && ai.sample !== null && !ai.blocked ? `<p class="muted">${list.length ? "Want something different?" : ""} Summit can create a new healthy recipe for “${esc(q)}”${kUI.filters.size ? " that fits your filters" : ""}.</p>
+        <button class="btn primary small" type="button" data-act="rec-ai" ${kUI.ai && kUI.ai.busy ? "disabled" : ""}>${kUI.ai && kUI.ai.busy ? "Summit is writing a recipe…" : `Create a “${esc(q)}” recipe`}</button>` : ""}
+      <span class="err" id="rec-ai-err">${kUI.ai && kUI.ai.error ? esc(kUI.ai.error) : ""}</span>
+    </div>` : ""}`;
+  const inp = $("#rec-q");
+  if (prevFocus) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch (e) {} }
+}
+let recT;
+document.addEventListener("input", (e) => { if (e.target.id === "rec-q") { kUI.q = e.target.value; kUI.shown = 24; clearTimeout(recT); recT = setTimeout(renderKitchen, 120); } });
+document.addEventListener("change", (e) => { if (e.target.id === "rec-sort") { kUI.sort = e.target.value; renderKitchen(); $("#rec-sort").focus(); } });
+function recById(id) { return allRecipes().find((r) => r.id === id) || (kUI.ai && kUI.ai.recipe && kUI.ai.recipe.id === id ? kUI.ai.recipe : null); }
+function openRecipe(r, draft) {
+  const favs = new Set(state.favRecipes || []);
+  const kc = Math.max(1, r.kcal), share = (g, k) => Math.round(g * k / kc * 100);
+  $("#recipe-body").innerHTML = `
+    <div class="dlg-head"><div><span class="eyebrow">${esc(catLabel(r.cat))} · ${esc(r.cuisine || "")}</span><h2 id="recipe-title">${esc(r.name)}</h2></div></div>
+    <p class="rmeta num">${r.time} min · serves ${r.serves} · per serving</p>
+    <div class="macros">
+      <div><span class="num">${r.kcal}</span><small>kcal</small></div><div><span class="num">${r.p} g</span><small><i class="mdot" style="background:var(--moss)"></i>protein</small></div><div><span class="num">${r.c} g</span><small><i class="mdot" style="background:var(--gold)"></i>carbs</small></div><div><span class="num">${r.f} g</span><small><i class="mdot" style="background:var(--arctic)"></i>fat</small></div>
+    </div>
+    <div class="macro-bar" aria-hidden="true"><i style="width:${share(r.p, 4)}%;background:var(--moss)"></i><i style="width:${share(r.c, 4)}%;background:var(--gold)"></i><i style="width:${share(r.f, 9)}%;background:var(--arctic)"></i></div>
+    <div class="rtags">${(r.tags || []).map((t) => `<span class="rtag">${esc(TAG_LABEL[t] || t)}</span>`).join("")}</div>
+    <h3>Ingredients</h3>
+    <ul class="ing">${r.ing.map((x, i) => `<li><label><input type="checkbox" id="ing-${i}"> <span>${esc(x)}</span></label></li>`).join("")}</ul>
+    <h3>Method</h3>
+    <ol class="steps">${r.steps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+    ${r.ai || r.mine ? `<p class="muted" style="font-size:.82rem">Created by Summit. Nutrition values are estimates.</p>` : `<p class="muted" style="font-size:.82rem">Nutrition values are estimates per serving.</p>`}
+    <span class="err" id="rec-save-err"></span>
+    <div class="dlg-foot">
+      ${draft ? `<button class="btn primary" type="button" data-act="rec-save-ai">Save to my recipes</button>` : `<button class="btn ${favs.has(r.id) ? "" : "primary"}" type="button" data-act="rec-fav-dlg" data-id="${esc(r.id)}">${favs.has(r.id) ? "★ In favorites" : "☆ Add to favorites"}</button>`}
+      ${r.mine ? `<button class="btn ghost" type="button" data-act="rec-del" data-id="${esc(r.id)}">Delete</button>` : ""}
+      <button class="btn" type="button" data-act="rec-ask" data-id="${esc(r.id)}">Ask Summit about it</button>
+      <button class="btn" type="button" data-act="close-dialog">Close</button>
+    </div>`;
+  const d = $("#dlg-recipe"); if (!d.open) (d.showModal ? d.showModal() : d.setAttribute("open", ""));
+  d.dataset.id = r.id; $("#recipe-title").focus && d.querySelector(".dlg-foot .btn").focus();
+}
+async function toggleFav(id) {
+  const favs = new Set(state.favRecipes || []); const on = !favs.has(id); on ? favs.add(id) : favs.delete(id);
+  try { await store.setSingle("favRecipes", [...favs]); } catch (e) { toast(SAVE_FAIL, true); return false; }
+  const r = recById(id); toast(on ? `${r ? r.name : "Recipe"} added to favorites` : "Removed from favorites"); return true;
+}
+const REC_CAT_KEYS = REC_CATS.map((x) => x[0]).filter((x) => x !== "all");
+function normAiRecipe(x, q) {
+  if (!x || typeof x !== "object") return null;
+  const num = (v) => Math.max(0, Math.round(Number(v) || 0));
+  const ing = Array.isArray(x.ingredients) ? x.ingredients.map(String).filter(Boolean).slice(0, 25) : [];
+  const steps = Array.isArray(x.steps) ? x.steps.map(String).filter(Boolean).slice(0, 15) : [];
+  if (!x.name || ing.length < 2 || steps.length < 1) return null;
+  const kcal = num(x.kcal), p = num(x.protein), c = num(x.carbs), f = num(x.fat);
+  const tags = new Set((Array.isArray(x.tags) ? x.tags : []).filter((t) => ["veg", "vgn", "gf", "df", "mp", "trail"].includes(t)));
+  if (tags.has("vgn")) { tags.add("veg"); tags.add("df"); }
+  const cat = REC_CAT_KEYS.includes(x.category) ? x.category : "main";
+  if (kcal && (p * 4 / kcal >= 0.25 || p >= 30 || (cat !== "main" && cat !== "starter" && p >= 15 && p * 4 / kcal >= 0.18))) tags.add("hp");
+  if (c <= 20) tags.add("lc");
+  const time = num(x.minutes) || 30; if (time <= 20) tags.add("quick");
+  return { id: "my-" + uid(), name: String(x.name).slice(0, 90), cat, cuisine: String(x.cuisine || "Modern").slice(0, 30), time, serves: Math.max(1, num(x.serves) || 2), kcal, p, c, f, tags: [...tags].sort(), ing, steps, ai: true, query: q };
+}
+async function aiRecipe() {
+  const q = kUI.q.trim(); if (!q) return;
+  await aiReady; if (!ai.sample) { kUI.ai = { error: "Summit isn't available in this view." }; renderKitchen(); return; }
+  kUI.ai = { busy: true }; renderKitchen();
+  const want = [...kUI.filters].filter((f) => TAG_LABEL[f]).map((f) => TAG_LABEL[f].toLowerCase());
+  const a = state.answers, goal = validAnswers(a) ? label("goal", a.goal) : "general health";
+  const prompt = `You are Summit, a master of fitness and nutrition. Create ONE healthy, realistic home-cooking recipe for: "${q}".${kUI.cat !== "all" ? ` Category: ${catLabel(kUI.cat)}.` : ""}${want.length ? ` It must be: ${want.join(", ")}.` : ""} The cook's training goal is: ${goal}. Keep it genuinely healthy (whole foods, lean protein, vegetables, sensible portions) while staying true to the dish. Use metric quantities.
+Reply with only a JSON object in this shape:
+{"name": string, "category": one of ${JSON.stringify(REC_CAT_KEYS)}, "cuisine": string, "minutes": number, "serves": number, "kcal": number, "protein": number, "carbs": number, "fat": number, "tags": array using only "veg","vgn","gf","df","mp","trail" when truly accurate, "ingredients": array of strings with quantities, "steps": array of short strings}
+Nutrition is per serving and must add up (kcal ≈ 4×protein + 4×carbs + 9×fat). Reply in English unless the request is in another language.`;
+  try {
+    const x = await ai.sample.json(prompt, { cache: false });
+    const r = normAiRecipe(x, q);
+    if (!r) throw { code: "invalid_json" };
+    kUI.ai = { recipe: r }; renderKitchen(); openRecipe(r, true);
+  } catch (e) {
+    const code = e && e.code;
+    kUI.ai = { error: code === "not_granted" ? "Claude access wasn't allowed for this page." : code === "rate_limited" ? "Too many requests right now. Try again in a bit." : code === "invalid_json" ? "Summit's recipe came back incomplete. Try again, or try different words." : "Summit couldn't create a recipe just now. Try again." };
+    renderKitchen();
+  }
+}
+function showTrainSection(s) {
+  kUI.section = s;
+  $("#training").hidden = s !== "plan"; $("#kitchen").hidden = s !== "recipes";
+  $$("[data-act=train-sec]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === s)));
+  if (s === "recipes") renderKitchen();
+}
+// Summit can look recipes up in the library
+function summitRecipeTools() {
+  return [
+    { name: "search_recipes", description: "Search the user's healthy recipe library (374+ recipes). Returns up to 8 matches with id, name, category, minutes and per-serving kcal/protein/carbs/fat. Use it to recommend real recipes from their library.",
+      inputSchema: { type: "object", properties: { query: { type: "string", description: "free text, e.g. 'high protein pasta' or 'vegan dessert'" }, category: { type: "string", enum: REC_CAT_KEYS } } },
+      async execute(i) { await loadRecipes(); return searchRecipes({ q: String(i.query || ""), cat: REC_CAT_KEYS.includes(i.category) ? i.category : "all", filters: new Set(), sort: "match" }).slice(0, 8).map((r) => ({ id: r.id, name: r.name, category: r.cat, minutes: r.time, kcal: r.kcal, protein: r.p, carbs: r.c, fat: r.f })); } },
+    { name: "open_recipe", description: "Open a recipe from the library on screen so the user can see ingredients and steps. recipe_id comes from search_recipes.",
+      inputSchema: { type: "object", properties: { recipe_id: { type: "string" } }, required: ["recipe_id"] },
+      async execute(i) { await loadRecipes(); const r = recById(String(i.recipe_id)); if (!r) throw new Error("no recipe with that id"); closeAI(); showTrainSection("recipes"); openRecipe(r); return { ok: true }; } },
+  ];
+}
 /* ============================ dialogs & export ============================ */
 function openDialog(sel, focusSel) {
   const d = $(sel); $$(".err", d).forEach((e) => (e.textContent = ""));
@@ -2925,13 +3203,14 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(),
     destinations, projects,
     income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
     readingList: books, milestones, currentStage: stage,
     training: { answers, activePlan: plan, completedSessions: trainingLog },
+    recipes: { favorites: favRecipes, myRecipes: myrecipes },
     travel: { answers: travelAnswers, plan: travelValid(travelAnswers) ? (({ trips, yearCost }) => ({ trips, yearCost }))(travelPlan(travelAnswers)) : null },
     business: { answers: bizAnswers, plan: bizValid(bizAnswers) ? bizPlan(bizAnswers) : null, completedMilestones: bizDone },
   }, null, 2);
@@ -3043,6 +3322,24 @@ document.addEventListener("click", async (e) => {
     case "rebuild": tUI.rebuilding = true; tUI.draft = draftFrom(state.answers); renderTraining(); window.scrollTo({ top: 0 }); break;
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
+    case "train-sec": showTrainSection(b.dataset.v); break;
+    case "rec-cat": kUI.cat = b.dataset.v; kUI.shown = 24; renderKitchen(); $(`[data-act=rec-cat][data-v="${b.dataset.v}"]`).focus(); break;
+    case "rec-filter": { const v = b.dataset.v; kUI.filters.has(v) ? kUI.filters.delete(v) : kUI.filters.add(v); kUI.shown = 24; renderKitchen(); $(`[data-act=rec-filter][data-v="${v}"]`).focus(); break; }
+    case "rec-clear": kUI.q = ""; kUI.cat = "all"; kUI.filters.clear(); kUI.shown = 24; kUI.ai = null; renderKitchen(); $("#rec-q").focus(); break;
+    case "rec-more": kUI.shown += 48; renderKitchen(); break;
+    case "rec-retry": kUI.error = ""; loadRecipes(); break;
+    case "rec-open": { const r = recById(id); r && openRecipe(r); break; }
+    case "rec-fav": if (await toggleFav(id)) { renderKitchen(); const nb = $(`[data-act=rec-fav][data-id="${CSS.escape(id)}"]`); nb && nb.focus(); } break;
+    case "rec-fav-dlg": if (await toggleFav(id)) { openRecipe(recById(id)); renderKitchen(); } break;
+    case "rec-ai": aiRecipe(); break;
+    case "rec-save-ai": {
+      const r = kUI.ai && kUI.ai.recipe; if (!r) break;
+      const obj = { ...r }; delete obj._hay;
+      try { await store.put("myrecipes", obj); } catch (err) { $("#rec-save-err").textContent = SAVE_FAIL; break; }
+      kUI.ai = null; closeDialogs(); renderKitchen(); toast(`${r.name} saved to your recipes`); break;
+    }
+    case "rec-del": { const r = recById(id); try { await store.remove("myrecipes", id); } catch (err) { $("#rec-save-err").textContent = SAVE_FAIL; break; } closeDialogs(); renderKitchen(); toast(`${r ? r.name : "Recipe"} deleted`); break; }
+    case "rec-ask": { const r = recById(id); closeDialogs(); openAI("summit"); if (r) { const box = $("#ai-input"); box.value = `About the recipe "${r.name}" (${r.kcal} kcal, ${r.p} g protein per serving): how does it fit my plan, and how could I adapt it?`; box.focus(); } break; }
     case "travel-edit": tvUI.editing = true; tvUI.draft = JSON.parse(JSON.stringify(state.travelAnswers || {})); renderTravel(); { const f = $("#travelquiz input:checked") || $("#travelquiz input"); f && f.focus(); } break;
     case "travel-cancel": tvUI.editing = false; renderTravel(); break;
     case "travel-more": tvUI.showAll = !tvUI.showAll; renderTravel(); break;

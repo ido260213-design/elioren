@@ -1,0 +1,28 @@
+Chocolate Peanut Butter Protein Shake|drink|Modern|5|1|380,34,34,12|veg,gf|300 ml milk;25 g chocolate protein powder;1 tbsp peanut butter;1 frozen banana;ice|Blend until smooth
+Green Detox Smoothie|drink|Modern|5|1|190,4,40,2|vgn,gf,df|handful spinach;1/2 cucumber;1 green apple;1/2 banana;juice of 1/2 lemon;thumb of ginger;200 ml water|Blend until smooth and drink right away
+Mango Lassi (Protein)|drink|Indian|5|1|280,20,42,4|veg,gf|150 g mango;150 g Greek yogurt;100 ml milk;10 g vanilla protein powder;pinch of cardamom|Blend until smooth
+Iced Matcha Latte|drink|Japanese|5|1|120,8,14,4|veg,gf|1 tsp matcha;60 ml hot water;200 ml milk;1 tsp honey;ice|Whisk matcha with hot water until frothy;Pour over ice and milk;Sweeten with honey
+Golden Turmeric Milk|drink|Indian|8|1|140,4,14,8|vgn,gf,df|250 ml oat milk;1/2 tsp turmeric;1/4 tsp cinnamon;pinch of black pepper;thumb of ginger, grated;1 tsp maple syrup|Warm everything in a small pan, whisking;Strain and drink warm
+Coffee Protein Shake|drink|Modern|5|1|250,30,20,5|veg,gf|200 ml cold brew coffee;150 ml milk;25 g vanilla protein powder;ice|Blend until frothy
+Watermelon Mint Cooler|drink|Modern|5|2|70,1,17,0|vgn,gf,df|500 g watermelon;handful mint;juice of 1 lime;ice|Blend watermelon with mint and lime;Pour over ice
+Berry Beet Recovery Smoothie|drink|Modern|5|1|260,18,42,3|veg,gf|150 g frozen berries;1 small cooked beetroot;200 ml milk;100 g Greek yogurt;1 tsp honey|Blend until smooth
+Tropical Protein Smoothie|drink|Caribbean|5|1|320,26,46,4|veg,gf|100 g pineapple;100 g mango;1/2 banana;200 ml coconut water;25 g vanilla protein powder|Blend until smooth
+Ginger Lemon Tea|drink|Modern|8|1|30,0,8,0|vgn,gf,df|thumb of ginger, sliced;juice of 1/2 lemon;1 tsp maple syrup;300 ml boiling water|Steep the ginger 5 minutes;Add lemon and maple
+Electrolyte Trail Drink|drink|Modern|3|1|60,0,15,0|vgn,gf,df,trail|500 ml water;juice of 1 orange;juice of 1/2 lemon;1 tsp maple syrup;1/4 tsp salt|Shake everything in your bottle;Drink during long hikes or hot sessions
+Peanut Butter Banana Oat Smoothie|drink|American|5|1|450,22,58,15|veg|1 banana;30 g rolled oats;1 tbsp peanut butter;250 ml milk;pinch of cinnamon|Blend until smooth and thick
+Spiced Hot Cocoa (Lighter)|drink|Mexican|8|1|160,10,20,5|veg,gf|250 ml milk;1 tbsp cocoa;1 tsp maple syrup;pinch of cinnamon and cayenne|Whisk everything in a pan until steaming
+Strawberry Banana Protein Smoothie|drink|American|5|1|300,28,40,3|veg,gf|150 g strawberries;1 banana;200 ml skim milk;20 g protein powder|Blend until smooth
+Kefir Berry Smoothie|drink|Eastern European|5|1|230,12,34,5|veg,gf|250 ml kefir;120 g mixed berries;1 tsp honey|Blend until smooth
+Iced Green Tea with Citrus|drink|Asian|5|2|20,0,5,0|vgn,gf,df|2 green tea bags;500 ml hot water;slices of lemon and orange;mint;ice|Brew and cool the tea;Pour over ice with citrus and mint
+Chocolate Cherry Recovery Shake|drink|Modern|5|1|330,30,38,6|veg,gf|150 g frozen cherries;250 ml milk;25 g chocolate protein powder;1 tsp cocoa|Blend until smooth
+Avocado Spinach Smoothie|drink|Modern|5|1|300,8,34,16|vgn,gf,df|1/2 avocado;handful spinach;1 banana;250 ml almond milk;1 tsp agave syrup|Blend until silky
+Vanilla Almond Protein Shake|drink|Modern|5|1|240,28,10,10|veg,gf|300 ml unsweetened almond milk;30 g vanilla protein powder;1 tbsp almond butter;ice|Blend until frothy
+Apple Cinnamon Overnight Smoothie|drink|Modern|5|1|330,18,48,7|veg|1 apple;30 g rolled oats;150 g Greek yogurt;150 ml milk;1 tsp cinnamon|Soak oats in milk overnight;Blend with the rest in the morning
+Cold Brew Coffee|drink|American|5|4|4,0,1,0|vgn,gf,df|100 g coarse coffee;1 liter cold water|Stir coffee into the water;Steep 12 to 16 hours in the fridge;Strain through a filter and serve over ice
+Pineapple Ginger Smoothie|drink|Modern|5|1|210,4,48,1|vgn,gf,df|200 g pineapple;1/2 banana;thumb of ginger;200 ml coconut water|Blend until smooth
+Carrot Orange Juice Smoothie|drink|Modern|5|1|160,3,36,1|vgn,gf,df|2 carrots;2 oranges, peeled;thumb of ginger;ice|Blend with a splash of water until smooth
+Mint Lemonade (Low Sugar)|drink|Middle Eastern|5|4|40,0,10,0|vgn,gf,df|juice of 4 lemons;large handful mint;3 tbsp maple syrup;1 liter cold water;ice|Blend lemon juice, mint and maple with a little water;Top up with water and ice
+Cocoa Banana Recovery Milk|drink|Modern|3|1|320,16,52,6|veg,gf|300 ml milk;1 banana;1 tbsp cocoa;1 tsp honey|Blend until smooth; drink within 30 minutes after training
+Blueberry Oat Protein Smoothie|drink|Modern|5|1|360,30,48,6|veg|150 g blueberries;30 g rolled oats;250 ml milk;20 g protein powder|Blend until smooth
+Chai Protein Latte|drink|Indian|8|1|210,26,16,4|veg,gf|1 chai tea bag;120 ml hot water;200 ml milk;20 g vanilla protein powder|Steep the tea 4 minutes;Warm the milk and whisk in the protein;Combine
+Hibiscus Iced Tea|drink|Egyptian|10|4|25,0,6,0|vgn,gf,df|20 g dried hibiscus;1 liter water;2 tbsp maple syrup;lime;ice|Steep hibiscus in hot water 10 minutes;Strain, sweeten and chill;Serve over ice with lime
