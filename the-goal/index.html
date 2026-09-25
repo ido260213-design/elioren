@@ -414,6 +414,31 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .ing input{margin-top:3px;accent-color:var(--moss)}
 .ing input:checked+span{color:var(--muted);text-decoration:line-through}
 .steps{margin:0;padding-left:1.3em;display:grid;gap:6px;font-size:.93rem}
+.countries-card{padding:14px 16px;display:grid;gap:10px}
+.countries-h{font-size:1rem;font-weight:600}
+.cchips{display:flex;flex-wrap:wrap;gap:6px}
+.cchip{display:inline-flex;align-items:center;gap:7px;border:1px solid color-mix(in srgb,var(--gold) 55%,transparent);background:color-mix(in srgb,var(--gold) 16%,var(--raised));border-radius:999px;padding:5px 12px;font-size:.84rem;cursor:pointer;color:var(--ink)}
+.cchip .dot{--c:var(--gold)}
+.cchip .pc{font-size:.72rem;color:var(--muted)}
+.add-country{display:flex;gap:6px}
+.add-country input{flex:1;min-width:0}
+.detail-photos{display:grid;gap:8px;border-top:1px solid var(--hairline);padding-top:10px;margin-top:4px}
+.detail-photos:empty{display:none}
+.file-btn{position:relative;overflow:hidden;cursor:pointer;justify-self:start}
+.file-btn input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.file-btn:focus-within{outline:2px solid var(--moss);outline-offset:2px}
+.album{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px}
+.album.mini{grid-template-columns:repeat(4,1fr)}
+.ph{padding:0;border:0;border-radius:var(--r-sm);overflow:hidden;aspect-ratio:1/1;cursor:pointer;background:var(--sunken);max-width:100%}
+.ph img{width:100%;height:100%;object-fit:cover;display:block;transition:transform var(--t)}
+.ph:hover img{transform:scale(1.03)}
+.dlg-photo{width:min(1100px,calc(100vw - 24px));background:#0b0d0b;color:#eef0ea;border-color:#222}
+.lb-img{background:#000;display:grid;place-items:center;max-height:72vh}
+.lb-img img{max-width:100%;max-height:72vh;object-fit:contain;display:block}
+.lb-bar{padding:12px 14px;display:grid;gap:8px}
+.lb-bar input{background:#151915;color:#eef0ea;border-color:#333}
+.lb-bar .btn{background:#1a1f1a;color:#eef0ea;border-color:#333}
+.lb-bar .muted{color:#9aa39a}
 .plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
 
 /* ---------- AI assistants ---------- */
@@ -526,11 +551,12 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
           <div class="globe-tip" id="globe-tip" hidden></div>
         </div>
         </div>
-        <p class="globe-help" id="globe-help">Drag to turn the globe. Scroll or pinch to zoom. Click or tap a marker to open it.</p>
+        <p class="globe-help" id="globe-help">Drag to turn the globe. Scroll or pinch to zoom. Tap a marker to open a place, or tap a country for its photo album.</p>
         <p class="globe-fallback" id="globe-fallback" hidden>This device can't draw the 3D globe (WebGL is unavailable). Every place is still in the list, and choosing one opens its details.</p>
       </div>
       <div class="side">
         <article class="card detail" id="detail" aria-live="polite"></article>
+        <div class="card countries-card" id="countries-panel"></div>
         <div class="card list-card">
           <div class="list-tools">
             <label class="sr-only" for="place-search">Search places by name or terrain</label>
@@ -730,6 +756,9 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 
 <dialog id="dlg-recipe" aria-labelledby="recipe-title" class="dlg-wide"><div class="recipe-body" id="recipe-body"></div></dialog>
 
+<dialog id="dlg-country" aria-labelledby="country-title" class="dlg-wide"><div class="recipe-body" id="country-body"></div></dialog>
+<dialog id="dlg-photo" aria-label="Photo" class="dlg-photo"><div id="photo-body"></div></dialog>
+
 <dialog id="dlg-export" aria-labelledby="export-title">
   <form method="dialog">
     <div class="dlg-head"><h2 id="export-title">Your data</h2></div>
@@ -787,9 +816,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [] };
-const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites" };
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [] };
+const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos"];
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 let loaded = false;
 
@@ -831,6 +860,7 @@ const store = {
     state.trainingLog = state.trainingLog && Array.isArray(state.trainingLog.entries) ? state.trainingLog.entries.slice() : [];
     state.bizDone = state.bizDone && Array.isArray(state.bizDone.done) ? state.bizDone.done.map(String) : [];
     state.favRecipes = state.favRecipes && Array.isArray(state.favRecipes.ids) ? state.favRecipes.ids.map(String) : [];
+    state.countries = state.countries && Array.isArray(state.countries.names) ? state.countries.names.map(String) : [];
   },
   async loadLocal() {
     let raw = null, ok = true;
@@ -846,6 +876,8 @@ const store = {
     if (!Array.isArray(state.trainingLog)) state.trainingLog = [];
     if (!Array.isArray(state.favRecipes)) state.favRecipes = [];
     if (!Array.isArray(state.myrecipes)) state.myrecipes = [];
+    if (!Array.isArray(state.countries)) state.countries = [];
+    if (!Array.isArray(state.photos)) state.photos = [];
     this.mode = ok ? "local" : "memory";
     if (!ok) setBanner("This browser is blocking storage, so changes only last until this tab closes.");
     else this.saveLocal();
@@ -853,8 +885,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -875,7 +907,7 @@ const store = {
     if (this.mode === "db") {
       const ref = this.db.doc(SINGLE_PATHS[key]);
       if (data === null) await ref.delete();
-      else await ref.set(key === "trainingLog" ? { entries: data } : key === "bizDone" ? { done: data } : key === "favRecipes" ? { ids: data } : data);
+      else await ref.set(key === "trainingLog" ? { entries: data } : key === "bizDone" ? { done: data } : key === "favRecipes" ? { ids: data } : key === "countries" ? { names: data } : data);
     }
     state[key] = data;
     if (this.mode !== "db") this.saveLocal();
@@ -899,7 +931,7 @@ function applyThemeLabel() {
   $("#theme-lbl").textContent = dark ? "Light" : "Dark";
   $("#theme-btn").setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
 }
-function onThemeChange() { applyThemeLabel(); globe && globe.recolor(); drawScene(); renderChart(); }
+function onThemeChange() { applyThemeLabel(); globe && globe.recolor(); drawScene(); renderChart(); refreshCountryOverlay(); }
 try { const t = localStorage.getItem("the-goal-theme"); if (t === "dark" || t === "light") document.documentElement.dataset.theme = t; } catch (e) {}
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onThemeChange);
 
@@ -922,7 +954,7 @@ function renderFamilyChips() {
   $("#visit-chips").innerHTML =
     `<button type="button" class="chip" style="--c:var(--gold)" data-act="visit" data-v="been" aria-pressed="${atlasUI.visit === "been"}">${CHECK_SVG.replace("<svg", '<svg width="12" height="12"')}Been there <span class="mono">${been}</span></button>` +
     `<button type="button" class="chip" data-act="visit" data-v="not" aria-pressed="${atlasUI.visit === "not"}">Not yet <span class="mono">${total - been}</span></button>`;
-  $("#been-line").innerHTML = total ? `<span class="been-bar" aria-hidden="true"><i style="width:${(been / total) * 100}%"></i></span><span>Been to <span class="num">${been}</span> of <span class="num">${total}</span></span>` : "";
+  $("#been-line").innerHTML = total ? `<span class="been-bar" aria-hidden="true"><i style="width:${(been / total) * 100}%"></i></span><span>Been to <span class="num">${been}</span> of <span class="num">${total}</span> places · <span class="num">${visitedCountryMap().size}</span> ${visitedCountryMap().size === 1 ? "country" : "countries"}</span>` : "";
 }
 function renderPlaceList() {
   const list = visiblePlaces();
@@ -959,8 +991,9 @@ function renderDetail() {
           : `<button class="btn small been" type="button" data-act="toggle-visited" aria-pressed="${!!p.visited}">${p.visited ? CHECK_SVG + "Been there" : "I've been here"}</button><button class="btn small" type="button" data-act="edit-place">Edit</button><button class="btn small ghost" type="button" data-act="delete-place">Delete</button>`}
       </div>
       <span class="err" id="place-err"></span>
+      <div class="detail-photos" id="detail-photos"></div>
     </div>`;
-  drawScene();
+  drawScene(); renderDetailPhotos();
 }
 function selectPlace(id, { fly = true } = {}) {
   atlasUI.selectedId = id; atlasUI.confirmDelete = false;
@@ -1174,10 +1207,229 @@ function travelContext() {
   return `Travel profile answers:\n${ans}\nPlanned trips shown to them (next 12 months): ${t.trips.map((tr) => `${tr.stops.map((x) => x.name).join(" + ")} in ${MONTHS[tr.month - 1]} ${tr.year}, ${tr.days} days, about ${usd0.format(tr.cost)}`).join("; ") || "none fit"}.\nEstimated travel budget: ${usd0.format(t.yearCost)} a year.\nTop-ranked places: ${t.ranked.slice(0, 8).map((r) => `${r.p.name} (go ${monthLabel(r.when)}${r.warn.length ? "; " + r.warn.join(" ") : ""})`).join("; ")}.`;
 }
 
+/* ---------- countries you've been to + photo albums ---------- */
+let COUNTRIES = null; // [{n, rings:[[lon,lat,...]], bbox}]
+const PLACE_COUNTRIES = { "kazakhstan": ["Kazakhstan"], "finnish-lapland": ["Finland"], "dolomites": ["Italy"], "american-wild": ["United States"], "brazil": ["Brazil"], "peru": ["Peru"], "maldives": ["Maldives"], "thailand": ["Thailand"], "japan": ["Japan"], "hawaii": ["United States"], "austria": ["Austria"], "france": ["France"], "iceland": ["Iceland"], "patagonia": ["Chile", "Argentina"], "new-zealand": ["New Zealand"], "georgia": ["Georgia"], "faroe-islands": ["Faroe Islands"], "bhutan": ["Bhutan"], "mongolia": ["Mongolia"], "namibia": ["Namibia"] };
+async function loadCountries() {
+  if (COUNTRIES) return COUNTRIES;
+  try {
+    const r = await fetch("countries.json"); if (!r.ok) throw 0;
+    const d = await r.json();
+    COUNTRIES = d.countries.map((c) => {
+      let x0 = 999, y0 = 999, x1 = -999, y1 = -999;
+      c.r.forEach((ring) => { for (let i = 0; i < ring.length; i += 2) { x0 = Math.min(x0, ring[i]); x1 = Math.max(x1, ring[i]); y0 = Math.min(y0, ring[i + 1]); y1 = Math.max(y1, ring[i + 1]); } });
+      return { n: c.n, rings: c.r, bbox: [x0, y0, x1, y1] };
+    });
+  } catch (e) { COUNTRIES = []; }
+  return COUNTRIES;
+}
+function inRing(ring, lon, lat) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+    const xi = ring[i], yi = ring[i + 1], xj = ring[j], yj = ring[j + 1];
+    if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function countryAt(lat, lon, nearKm = 0) {
+  if (!COUNTRIES) return null;
+  for (const c of COUNTRIES) { const [x0, y0, x1, y1] = c.bbox; if (lon < x0 || lon > x1 || lat < y0 || lat > y1) continue; if (c.rings.some((r) => inRing(r, lon, lat))) return c.n; }
+  if (!nearKm) return null;
+  let best = null, bd = nearKm;
+  for (const c of COUNTRIES) { const [x0, y0, x1, y1] = c.bbox; if (lon < x0 - 5 || lon > x1 + 5 || lat < y0 - 5 || lat > y1 + 5) continue; for (const r of c.rings) for (let i = 0; i < r.length; i += 2) { const d = kmBetween([lat, lon], [r[i + 1], r[i]]); if (d < bd) { bd = d; best = c.n; } } }
+  return best;
+}
+function placeCountries(p) { return PLACE_COUNTRIES[p.id] || (() => { const c = countryAt(p.lat, p.lon, 300); return c ? [c] : []; })(); }
+function visitedCountryMap() { // name → {auto: [place names], manual: bool}
+  const m = new Map();
+  state.destinations.filter((p) => p.visited).forEach((p) => placeCountries(p).forEach((c) => { if (!m.has(c)) m.set(c, { auto: [], manual: false }); m.get(c).auto.push(p.name); }));
+  (state.countries || []).forEach((c) => { if (!m.has(c)) m.set(c, { auto: [], manual: false }); m.get(c).manual = true; });
+  return m;
+}
+function photosFor(country, placeId) { return (state.photos || []).filter((ph) => (country ? ph.country === country : true) && (placeId ? ph.placeId === placeId : true)).sort((a, b) => String(a.addedAt).localeCompare(String(b.addedAt))); }
+let overlayT;
+function refreshCountryOverlay() {
+  clearTimeout(overlayT);
+  overlayT = setTimeout(async () => {
+    if (!globe) return; await loadCountries(); if (!COUNTRIES.length) return;
+    const W = 4096, H = 2048, c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    const visited = visitedCountryMap(), dark = isDark();
+    const drawRing = (ring, off) => { g.beginPath(); let prev = null; for (let i = 0; i < ring.length; i += 2) { let lon = ring[i]; if (prev !== null) { while (lon - prev > 180) lon -= 360; while (prev - lon > 180) lon += 360; } prev = lon; const x = (lon + 180) / 360 * W + off, y = (90 - ring[i + 1]) / 180 * H; i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); };
+    g.lineJoin = "round";
+    for (const ct of COUNTRIES) {
+      const on = visited.has(ct.n);
+      for (const ring of ct.rings) for (const off of [0, -W, W]) {
+        drawRing(ring, off);
+        if (on) { g.fillStyle = dark ? "rgba(233,178,92,.58)" : "rgba(226,160,60,.55)"; g.fill(); g.strokeStyle = dark ? "rgba(255,214,140,.95)" : "rgba(255,226,170,.95)"; g.lineWidth = 3; g.stroke(); }
+        else { g.strokeStyle = dark ? "rgba(220,235,240,.18)" : "rgba(255,255,255,.28)"; g.lineWidth = 1.2; g.stroke(); }
+      }
+    }
+    globe.setCountryOverlay(c); window.__goalOverlay = c;
+  }, 60);
+}
+// ---- photo storage: artifact assets when available, otherwise this browser (IndexedDB) ----
+const photoStore = {
+  assets: undefined, db: null, urls: new Map(),
+  async init() {
+    if (this.assets !== undefined) return;
+    this.assets = null;
+    if (window.claude && typeof window.claude.use === "function") { try { this.assets = await window.claude.use("assets"); } catch (e) { this.assets = null; } }
+  },
+  canUpload() { return !!this.assets || (store.mode !== "db" && "indexedDB" in window); },
+  async idb() {
+    if (this.db) return this.db;
+    this.db = await new Promise((res, rej) => { const r = indexedDB.open("the-goal-photos", 1); r.onupgradeneeded = () => r.result.createObjectStore("blobs"); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+    return this.db;
+  },
+  async idbOp(mode, fn) { const db = await this.idb(); return new Promise((res, rej) => { const tx = db.transaction("blobs", mode); const req = fn(tx.objectStore("blobs")); tx.oncomplete = () => res(req && req.result); tx.onerror = () => rej(tx.error); }); },
+  async save(blob, id) {
+    if (this.assets) { const r = await this.assets.upload(blob, { type: "image/jpeg" }); return { assetId: r.id }; }
+    await this.idbOp("readwrite", (s) => s.put(blob, id)); return { local: true };
+  },
+  src(ph) {
+    if (ph.assetId) return "/_blob/" + ph.assetId;
+    if (this.urls.has(ph.id)) return this.urls.get(ph.id);
+    this.idbOp("readonly", (s) => s.get(ph.id)).then((b) => { if (b) { this.urls.set(ph.id, URL.createObjectURL(b)); $$(`img[data-photo="${ph.id}"]`).forEach((im) => (im.src = this.urls.get(ph.id))); } }).catch(() => {});
+    return "data:image/gif;base64,R0lGODlhAQABAAAAACw=";
+  },
+  async remove(ph) {
+    if (ph.assetId && this.assets) { try { await this.assets.delete(ph.assetId); } catch (e) {} }
+    if (ph.local) { try { await this.idbOp("readwrite", (s) => s.delete(ph.id)); } catch (e) {} }
+  },
+};
+async function shrinkImage(file) {
+  const bmp = await createImageBitmap(file);
+  const max = 2000, k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const w = Math.round(bmp.width * k), h = Math.round(bmp.height * k);
+  const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(bmp, 0, 0, w, h);
+  const blob = await new Promise((res) => c.toBlob(res, "image/jpeg", .85));
+  if (!blob) throw new Error("encode");
+  return { blob, w, h };
+}
+const cUI = { country: null, busy: "", error: "", confirmDel: null, lightbox: null };
+async function addPhotos(files, country, placeId) {
+  await photoStore.init();
+  if (!photoStore.canUpload()) { cUI.error = "Photos can't be added in this view."; renderCountryDialog(); return; }
+  const list = [...files].filter((f) => /^image\//.test(f.type) || /\.(jpe?g|png|webp|gif|heic)$/i.test(f.name));
+  if (!list.length) { cUI.error = "Pick image files (JPEG, PNG or WebP)."; renderCountryDialog(); return; }
+  let done = 0, failed = 0;
+  for (const f of list) {
+    cUI.busy = `Adding photo ${done + failed + 1} of ${list.length}…`; cUI.error = ""; renderCountryDialog(); renderDetailPhotos();
+    try {
+      const { blob, w, h } = await shrinkImage(f);
+      const id = uid();
+      const where = await photoStore.save(blob, id);
+      await store.put("photos", { id, country, placeId: placeId || null, ...where, w, h, caption: "", addedAt: new Date().toISOString() });
+      done++;
+    } catch (e) {
+      failed++;
+      const code = e && e.code;
+      cUI.error = code === "too_large" ? "That photo is too large." : code === "quota_or_state" ? "Photo storage is full. Delete some photos to add more." : code === "rate_limited" ? "Too many uploads at once. Wait a moment and try again." : e && e.message === "encode" || e instanceof DOMException ? "One photo couldn't be read. Try a JPEG or PNG." : "A photo couldn't be saved. Try again.";
+      if (code === "quota_or_state") break;
+    }
+  }
+  cUI.busy = "";
+  renderCountryDialog(); renderDetailPhotos(); renderCountriesPanel();
+  if (done) toast(`${done} ${done === 1 ? "photo" : "photos"} added to ${country}`);
+}
+function photoTile(ph, i) { return `<button type="button" class="ph" data-act="photo-open" data-id="${esc(ph.id)}" aria-label="Open photo ${i + 1}${ph.caption ? ": " + esc(ph.caption) : ""}"><img alt="" loading="lazy" data-photo="${esc(ph.id)}" src="${photoStore.src(ph)}"></button>`; }
+function renderCountryDialog() {
+  const d = $("#dlg-country"); if (!d || !d.open || !cUI.country) return;
+  const name = cUI.country, v = visitedCountryMap().get(name), photos = photosFor(name);
+  const canUp = photoStore.canUpload();
+  $("#country-body").innerHTML = `
+    <div class="dlg-head"><div><span class="eyebrow">${v ? "Been there" : "Country"}</span><h2 id="country-title">${esc(name)}</h2></div></div>
+    ${v && v.auto.length ? `<p class="muted" style="font-size:.9rem">Colored on your globe because you've been to ${esc(v.auto.join(", "))}.</p>` : ""}
+    <div class="row">
+      ${v && v.auto.length && !v.manual ? "" : `<button class="btn small been" type="button" data-act="country-toggle" aria-pressed="${!!v}">${v ? CHECK_SVG + "Been here" : "I've been here"}</button>`}
+      ${canUp ? `<label class="btn small primary file-btn"><input type="file" accept="image/*" multiple id="country-files" ${cUI.busy ? "disabled" : ""}>${cUI.busy ? esc(cUI.busy) : "Add photos"}</label>` : ""}
+    </div>
+    <span class="err" id="country-err">${esc(cUI.error || "")}</span>
+    ${photos.length ? `<div class="album">${photos.map(photoTile).join("")}</div>` : `<p class="muted">${canUp ? `No photos from ${esc(name)} yet. Add some to build your album.` : "No photos yet."}</p>`}
+    ${!photoStore.assets && canUp ? `<p class="muted" style="font-size:.8rem">Photos are saved in this browser only in this view.</p>` : ""}
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Close</button></div>`;
+  const inp = $("#country-files"); if (inp) inp.addEventListener("change", () => { const files = inp.files; if (files && files.length) addPhotos(files, name, null); });
+}
+async function openCountry(name) {
+  cUI.country = name; cUI.error = ""; cUI.busy = "";
+  await photoStore.init();
+  const d = $("#dlg-country"); if (!d.open) (d.showModal ? d.showModal() : d.setAttribute("open", ""));
+  renderCountryDialog();
+  const f = d.querySelector(".dlg-foot .btn"); f && f.focus();
+}
+function openLightbox(id) {
+  const ph = (state.photos || []).find((x) => x.id === id); if (!ph) return;
+  cUI.lightbox = id; cUI.confirmDel = null;
+  const d = $("#dlg-photo"); if (!d.open) (d.showModal ? d.showModal() : d.setAttribute("open", ""));
+  renderLightbox();
+}
+function renderLightbox() {
+  const ph = (state.photos || []).find((x) => x.id === cUI.lightbox); if (!ph) { $("#dlg-photo").close(); return; }
+  const list = photosFor(ph.country), i = list.findIndex((x) => x.id === ph.id);
+  const place = ph.placeId ? state.destinations.find((p) => p.id === ph.placeId) : null;
+  $("#photo-body").innerHTML = `
+    <div class="lb-img"><img alt="${esc(ph.caption || `Photo from ${ph.country}`)}" data-photo="${esc(ph.id)}" src="${photoStore.src(ph)}"></div>
+    <div class="lb-bar">
+      <div class="lb-meta"><strong>${esc(ph.country)}</strong>${place ? ` · ${esc(place.name)}` : ""} <span class="muted num">${i + 1} / ${list.length}</span></div>
+      <label class="sr-only" for="photo-caption">Caption</label>
+      <input type="text" id="photo-caption" maxlength="140" placeholder="Add a caption" value="${esc(ph.caption || "")}">
+      <div class="row">
+        <button class="btn small" type="button" data-act="photo-nav" data-d="-1" ${list.length < 2 ? "disabled" : ""} aria-label="Previous photo">‹ Prev</button>
+        <button class="btn small" type="button" data-act="photo-nav" data-d="1" ${list.length < 2 ? "disabled" : ""} aria-label="Next photo">Next ›</button>
+        ${cUI.confirmDel === ph.id ? `<span class="muted" style="font-size:.85rem">Delete this photo?</span><button class="btn small danger" type="button" data-act="photo-del-yes">Delete</button><button class="btn small" type="button" data-act="photo-del-no">Keep</button>` : `<button class="btn small ghost" type="button" data-act="photo-del">Delete</button>`}
+        <button class="btn small" type="button" data-act="photo-close" style="margin-left:auto">Close</button>
+      </div>
+      <span class="err" id="photo-err"></span>
+    </div>`;
+  const cap = $("#photo-caption");
+  cap.addEventListener("change", async () => { const val = cap.value.trim().slice(0, 140); if (val === (ph.caption || "")) return; try { await store.put("photos", { ...ph, caption: val }); toast("Caption saved"); } catch (e) { $("#photo-err").textContent = SAVE_FAIL; } });
+}
+function renderCountriesPanel() {
+  const el = $("#countries-panel"); if (!el) return;
+  const m = visitedCountryMap(), names = [...m.keys()].sort((a, b) => a.localeCompare(b));
+  const all = COUNTRIES ? COUNTRIES.map((c) => c.n).filter((n) => !m.has(n)) : [];
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between;align-items:baseline"><h3 class="countries-h">Countries you've been to <span class="num muted">${names.length}</span></h3></div>
+    ${names.length ? `<div class="cchips">${names.map((n) => { const c = photosFor(n).length; return `<button type="button" class="cchip" data-act="country-open" data-name="${esc(n)}"><span class="dot" aria-hidden="true"></span>${esc(n)}${c ? `<span class="pc num" aria-label="${c} photos">${c} ${c === 1 ? "photo" : "photos"}</span>` : ""}</button>`; }).join("")}</div>`
+      : `<p class="muted" style="font-size:.88rem">Mark a place as "Been there", click a country on the globe, or add one below. Countries you've been to turn gold on the globe.</p>`}
+    <form class="add-country" id="add-country">
+      <label class="sr-only" for="add-country-in">Add a country you've been to</label>
+      <input type="text" id="add-country-in" list="country-names" placeholder="Add a country you've been to" autocomplete="off">
+      <datalist id="country-names">${all.map((n) => `<option value="${esc(n)}"></option>`).join("")}</datalist>
+      <button class="btn small" type="submit">Add</button>
+    </form>
+    <span class="err" id="add-country-err"></span>`;
+  $("#add-country").addEventListener("submit", async (e) => {
+    e.preventDefault(); const v = $("#add-country-in").value.trim();
+    const hit = COUNTRIES && COUNTRIES.find((c) => c.n.toLowerCase() === v.toLowerCase());
+    if (!hit) { $("#add-country-err").textContent = v ? `"${v}" isn't in the country list. Pick one of the suggestions.` : "Type a country name."; return; }
+    await setCountryManual(hit.n, true); $("#add-country-in") && $("#add-country-in").focus();
+  });
+}
+async function setCountryManual(name, on) {
+  const s = new Set(state.countries || []); on ? s.add(name) : s.delete(name);
+  try { await store.setSingle("countries", [...s].sort()); } catch (e) { toast(SAVE_FAIL, true); return; }
+  renderCountriesPanel(); refreshCountryOverlay(); renderPlaceList(); renderFamilyChips(); renderCountryDialog();
+  toast(on ? `${name} marked as been there` : `${name} removed`);
+}
+function renderDetailPhotos() {
+  const el = $("#detail-photos"); if (!el) return;
+  const p = state.destinations.find((x) => x.id === atlasUI.selectedId); if (!p || !p.visited) { el.innerHTML = ""; return; }
+  const cs = placeCountries(p), main = cs[0] || p.name;
+  const photos = (state.photos || []).filter((ph) => ph.placeId === p.id || (!ph.placeId && cs.includes(ph.country)));
+  const canUp = photoStore.canUpload();
+  el.innerHTML = `
+    <div class="row" style="justify-content:space-between"><span class="eyebrow">Your photos${cs.length ? ` · ${esc(cs.join(", "))}` : ""}</span>
+      ${cs.length ? `<button class="btn small ghost" type="button" data-act="country-open" data-name="${esc(main)}">Open album</button>` : ""}</div>
+    ${photos.length ? `<div class="album mini">${photos.slice(0, 8).map(photoTile).join("")}</div>` : ""}
+    ${canUp ? `<label class="btn small file-btn"><input type="file" accept="image/*" multiple id="place-files" ${cUI.busy ? "disabled" : ""}>${cUI.busy ? esc(cUI.busy) : `Add photos from ${esc(p.name)}`}</label>` : ""}`;
+  const inp = $("#place-files"); if (inp) inp.addEventListener("change", () => { if (inp.files && inp.files.length) addPhotos(inp.files, main, p.id); });
+}
+
 function renderAtlas() {
   if (atlasUI.selectedId && !state.destinations.some((d) => d.id === atlasUI.selectedId)) atlasUI.selectedId = null;
   if (!atlasUI.selectedId && state.destinations.length) atlasUI.selectedId = sortedPlaces()[0].id;
-  renderFamilyChips(); renderPlaceList(); renderDetail(); renderTravel();
+  renderFamilyChips(); renderPlaceList(); renderDetail(); renderTravel(); renderCountriesPanel(); refreshCountryOverlay();
   if (globe) { globe.setMarkers(state.destinations); globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); globe.setSelected(atlasUI.selectedId); }
 }
 
@@ -1512,6 +1764,10 @@ function createGlobe(container) {
   tex("earth-water.jpg", (t) => { sphereMat.specularMap = t; sphereMat.specular.set(0x2e3a44); sphereMat.shininess = 28; sphereMat.needsUpdate = true; });
   tex("earth-night.jpg", (t) => { sphereMat.emissiveMap = t; sphereMat.emissive.set(0xffd9a0); sphereMat.needsUpdate = true; });
   tex("earth-clouds.jpg", (t) => { cloudMat.alphaMap = t; cloudMat.needsUpdate = true; recolor(); });
+  // countries layer: borders everywhere, gold fill for countries you've been to
+  const countryMat = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, opacity: 0 });
+  const countryMesh = new THREE.Mesh(new THREE.SphereGeometry(1.0035, 96, 64), countryMat);
+  countryMesh.rotation.y = -Math.PI / 2; world.add(countryMesh);
 
   // markers
   const markerGroup = new THREE.Group(); world.add(markerGroup);
@@ -1636,7 +1892,11 @@ function createGlobe(container) {
         const m = markers.get(id); const rect = canvas.getBoundingClientRect(), wrap = container.getBoundingClientRect();
         tip.textContent = m.visited ? `${m.name} · been there` : m.name; tip.hidden = false;
         tip.style.left = Math.min(wrap.width - 70, Math.max(70, e.clientX - wrap.left)) + "px"; tip.style.top = Math.max(40, e.clientY - wrap.top) + "px";
-      } else tip.hidden = true;
+      } else {
+        const ll = pickLatLon(e.clientX, e.clientY), cn = ll && COUNTRIES ? countryAt(ll[0], ll[1]) : null;
+        if (cn) { const wrap = container.getBoundingClientRect(); tip.textContent = visitedCountryMap().has(cn) ? `${cn} · been there` : cn; tip.hidden = false; tip.style.left = Math.min(wrap.width - 70, Math.max(70, e.clientX - wrap.left)) + "px"; tip.style.top = Math.max(40, e.clientY - wrap.top) + "px"; canvas.style.cursor = "pointer"; }
+        else tip.hidden = true;
+      }
     }
   });
   const end = (e) => {
@@ -1645,7 +1905,11 @@ function createGlobe(container) {
     if (pointers.size === 0) { dragging = false; canvas.classList.remove("dragging"); pinchStart = 0; }
     if (performance.now() - lastT > 80) { vYaw = vPitch = 0; }
     if (wasClick && e.type === "pointerup" && picking) { const ll = pickLatLon(e.clientX, e.clientY); if (ll) { const cb = picking; stopPick(); cb(ll[0], ll[1]); } }
-    else if (wasClick && e.type === "pointerup") { const id = pick(e.clientX, e.clientY); if (id) selectPlace(id); }
+    else if (wasClick && e.type === "pointerup") {
+      const id = pick(e.clientX, e.clientY);
+      if (id) selectPlace(id);
+      else { const ll = pickLatLon(e.clientX, e.clientY), cn = ll && COUNTRIES ? countryAt(ll[0], ll[1]) : null; if (cn) openCountry(cn); }
+    }
     lastInteract = performance.now();
   };
   canvas.addEventListener("pointerup", end);
@@ -1706,6 +1970,7 @@ function createGlobe(container) {
     setVisible(set) { visibleSet = set; applyVisible(); },
     setSelected(id) { selectedId = id; },
     flyTo, recolor, resize,
+    setCountryOverlay(canvas) { if (countryMat.map) countryMat.map.dispose(); const t = new THREE.CanvasTexture(canvas); t.anisotropy = Math.min(8, maxAniso); countryMat.map = t; countryMat.opacity = 1; countryMat.needsUpdate = true; },
     startPick(cb) { picking = cb; canvas.classList.add("picking"); tYaw = tPitch = null; vYaw = vPitch = 0; lastInteract = performance.now() + 60000; },
     cancelPick() { stopPick(); lastInteract = performance.now(); },
   };
@@ -2611,7 +2876,8 @@ const ASSISTANTS = {
     context() {
       const sel = state.destinations.find((d) => d.id === atlasUI.selectedId);
       const lines = sortedPlaces().map((p) => `- ${p.name} [id: ${p.id}] ${fmtCoord(p.lat, p.lon)}, ${p.family}, ${p.terrain || ""}${p.visited ? `, BEEN THERE${p.visitedOn ? " (" + p.visitedOn + ")" : ""}` : ""}. Note: ${p.note || "none"}`);
-      return `${travelContext()}\n\nTheir atlas (${state.destinations.length} places, ${state.destinations.filter((p) => p.visited).length} visited):\n${lines.join("\n")}\n\nCurrently open on screen: ${sel ? sel.name : "nothing"}.\nTraining status (for trek difficulty): ${state.answers ? `${label("experience", state.answers.experience)}, trains ${state.answers.days} days a week, goal ${label("goal", state.answers.goal)}` : "no training plan yet"}.`;
+      const cm = visitedCountryMap();
+      return `Countries they've been to (${cm.size}): ${[...cm.keys()].sort().map((n) => `${n}${photosFor(n).length ? ` (${photosFor(n).length} photos)` : ""}`).join(", ") || "none marked yet"}.\n\n${travelContext()}\n\nTheir atlas (${state.destinations.length} places, ${state.destinations.filter((p) => p.visited).length} visited):\n${lines.join("\n")}\n\nCurrently open on screen: ${sel ? sel.name : "nothing"}.\nTraining status (for trek difficulty): ${state.answers ? `${label("experience", state.answers.experience)}, trains ${state.answers.days} days a week, goal ${label("goal", state.answers.goal)}` : "no training plan yet"}.`;
     },
     tools: () => [
       { name: "add_place", description: "Add a new destination to the user's atlas and globe. Only use when the user asks to add a place. Returns the new place id.",
@@ -2678,7 +2944,7 @@ const ASSISTANTS = {
   summit: {
     name: "Summit", tab: "training", role: "Master of fitness",
     intro: "Strength, conditioning, form, recovery and getting your body ready for altitude and a heavy pack. I coach from your plan and your week.",
-    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. The app has a library of 374+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
+    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. The app has a library of 530+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
     starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
       if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice.";
@@ -2957,6 +3223,7 @@ async function sendAI(text) {
     if (ai.open === id) { renderAI(); if (status) { const s = $("#ai-status"); s.textContent = status; s.classList.toggle("bad", status !== "Stopped."); } $("#ai-input") && $("#ai-input").focus(); }
   }
 }
+document.addEventListener("keydown", (e) => { const lb = $("#dlg-photo"); if (lb && lb.open && (e.key === "ArrowLeft" || e.key === "ArrowRight") && document.activeElement.id !== "photo-caption") { const btn = $(`[data-act=photo-nav][data-d="${e.key === "ArrowLeft" ? -1 : 1}"]`); btn && !btn.disabled && btn.click(); } });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && ai.open && !document.querySelector("dialog[open]")) closeAI(); });
 
 /* ============================ KITCHEN: healthy recipes ============================ */
@@ -3185,7 +3452,7 @@ function showTrainSection(s) {
 // Summit can look recipes up in the library
 function summitRecipeTools() {
   return [
-    { name: "search_recipes", description: "Search the user's healthy recipe library (374+ recipes). Returns up to 8 matches with id, name, category, minutes and per-serving kcal/protein/carbs/fat. Use it to recommend real recipes from their library.",
+    { name: "search_recipes", description: "Search the user's healthy recipe library (530+ recipes). Returns up to 8 matches with id, name, category, minutes and per-serving kcal/protein/carbs/fat. Use it to recommend real recipes from their library.",
       inputSchema: { type: "object", properties: { query: { type: "string", description: "free text, e.g. 'high protein pasta' or 'vegan dessert'" }, category: { type: "string", enum: REC_CAT_KEYS } } },
       async execute(i) { await loadRecipes(); return searchRecipes({ q: String(i.query || ""), cat: REC_CAT_KEYS.includes(i.category) ? i.category : "all", filters: new Set(), sort: "match" }).slice(0, 8).map((r) => ({ id: r.id, name: r.name, category: r.cat, minutes: r.time, kcal: r.kcal, protein: r.p, carbs: r.c, fat: r.f })); } },
     { name: "open_recipe", description: "Open a recipe from the library on screen so the user can see ingredients and steps. recipe_id comes from search_recipes.",
@@ -3203,7 +3470,7 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(),
     destinations, projects,
@@ -3211,6 +3478,7 @@ function exportJSON() {
     readingList: books, milestones, currentStage: stage,
     training: { answers, activePlan: plan, completedSessions: trainingLog },
     recipes: { favorites: favRecipes, myRecipes: myrecipes },
+    countriesBeenTo: [...visitedCountryMap().keys()].sort(), photos: photos.map(({ id, country, placeId, caption, addedAt, assetId }) => ({ id, country, placeId, caption, addedAt, assetId: assetId || null })),
     travel: { answers: travelAnswers, plan: travelValid(travelAnswers) ? (({ trips, yearCost }) => ({ trips, yearCost }))(travelPlan(travelAnswers)) : null },
     business: { answers: bizAnswers, plan: bizValid(bizAnswers) ? bizPlan(bizAnswers) : null, completedMilestones: bizDone },
   }, null, 2);
@@ -3323,6 +3591,21 @@ document.addEventListener("click", async (e) => {
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
     case "train-sec": showTrainSection(b.dataset.v); break;
+    case "country-open": openCountry(b.dataset.name); break;
+    case "country-toggle": { const n = cUI.country, v = visitedCountryMap().get(n); await setCountryManual(n, !(v && v.manual)); break; }
+    case "photo-open": openLightbox(id); break;
+    case "photo-close": $("#dlg-photo").close(); break;
+    case "photo-nav": { const ph = state.photos.find((x) => x.id === cUI.lightbox); const list = photosFor(ph.country); const i = list.findIndex((x) => x.id === ph.id); cUI.lightbox = list[(i + Number(b.dataset.d) + list.length) % list.length].id; cUI.confirmDel = null; renderLightbox(); break; }
+    case "photo-del": cUI.confirmDel = cUI.lightbox; renderLightbox(); $("[data-act=photo-del-no]").focus(); break;
+    case "photo-del-no": cUI.confirmDel = null; renderLightbox(); break;
+    case "photo-del-yes": {
+      const ph = state.photos.find((x) => x.id === cUI.lightbox); if (!ph) break;
+      try { await store.remove("photos", ph.id); } catch (err) { $("#photo-err").textContent = SAVE_FAIL; break; }
+      await photoStore.remove(ph);
+      const rest = photosFor(ph.country); cUI.confirmDel = null;
+      if (rest.length) { cUI.lightbox = rest[0].id; renderLightbox(); } else $("#dlg-photo").close();
+      renderCountryDialog(); renderDetailPhotos(); renderCountriesPanel(); toast("Photo deleted"); break;
+    }
     case "rec-cat": kUI.cat = b.dataset.v; kUI.shown = 24; renderKitchen(); $(`[data-act=rec-cat][data-v="${b.dataset.v}"]`).focus(); break;
     case "rec-filter": { const v = b.dataset.v; kUI.filters.has(v) ? kUI.filters.delete(v) : kUI.filters.add(v); kUI.shown = 24; renderKitchen(); $(`[data-act=rec-filter][data-v="${v}"]`).focus(); break; }
     case "rec-clear": kUI.q = ""; kUI.cat = "all"; kUI.filters.clear(); kUI.shown = 24; kUI.ai = null; renderKitchen(); $("#rec-q").focus(); break;
@@ -3374,8 +3657,9 @@ applyThemeLabel();
 globe = createGlobe($("#globe-wrap"));
 if (!globe) { $("#globe-wrap").hidden = true; $("#globe-help").hidden = true; $("#globe-fallback").hidden = false; $(".place-list").style.maxHeight = "none"; }
 renderAtlas(); renderJourney(); renderTraining();
+loadCountries().then(() => { renderCountriesPanel(); refreshCountryOverlay(); });
 store.init().then(() => {
-  chatSyncInit();
+  chatSyncInit(); photoStore.init().then(() => { renderDetailPhotos(); renderCountryDialog(); });
   loaded = true;
   if (validAnswers(state.answers)) tUI.draft = draftFrom(state.answers);
   renderAtlas(); renderJourney(); renderTraining();

@@ -4,7 +4,7 @@ TAGS = {"veg", "vgn", "gf", "df", "lc", "mp", "trail"}
 out, seen, problems = [], set(), []
 MEAT = re.compile(r"\b(chicken|beef|steak|turkey|pork|ham|bacon|chorizo|lamb|salmon|tuna|cod|shrimp|prawn|sardine|anchov|fish|mussel|scallop|squid|crab|trout|sea bass|halibut|mackerel|prosciutto|sausage|duck|venison|bison|gelatin|lox)\b", re.I)
 DAIRY = re.compile(r"\b(milk|yogurt|yoghurt|cheese|feta|parmesan|mozzarella|ricotta|butter|cream|skyr|kefir|cottage|halloumi|paneer|ghee|whey|labneh|mascarpone|burrata|goat cheese|cheddar|quark|protein powder)\b", re.I)
-PLANT_MILK = re.compile(r"\b(almond|oat|coconut|soy|rice|cashew|plant)[- ](milk|yogurt|cream|butter)\b|peanut butter|almond butter|nut butter|cashew butter|cocoa butter|coconut cream|cream of|sunflower butter|tahini|apple butter|butter lettuce|butternut|butter beans?", re.I)
+PLANT_MILK = re.compile(r"\b(almond|oat|coconut|soy|rice|cashew|plant)[- ](milk|yogurt|cream|butter)\b|peanut butter|almond butter|nut butter|cashew butter|cocoa butter|coconut cream|cream of|sunflower butter|plant protein powder|tahini|apple butter|butter lettuce|butternut|butter beans?", re.I)
 EGG = re.compile(r"\beggs?\b|egg white|mayonnaise|\bhoney\b", re.I)
 GLUTEN = re.compile(r"\b(bread|toast|tortilla|pita|flour|pasta|spaghetti|penne|noodle|couscous|bulgur|barley|farro|sourdough|bagel|wrap|crispbread|panko|breadcrumb|soy sauce|seitan|croissant|bun|lasagna|orzo|fusilli|linguine|rigatoni|macaroni|gnocchi|granola|oats|rolled oats|muesli|waffle|pancake|cracker|flatbread|naan|freekeh|rye|wheat|semolina|udon|ramen|biscuit|cookie)\b", re.I)
 for f in sorted(glob.glob("*.txt")):
@@ -30,7 +30,7 @@ for f in sorted(glob.glob("*.txt")):
         if "veg" in tg and MEAT.search(text): problems.append(f"{f}:{n} {name}: tagged vegetarian but has {MEAT.search(text).group(0)}")
         if "df" in tg and DAIRY.search(PLANT_MILK.sub("", text)): problems.append(f"{f}:{n} {name}: tagged dairy-free but has {DAIRY.search(PLANT_MILK.sub('', text)).group(0)}")
         if "vgn" in tg and EGG.search(text): problems.append(f"{f}:{n} {name}: tagged vegan but has {EGG.search(text).group(0)}")
-        gtext = re.sub(r"gluten-free [a-z ]+|chickpea pasta|lentil pasta|spaghetti squash|tamari|corn tortilla|rice noodles?|buckwheat|rice paper|rice crackers?|oat milk|rice flour|almond flour|coconut flour|chickpea flour|corn flour", "", text, flags=re.I)
+        gtext = re.sub(r"gluten-free [a-z ]+|chickpea pasta|lentil pasta|spaghetti squash|tamari|corn tortilla|rice noodles?|buckwheat|rice paper|rice crackers?|oat milk|rice flour|tapioca flour|almond flour|coconut flour|chickpea flour|corn flour", "", text, flags=re.I)
         if "gf" in tg and GLUTEN.search(gtext): problems.append(f"{f}:{n} {name}: tagged gluten-free but has {GLUTEN.search(gtext).group(0)}")
         # labels computed from the numbers, not hand-set
         if p * 4 / kcal >= 0.25 or p >= 30 or (cat in ("snack", "dessert", "drink", "breakfast") and p >= 15 and p * 4 / kcal >= 0.18): tg.add("hp")
