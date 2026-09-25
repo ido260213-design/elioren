@@ -236,6 +236,17 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .store-table .acts{white-space:nowrap;text-align:right}
 .store-table tbody th{font-weight:500;white-space:nowrap}
 .day-preview{margin:4px 0 0}
+.money-card{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 20px;margin-bottom:14px}
+.money-val{font:500 1.5rem/1.2 var(--f-mono)}
+.money-form{gap:8px;flex-wrap:wrap;align-items:center}
+.money-form input{width:120px;font:inherit;padding:6px 10px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--raised);color:var(--ink)}
+.setup-card{padding:16px 20px;margin-bottom:14px;display:grid;gap:8px}
+.setup-card h3{margin:0}
+.setup-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.setup-list li{display:flex;gap:10px;align-items:flex-start}
+.setup-list input{margin-top:3px;width:18px;height:18px;accent-color:var(--moss);flex:none}
+.setup-list input:checked + label{color:var(--muted);text-decoration:line-through}
+.setup-done{margin:0 0 12px;font-size:.88rem}
 .store-start,.store-remind{padding:16px 20px;margin-bottom:14px;display:grid;gap:8px}
 .store-start h3,.store-start p{margin:0}
 .store-remind{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-color:color-mix(in srgb,var(--gold) 60%,transparent);background:color-mix(in srgb,var(--gold) 8%,var(--raised))}
@@ -2404,13 +2415,66 @@ function storeStartCard() {
   if (miss.length) return `<article class="card store-remind" role="status"><div><strong>${miss.length === 1 ? `${esc(miss[0] === iso(addDays(parseISO(t), -1)) ? "Yesterday" : fmtDate(miss[0]))} isn't logged yet.` : `${miss.length} days aren't logged yet.`}</strong> <span class="muted">${miss.length > 1 ? esc(miss.map((d) => parseISO(d).toLocaleDateString("en-US", { month: "short", day: "numeric" })).join(", ")) + ". " : ""}It takes a minute, and the tips only work with every day in.</span></div><button class="btn small primary" type="button" data-act="day-add" data-date="${miss[0]}">Log ${miss[0] === iso(addDays(parseISO(t), -1)) ? "yesterday" : "it"} now</button></article>`;
   return "";
 }
+
+// Money put into the business (kept in the profile so every assistant sees it) and the setup checklist.
+const SETUP_STEPS = (minor) => minor ? [
+  ["talk", "Tell your parents the plan and get their OK"],
+  ["store", "A parent opens the store account (like Shopify) in their name"],
+  ["pay", "A parent connects payments (Shopify Payments or PayPal) to their bank account"],
+  ["ads", "A parent owns the ad accounts (TikTok, Meta); you run the ads"],
+  ["money", "Put your business money on a card or account a parent controls"],
+  ["product", "Pick your product and supplier, and order a sample"],
+  ["test", "Place one test order yourself before running ads"],
+] : [
+  ["store", "Open the store account (like Shopify)"],
+  ["pay", "Connect payments to a bank account"],
+  ["ads", "Set up the ad accounts (TikTok, Meta)"],
+  ["money", "Keep business money on its own card or account"],
+  ["product", "Pick your product and supplier, and order a sample"],
+  ["test", "Place one test order yourself before running ads"],
+];
+const setupDone = () => new Set((state.storeSettings && state.storeSettings.setupDone) || []);
+async function saveStoreSettings(patch) { await store.setSingle("storeSettings", { ...(state.storeSettings || {}), ...patch }); }
+async function setBusinessMoney(dollars) {
+  const p = { ...(state.profile || {}), budget: Math.round(dollars), updatedAt: (state.profile && state.profile.updatedAt) || new Date().toISOString() };
+  await store.setSingle("profile", normProfile(p));
+}
+function moneyCard() {
+  const b = state.profile && state.profile.budget != null ? state.profile.budget : null;
+  return `<article class="card money-card"><div><span class="eyebrow">Money you've put into the business</span><div class="money-val num">${b != null ? money(b * 100) : "Not set"}</div></div>
+    <form class="row money-form" id="money-form"><label class="sr-only" for="money-amt">Amount in dollars</label><input id="money-amt" type="text" inputmode="decimal" placeholder="$ amount" autocomplete="off"><button class="btn small primary" type="submit" name="mode" value="add">Add money</button><button class="btn small" type="submit" name="mode" value="set">Set total</button><span class="err" id="money-err"></span></form></article>`;
+}
+function setupCard() {
+  const steps = SETUP_STEPS(isMinor()), done = setupDone(), n = steps.filter(([k]) => done.has(k)).length;
+  if (n === steps.length && !sUI.showSetup) return `<p class="muted setup-done">Setup checklist done ✓ <button class="linkish" type="button" data-act="setup-show">Show it</button></p>`;
+  return `<article class="card setup-card"><div class="row" style="justify-content:space-between;align-items:baseline"><h3>Before you sell <span class="muted num">${n}/${steps.length}</span></h3>${n === steps.length ? `<button class="btn ghost small" type="button" data-act="setup-show">Hide</button>` : ""}</div>
+    ${isMinor() ? `<p class="muted" style="font-size:.88rem">Under 18, the accounts have to be in a parent's name. You still run the business.</p>` : ""}
+    <ul class="setup-list">${steps.map(([k, t]) => `<li><input type="checkbox" id="setup-${k}" data-setup="${k}" ${done.has(k) ? "checked" : ""}><label for="setup-${k}">${esc(t)}</label></li>`).join("")}</ul></article>`;
+}
+document.addEventListener("change", async (e) => {
+  const k = e.target.dataset && e.target.dataset.setup; if (!k) return;
+  const done = setupDone(); e.target.checked ? done.add(k) : done.delete(k);
+  try { await saveStoreSettings({ setupDone: [...done] }); } catch (err) { toast(SAVE_FAIL, true); }
+  renderStore();
+});
+document.addEventListener("submit", async (e) => {
+  if (e.target.id !== "money-form") return;
+  e.preventDefault();
+  const mode = e.submitter && e.submitter.value === "set" ? "set" : "add";
+  const m = parseMoney($("#money-amt").value);
+  if (m.err || !m.cents) { $("#money-err").textContent = m.err || "Enter an amount, like 50."; return; }
+  const cur = state.profile && state.profile.budget != null ? state.profile.budget : 0;
+  const next = mode === "add" ? cur + m.cents / 100 : m.cents / 100;
+  try { await setBusinessMoney(next); } catch (err) { $("#money-err").textContent = SAVE_FAIL; return; }
+  renderStore(); toast(mode === "add" ? `Added ${money(m.cents)}. Total: ${money(Math.round(next * 100))}` : `Business money set to ${money(Math.round(next * 100))}`);
+});
 function renderStore() {
   const el = $("#store"); if (!el) return;
   updateStoreDot();
   const s = storeStats(), L = s.last, P = s.prev;
   const tipIcon = { good: "▲", bad: "!", warn: "!", info: "i" };
   const tipsHtml = `<article class="card store-tips"><h3>What you need right now</h3><ul>${storeTips(s).map(([k, t]) => `<li class="tip-${k}"><span class="ti" aria-hidden="true">${tipIcon[k]}</span><span><span class="sr-only">${{ good: "Good: ", bad: "Problem: ", warn: "Watch: ", info: "" }[k]}</span>${esc(t)}</span></li>`).join("")}</ul></article>`;
-  const startHtml = storeStartCard();
+  const startHtml = moneyCard() + setupCard() + storeStartCard();
   if (!s.days.length) { el.innerHTML = `${startHtml}${storeStart() && storeStart() > s.tISO ? "" : tipsHtml}<p class="muted" style="font-size:.9rem">Or tell Sterling: "Yesterday I got 3 sales for $75, spent $20 on ads and $30 on products."</p>`; return; }
   const lp = dayProfit(L), pp = P ? dayProfit(P) : null;
   const dayName = (d) => d === s.tISO ? "Today" : d === iso(addDays(parseISO(s.tISO), -1)) ? "Yesterday" : fmtDate(d);
@@ -2539,12 +2603,13 @@ document.addEventListener("submit", async (e) => {
 });
 function storeContext() {
   const s = storeStats();
-  const st = storeStart(), miss = missingDays();
+  const st = storeStart(), miss = missingDays(), steps = SETUP_STEPS(isMinor()), sd = setupDone();
+  const setupLine = `Setup checklist: ${steps.map(([k, t]) => `${sd.has(k) ? "[x]" : "[ ]"} ${t}`).join("; ")}.\n`;
   const pre = st ? (st > s.tISO ? `Their store starts on ${st} (in ${Math.round((parseISO(st) - parseISO(s.tISO)) / 864e5)} days). Help them prepare.\n` : `Store started ${st}.${miss.length ? ` Days not logged yet: ${miss.join(", ")}. Remind them kindly and offer to log them.` : ""}\n`) : "";
-  if (!s.days.length) return pre + "Store numbers: nothing logged yet. They can log a day on The Journey page, or tell you the numbers and you log them with log_store_day.";
+  if (!s.days.length) return setupLine + pre + "Store numbers: nothing logged yet. They can log a day on The Journey page, or tell you the numbers and you log them with log_store_day.";
   const line = (d) => `- ${d.date}: ${d.orders} sales, in ${money(d.revenueC)}, products ${money(d.productC)}, ads ${money(d.adsC)}, other ${money(d.otherC)}, refunds ${money(d.refundsC)}${d.visitors != null ? `, ${d.visitors} visitors` : ""} → profit ${signMoney(dayProfit(d))}${d.note ? ` (${d.note})` : ""}`;
   const w = s.w7;
-  return `${pre}Store numbers (USD), ${s.days.length} days logged. Last 14:\n${s.days.filter((d) => d.date >= s.from14).map(line).join("\n") || "none in the last 14 days"}
+  return `${setupLine}${pre}Store numbers (USD), ${s.days.length} days logged. Last 14:\n${s.days.filter((d) => d.date >= s.from14).map(line).join("\n") || "none in the last 14 days"}
 Last 7 days: ${w.orders} sales, in ${money(w.revenueC)}, costs ${money(w.costs)}, profit ${signMoney(w.profit)}${w.roas != null ? `, ROAS ${w.roas.toFixed(2)}` : ""}${w.breakEvenRoas ? ` (break-even ROAS ${w.breakEvenRoas.toFixed(2)})` : ""}${w.aov != null ? `, AOV ${money(Math.round(w.aov))}` : ""}${w.cps != null ? `, ad cost per sale ${money(Math.round(w.cps))}` : ""}.
 All time: profit ${signMoney(s.all.profit)}.${s.cashC != null ? ` Money in the business now: ${money(s.cashC)} (started with ${money(s.budgetC)}).` : ""}
 The app's own tips right now: ${storeTips(s).map((t) => t[1]).join(" | ")}`;
@@ -3587,6 +3652,14 @@ const ASSISTANTS = {
             vs_previous_day: prev ? { date: prev.date, profit_change: (dayProfit(day) - dayProfit(prev)) / 100, revenue_change: (day.revenueC - prev.revenueC) / 100, orders_change: day.orders - prev.orders } : null,
             last_7_days_profit: s.w7.profit / 100, money_in_business: s.cashC != null ? s.cashC / 100 : null };
         } },
+      { name: "update_business_money", description: "Change how much money the user has put into the business, when they tell you they got or added money, or the total changed. mode 'add' adds the amount to the current total; 'set' replaces the total.",
+        inputSchema: { type: "object", properties: { amount: { type: "number", description: "US dollars, positive" }, mode: { type: "string", enum: ["add", "set"] } }, required: ["amount", "mode"] },
+        async execute(i) {
+          const a = Number(i.amount); if (!Number.isFinite(a) || a <= 0 || a > 1e7) throw new Error("amount must be a positive number");
+          const cur = state.profile && state.profile.budget != null ? state.profile.budget : 0, next = i.mode === "set" ? a : cur + a;
+          await setBusinessMoney(next); renderStore(); toast(`Sterling updated your business money: ${money(Math.round(next * 100))}`); aiNote(`Business money now $${Math.round(next)}`);
+          return { ok: true, previous: cur, now: Math.round(next) };
+        } },
       { name: "add_project", description: "Add a project card to the user's Current projects. Only when the user asks to add or track a project.",
         inputSchema: { type: "object", properties: { name: { type: "string" }, status: { type: "string", enum: PROJECT_STATUSES }, description: { type: "string", description: "1-2 sentences" } }, required: ["name"] },
         async execute(i) {
@@ -4188,6 +4261,7 @@ document.addEventListener("click", async (e) => {
     case "day-del": sUI.confirm = id; renderStore(); break;
     case "day-del-no": sUI.confirm = null; renderStore(); break;
     case "day-del-yes": { sUI.confirm = null; try { await store.remove("storedays", id); toast(`${fmtDate(id)} deleted`); } catch (e) { toast(SAVE_FAIL, true); } renderStore(); break; }
+    case "setup-show": sUI.showSetup = !sUI.showSetup; renderStore(); break;
     case "day-all": sUI.showAll = !sUI.showAll; renderStore(); break;
     case "ai-open": openAI(b.dataset.ai); break;
     case "ai-close": closeAI(); break;
