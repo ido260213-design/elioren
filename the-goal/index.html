@@ -356,6 +356,30 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .biz-rhythm{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px;font-size:.92rem}
 .biz-rhythm li{display:flex;justify-content:space-between;border-bottom:1px solid var(--hairline);padding:4px 0}
 .why-inline ul{margin:6px 0 0;padding-left:1.2em;display:grid;gap:3px;font-size:.92rem}
+.travel-sec{margin-top:40px}
+.year{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:6px;margin-top:8px}
+@media (max-width:900px){.year{grid-template-columns:repeat(6,minmax(0,1fr))}}
+@media (max-width:420px){.year{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.mo{border:1px dashed var(--hairline);border-radius:var(--r-sm);padding:6px 6px 8px;min-height:64px;display:grid;align-content:start;gap:4px;background:var(--paper);font-size:.74rem;min-width:0}
+.mo.free{border:1.5px solid var(--hairline-strong)}
+.mo.on{background:color-mix(in srgb,var(--moss) 16%,var(--raised));border-color:var(--moss)}
+.mo .mn{font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.mo .yr{font:400 .7rem var(--f-mono)}
+.mo .tr{font-weight:500;line-height:1.25;overflow-wrap:anywhere}
+.mo .tr.cont{color:var(--muted);font-weight:400;font-style:italic}
+.trips{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.trips li{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--hairline);padding:6px 0;font-size:.93rem;flex-wrap:wrap}
+.picks{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:8px}
+.pick{border:1px solid var(--hairline);border-radius:var(--r);padding:12px 14px;display:grid;gap:6px;align-content:start;background:var(--paper)}
+.pick-head{display:flex;align-items:center;gap:8px}
+.pick-head h4{font:600 1rem/1.2 var(--f-display);margin:0;flex:1}
+.pick .rank{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--sunken);font-size:.75rem}
+.pick p{font-size:.86rem;margin:0}
+.pick .good{color:var(--moss)}
+.pick .warn{color:var(--gold)}
+.pick .tip{font-size:.8rem}
+.pick .drive{font-size:.82rem}
+.pick .btn{justify-self:start}
 .plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
 
 /* ---------- AI assistants ---------- */
@@ -488,6 +512,10 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
         </div>
       </div>
     </div>
+    <section class="travel-sec" aria-labelledby="travel-h">
+      <div class="sec-head"><div><h2 id="travel-h">Travel plan</h2><p class="sub">Your places, matched to how and when you travel.</p></div></div>
+      <div id="travelplan"></div>
+    </section>
   </section>
 
   <!-- ================= JOURNEY ================= -->
@@ -718,9 +746,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [] };
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null };
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones" };
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 let loaded = false;
 
@@ -781,8 +809,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -896,10 +924,216 @@ function selectPlace(id, { fly = true } = {}) {
   const p = state.destinations.find((x) => x.id === id);
   if (globe && p) { globe.setSelected(id); if (fly) globe.flyTo(p.lat, p.lon); }
 }
+/* ---------- travel plan: questions → ranked trips, a year calendar and a budget ---------- */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const TRAVEL_Q = [
+  { key: "length", req: true, q: "How long is a typical trip?", opts: [["10", "1-2 weeks"], ["24", "3-4 weeks"], ["60", "1-3 months"], ["100", "3+ months"]] },
+  { key: "perYear", req: true, q: "How many big trips a year?", opts: [["1", "1"], ["2", "2"], ["3", "3-4"], ["5", "5+"]] },
+  { key: "months", req: true, multi: true, q: "Which months can you travel?", hint: "Pick every month that could work.", opts: MONTHS.map((m, i) => [String(i + 1), m]) },
+  { key: "style", req: true, q: "How do you like to travel?", opts: [["lean", "Lean: simple and cheap"], ["comfort", "Comfortable"], ["best", "The best hotel in the region"]] },
+  { key: "difficulty", q: "How hard can the adventure be?", opts: [["1", "Easy walks"], ["2", "Day hikes"], ["3", "Multi-day treks"], ["4", "Technical: glaciers, via ferrata"]] },
+  { key: "altitude", q: "How high are you comfortable going?", opts: [["2500", "Below 2,500 m"], ["4000", "Up to 4,000 m"], ["9000", "Higher is fine"]] },
+  { key: "who", q: "Who's usually coming?", opts: [["solo", "Just me"], ["partner", "My partner"], ["family", "Family with kids"], ["friends", "Friends"]] },
+  { key: "home", q: "Where's home base?", opts: [["europe", "Europe"], ["mideast", "Middle East"], ["namerica", "North America"], ["samerica", "South America"], ["asia", "Asia"], ["oceania", "Australia / NZ"], ["africa", "Africa"]] },
+  { key: "avoid", multi: true, q: "Anything to avoid?", hint: "Optional. Pick any.", opts: [["cold", "Extreme cold"], ["heat", "Extreme heat"], ["rain", "Rainy seasons"]] },
+  { key: "drive", q: "Want a great drive (supercar-worthy roads) on your trips?", opts: [["yes", "Yes, plan them in"], ["some", "Sometimes"], ["no", "Not really"]] },
+];
+const tlabel = (key, v) => { const q = TRAVEL_Q.find((x) => x.key === key); const o = q && q.opts.find((o) => o[0] === v); return o ? o[1] : ""; };
+function travelValid(a) {
+  if (!a) return false;
+  return TRAVEL_Q.filter((q) => q.req).every((q) => q.multi ? Array.isArray(a[q.key]) && a[q.key].some((v) => q.opts.some((o) => o[0] === v)) : q.opts.some((o) => o[0] === a[q.key]));
+}
+// What the dossier knows about each seeded place. Places added later fall back to terrain + hemisphere defaults.
+const PLACE_INFO = {
+  "kazakhstan": { best: [5, 6, 9], alt: 2500, diff: 2, cost: 1, days: 8, drive: "Almaty to Charyn Canyon and the Kolsai Lakes", tip: "Visa-free for many passports. Distances are long: hire a 4x4 with a driver." },
+  "finnish-lapland": { best: [1, 2, 3, 9], alt: 500, diff: 2, cost: 3, days: 5, drive: "The Arctic Road north through Lapland, on studded winter tyres", tip: "Aurora season runs September to March; the lakes freeze solid January to March." },
+  "dolomites": { best: [6, 9], alt: 3000, diff: 3, cost: 3, days: 7, drive: "The Great Dolomites Road and the Sella Pass", tip: "Rifugios open mid-June to late September. June and September beat the August crowds." },
+  "american-wild": { best: [7, 8, 9], alt: 3500, diff: 3, cost: 3, days: 10, drive: "The Beartooth Highway, Montana to Wyoming", tip: "Grizzly country: carry bear spray. Teton backcountry trips need a permit." },
+  "brazil": { best: [7, 8, 9, 10, 11], alt: 200, diff: 2, cost: 2, days: 7, drive: null, tip: "Yellow fever vaccination is recommended. Go deep with a licensed jungle lodge." },
+  "peru": { best: [5, 6, 7, 8, 9], alt: 4600, diff: 3, cost: 2, days: 10, drive: null, tip: "Inca Trail permits sell out months ahead; the Salkantay route needs none. Spend 2-3 days in Cusco (3,400 m) first." },
+  "maldives": { best: [12, 1, 2, 3, 4], alt: 0, diff: 1, cost: 3, days: 7, drive: null, tip: "Outer atolls need a seaplane or domestic flight; book the transfer with the room." },
+  "thailand": { best: [12, 1, 2, 3], alt: 1000, diff: 2, cost: 1, days: 8, drive: null, tip: "Stay in Khao Sok's floating lake bungalows. The west coast gets monsoon rain May to October." },
+  "japan": { best: [7, 8, 9, 10], alt: 3190, diff: 3, cost: 3, days: 10, drive: "Hokkaido's east coast to the Shiretoko peninsula", tip: "Mountain huts in the Northern Alps open July to mid-October." },
+  "hawaii": { best: [4, 5, 6, 9, 10], alt: 4200, diff: 2, cost: 3, days: 7, drive: "The Saddle Road across the Big Island toward Mauna Kea", tip: "Lava viewing depends on current activity: check the USGS volcano updates before you go." },
+  "austria": { best: [6, 7, 8, 9], alt: 3000, diff: 3, cost: 3, days: 6, drive: "The Grossglockner High Alpine Road (open May to October)", tip: "Hohe Tauern huts open late June to September." },
+  "france": { best: [6, 7, 8, 9], alt: 2700, diff: 4, cost: 3, days: 7, drive: "The Route des Grandes Alpes over the Col de l'Iseran", tip: "The GR20 takes about 15 days and is Europe's toughest long trail. Book the refuges." },
+  "iceland": { best: [7, 8, 9], alt: 1000, diff: 3, cost: 3, days: 8, drive: "The F-roads into the highlands (4x4 only)", tip: "Highland roads open late June to early September. Ice caves are a separate winter trip, November to March." },
+  "patagonia": { best: [11, 12, 1, 2, 3], alt: 1200, diff: 3, cost: 3, days: 10, drive: "The Carretera Austral", tip: "Refugios and campsites on the W and O circuits must be booked ahead. The wind is the real test." },
+  "new-zealand": { best: [11, 12, 1, 2, 3, 4], alt: 1200, diff: 3, cost: 3, days: 12, drive: "The Milford Road from Te Anau", tip: "Great Walk huts (Milford Track) open late October to April and sell out fast." },
+  "georgia": { best: [7, 8, 9], alt: 3000, diff: 3, cost: 1, days: 8, drive: "The Georgian Military Road over the Jvari Pass", tip: "Mestia to Ushguli is a 4-day hike between stone-tower villages, staying in guesthouses." },
+  "faroe-islands": { best: [5, 6, 7, 8], alt: 880, diff: 2, cost: 3, days: 5, drive: "The tunnels and coast roads between the islands", tip: "Many trails cross private land and charge a hiking fee. Weather changes by the hour." },
+  "bhutan": { best: [3, 4, 10, 11], alt: 4200, diff: 3, cost: 3, days: 8, drive: null, tip: "Visitors pay a daily Sustainable Development Fee (check the current rate) and travel with a licensed guide." },
+  "mongolia": { best: [6, 7, 8, 9], alt: 2800, diff: 2, cost: 1, days: 12, drive: "Overland by 4x4 from Ulaanbaatar to the Gobi", tip: "Distances are huge and roads rough: plan a driver-guide and ger camps." },
+  "namibia": { best: [5, 6, 7, 8, 9, 10], alt: 2000, diff: 2, cost: 2, days: 12, drive: "Self-drive from Sossusvlei to Etosha through Damaraland", tip: "The dry season (May to October) is best for wildlife at Etosha's waterholes." },
+};
+function placeInfo(p) {
+  if (PLACE_INFO[p.id]) return PLACE_INFO[p.id];
+  const south = p.lat < 0;
+  const best = { alpine: south ? [12, 1, 2, 3] : [6, 7, 8, 9], arctic: south ? [12, 1, 2] : [1, 2, 3, 9], arid: [4, 5, 10, 11], rainforest: [1, 2, 3, 7, 8], ocean: [4, 5, 6, 9, 10] }[p.family] || [5, 6, 9];
+  return { best, alt: p.family === "alpine" ? 3000 : 1000, diff: p.family === "alpine" ? 3 : 2, cost: 2, days: 7, drive: null, tip: "", estimated: true };
+}
+const HOME_AT = { europe: [48, 10], mideast: [30, 40], namerica: [40, -95], samerica: [-15, -60], asia: [30, 105], oceania: [-30, 145], africa: [0, 20] };
+function kmBetween([la1, lo1], [la2, lo2]) { const r = Math.PI / 180, d = Math.sin((la2 - la1) * r / 2) ** 2 + Math.cos(la1 * r) * Math.cos(la2 * r) * Math.sin((lo2 - lo1) * r / 2) ** 2; return 12742 * Math.asin(Math.sqrt(d)); }
+const DAY_COST = { lean: [50, 80, 130], comfort: [120, 200, 320], best: [350, 600, 1000] };
+const FLIGHT = { lean: [250, 600, 1100], comfort: [400, 900, 1600], best: [900, 2500, 5000] };
+function monthLabel(ms) { return ms.map((m) => MONTHS[m - 1]).join(", "); }
+function travelPlan(a) {
+  const tripDays = Number(a.length), n = Number(a.perYear), style = a.style;
+  const avail = new Set((a.months || []).map(Number));
+  const maxDiff = a.difficulty ? Number(a.difficulty) : 9, maxAlt = a.altitude ? Number(a.altitude) : 99999, avoid = new Set(a.avoid || []);
+  const ranked = [], skipped = [];
+  state.destinations.filter((p) => !p.visited).forEach((p) => {
+    const info = placeInfo(p);
+    const when = info.best.filter((m) => avail.has(m));
+    if (!when.length) { skipped.push({ p, info }); return; }
+    let score = 10 + Math.min(3, when.length); const warn = [], plus = [];
+    if (info.diff > maxDiff) { score -= 3; warn.push(`Harder than you asked for${info.diff >= 4 ? ": technical terrain" : ": multi-day trekking"}. Easier options exist there, but plan them.`); }
+    if (info.alt > maxAlt) { score -= 2; warn.push(`Reaches about ${info.alt.toLocaleString("en-US")} m. Plan acclimatization days or stay lower.`); }
+    if (avoid.has("cold") && (p.family === "arctic" || when.some((m) => [12, 1, 2].includes(m) && p.lat > 50))) { score -= 2; warn.push("It's cold there in your months."); }
+    if (avoid.has("heat") && (p.family === "arid" || p.family === "rainforest" || Math.abs(p.lat) < 25)) { score -= 2; warn.push("Expect heat: it's warm there all year."); }
+    if (avoid.has("rain") && p.family === "rainforest") { score -= 1; warn.push("Rain is part of rainforest life even in the drier months."); }
+    if (a.who === "family" && info.diff >= 3) { score -= 1; warn.push("Pick the shorter routes with kids."); }
+    let tier = 1;
+    if (a.home) { const km = kmBetween(HOME_AT[a.home], [p.lat, p.lon]); tier = km < 3000 ? 0 : km < 8000 ? 1 : 2; if (tripDays <= 10 && tier === 2) { score -= 2; warn.push("A long flight for a short trip. Better on a longer stretch."); } else if (tier === 0) { score += 1; plus.push("Close to home base."); } }
+    if (info.days > tripDays) { score -= 2; warn.push(`Needs at least ${info.days} days to be worth it.`); }
+    if (style === "lean" && info.cost === 3) { score -= 1; warn.push("One of the pricier places on your list."); }
+    if (style === "lean" && info.cost === 1) { score += 1; plus.push("Good value."); }
+    if (when.length >= 2) plus.push(`Good in ${when.length} of your months.`);
+    const days = Math.max(Math.min(tripDays, 45), info.days);
+    ranked.push({ p, info, when, score, warn, plus, tier, days });
+  });
+  ranked.sort((x, y) => y.score - x.score || x.p.name.localeCompare(y.p.name));
+  const costOf = (r, days) => Math.round((DAY_COST[style][r.info.cost - 1] * days + FLIGHT[style][r.tier]) / 50) * 50;
+  // place trips into the next 12 months, each in its best available month; long trips chain nearby places in the same season
+  const now = new Date(), slots = []; for (let i = 1; i <= 12; i++) { const d = new Date(now.getFullYear(), now.getMonth() + i, 1); slots.push({ m: d.getMonth() + 1, y: d.getFullYear(), trip: null }); }
+  const used = new Set(), trips = [], span = Math.max(1, Math.round(tripDays / 30));
+  for (const r of ranked) {
+    if (trips.length >= n) break;
+    if (used.has(r.p.id)) continue;
+    const si = slots.findIndex((s, i) => r.when.includes(s.m) && slots.slice(i, i + span).length === span && slots.slice(i, i + span).every((x) => !x.trip && avail.has(x.m)));
+    if (si < 0) continue;
+    const stops = [r]; used.add(r.p.id); let total = r.days;
+    if (tripDays > 30) {
+      for (const o of ranked) {
+        if (total >= tripDays || used.has(o.p.id)) continue;
+        if (kmBetween([r.p.lat, r.p.lon], [o.p.lat, o.p.lon]) < 2500 && o.when.includes(slots[si].m)) { stops.push(o); used.add(o.p.id); total += o.days; }
+      }
+    }
+    const days = tripDays > 30 ? Math.max(tripDays, stops.reduce((s, x) => s + x.info.days, 0)) : Math.max(tripDays, r.info.days);
+    const per = Math.round(days / stops.length);
+    const cost = stops.reduce((s, x, i) => s + (i === 0 ? costOf(x, per) : Math.round(DAY_COST[style][x.info.cost - 1] * per / 50) * 50), 0);
+    const trip = { stops: stops.map((x) => ({ id: x.p.id, name: x.p.name })), month: slots[si].m, year: slots[si].y, days, cost };
+    for (let k = si; k < si + span && k < slots.length; k++) slots[k].trip = trip;
+    trips.push(trip);
+  }
+  trips.sort((x, y) => x.year - y.year || x.month - y.month);
+  const yearCost = trips.reduce((s, t) => s + t.cost, 0);
+  const why = [
+    `Ranked from ${ranked.length} places you haven't been to yet, by season, ${a.difficulty ? "difficulty, " : ""}${a.altitude ? "altitude, " : ""}${a.home ? "distance, " : ""}trip length and budget.`,
+    `${trips.length} of ${n} ${n === 1 ? "trip" : "trips"} fit into your travel months over the next year.${trips.length < n ? " Add more travel months or places to fit the rest." : ""}`,
+  ];
+  if (tripDays > 30) why.push("Long stretches combine nearby places that share a season, so one flight covers several.");
+  if (skipped.length) why.push(`${skipped.length} ${skipped.length === 1 ? "place is" : "places are"} out of season in your months.`);
+  return { ranked, skipped, trips, slots, yearCost, why, style };
+}
+const tvUI = { editing: false, draft: {}, showAll: false };
+function renderTravel() {
+  const el = $("#travelplan"); if (!el) return;
+  if (!loaded) { el.innerHTML = `<p class="loading">Opening the travel plan…</p>`; return; }
+  const a = state.travelAnswers, has = travelValid(a);
+  if (!has || tvUI.editing) return renderTravelQuiz(el, has);
+  const t = travelPlan(a), $$$ = (n) => usd0.format(n);
+  const target = bizValid(state.bizAnswers) ? Number(state.bizAnswers.target) : null;
+  const perMonth = Math.round(t.yearCost / 12 / 10) * 10;
+  const top = tvUI.showAll ? t.ranked : t.ranked.slice(0, 6);
+  el.innerHTML = `
+    <div class="card biz travel">
+      <div class="biz-top">
+        <div><span class="eyebrow">Your travel plan</span><h3 class="biz-model">${t.trips.length ? `${t.trips.length} ${t.trips.length === 1 ? "trip" : "trips"} in the next 12 months` : "No trips fit yet"}</h3></div>
+        <button class="btn small" type="button" data-act="travel-edit">Change answers</button>
+      </div>
+      <div>
+        <span class="eyebrow">Your year</span>
+        <div class="year" role="list">${t.slots.map((s) => `<div class="mo ${s.trip ? "on" : ""} ${(a.months || []).includes(String(s.m)) ? "free" : ""}" role="listitem"><span class="mn">${MONTHS[s.m - 1]}${s.m === 1 ? ` <span class="yr">${s.y}</span>` : ""}</span>${s.trip && s.trip.month === s.m ? `<span class="tr">${esc(s.trip.stops.map((x) => x.name).join(" + "))}</span>` : s.trip ? `<span class="tr cont">continued</span>` : ""}</div>`).join("")}</div>
+        <p class="muted" style="font-size:.8rem;margin-top:6px">Outlined months are the ones you can travel.</p>
+      </div>
+      ${t.trips.length ? `<ol class="trips">${t.trips.map((tr) => `<li><div><strong>${esc(tr.stops.map((x) => x.name).join(" + "))}</strong><span class="muted"> · ${MONTHS[tr.month - 1]} ${tr.year} · ${tr.days} days</span></div><span class="num">${$$$(tr.cost)}</span></li>`).join("")}</ol>` : `<p class="muted">None of your places are in season during your travel months. Add months or places.</p>`}
+      <div class="biz-grid">
+        <div class="biz-target">
+          <span class="eyebrow">Travel budget</span>
+          <div class="val num">${$$$(t.yearCost)} <span class="muted">a year</span></div>
+          <p class="muted">About ${$$$(perMonth)} a month, flights included, at ${tlabel("style", a.style).toLowerCase()} prices.</p>
+        </div>
+        <div>
+          <span class="eyebrow">Against your business target</span>
+          ${target ? `<p>${perMonth <= target ? `Travel takes about ${Math.round(perMonth / target * 100)}% of the ${$$$(target)}/month your business plan aims for.` : `This travel costs more than the ${$$$(target)}/month your business plan aims for. Raise the target, travel leaner, or take fewer trips.`}</p>` : `<p class="muted">Set a monthly target in the Business plan on The Journey to compare.</p>`}
+          <p class="muted" style="font-size:.8rem">Rough estimates: flights, stays, food and local transport. Permits, gear and car rentals are extra.</p>
+        </div>
+      </div>
+      <div>
+        <span class="eyebrow">Best places for you, in order</span>
+        <div class="picks">${top.map((r, i) => `
+          <article class="pick fam-${esc(r.p.family)}">
+            <div class="pick-head"><span class="rank num">${i + 1}</span><h4>${esc(r.p.name)}</h4><span class="dot" aria-hidden="true"></span></div>
+            <p class="when">Go in <strong>${monthLabel(r.when)}</strong> · ${r.days} days · about ${$$$(costOf2(r, t.style))}</p>
+            ${r.plus.length ? `<p class="good">${esc(r.plus.join(" "))}</p>` : ""}
+            ${r.warn.map((w) => `<p class="warn">${esc(w)}</p>`).join("")}
+            ${r.info.tip ? `<p class="muted tip">${esc(r.info.tip)}</p>` : r.info.estimated ? `<p class="muted tip">Seasons estimated from terrain. Ask Atlas for details.</p>` : ""}
+            ${a.drive && a.drive !== "no" && r.info.drive ? `<p class="drive">Drive: ${esc(r.info.drive)}${a.style === "best" ? ". Supercar rental usually runs $800-1,500 a day where available." : ""}</p>` : ""}
+            <button class="btn small ghost" type="button" data-act="travel-show" data-id="${esc(r.p.id)}">Show on the globe</button>
+          </article>`).join("")}</div>
+        ${t.ranked.length > 6 ? `<button class="btn small" type="button" data-act="travel-more" style="margin-top:10px">${tvUI.showAll ? "Show fewer" : `Show all ${t.ranked.length}`}</button>` : ""}
+      </div>
+      ${t.skipped.length ? `<div><span class="eyebrow">Out of season in your months</span><p class="muted" style="font-size:.88rem;margin-top:4px">${t.skipped.map((s) => `${esc(s.p.name)} (best ${monthLabel(s.info.best)})`).join(" · ")}</p></div>` : ""}
+      <div class="why-inline"><span class="eyebrow">How this was worked out</span><ul>${t.why.map((w) => `<li>${esc(w)}</li>`).join("")}</ul></div>
+    </div>`;
+  function costOf2(r, style) { return Math.round((DAY_COST[style][r.info.cost - 1] * r.days + FLIGHT[style][r.tier]) / 50) * 50; }
+}
+function renderTravelQuiz(el, has) {
+  const d = tvUI.draft, ok = travelValid(d);
+  el.innerHTML = `
+    <form class="card quiz" id="travelquiz" novalidate>
+      <div>
+        <span class="eyebrow">${has ? "Update your travel plan" : "Your travel plan"}</span>
+        <h3 style="margin-top:6px;font-size:1.2rem">${has ? "Change what's different. The rest stays as it was." : "Tell me how you travel, and I'll plan the year"}</h3>
+        <p class="muted" style="margin-top:6px">The first four are needed. The rest make it more personal. Atlas sees your answers too.</p>
+      </div>
+      ${TRAVEL_Q.map((q, i) => `
+        ${i === 4 ? `<div class="quiz-optional"><h3 class="quiz-group">Make it personal <span class="muted">(optional)</span></h3></div>` : ""}
+        <fieldset><legend>${q.req ? `<span class="qn">${i + 1}/4</span>` : ""}${esc(q.q)}</legend>${q.hint ? `<span class="hint">${esc(q.hint)}</span>` : ""}
+          <div class="choice">${q.opts.map(([v, l]) => `<input type="${q.multi ? "checkbox" : "radio"}" name="t-${q.key}" id="tq-${q.key}-${v}" value="${v}" ${q.multi ? (Array.isArray(d[q.key]) && d[q.key].includes(v) ? "checked" : "") : d[q.key] === v ? "checked" : ""}><label for="tq-${q.key}-${v}">${esc(l)}</label>`).join("")}</div>
+        </fieldset>`).join("")}
+      <div class="quiz-foot">
+        <button class="btn primary" type="submit" id="travel-build" ${ok ? "" : "disabled"}>Build my travel plan</button>
+        ${has ? `<button class="btn" type="button" data-act="travel-cancel">Keep the current plan</button>` : ""}
+        <span class="muted" id="travel-note" style="font-size:.88rem" aria-live="polite">${ok ? "Ready." : "Answer the first four to build the plan"}</span>
+        <span class="err" id="travelquiz-err"></span>
+      </div>
+    </form>`;
+  const form = $("#travelquiz");
+  form.addEventListener("change", (e) => {
+    const t = e.target; if (!t.name) return; const k = t.name.slice(2);
+    tvUI.draft[k] = t.type === "checkbox" ? $$(`input[name="${t.name}"]:checked`, form).map((i) => i.value) : t.value;
+    const good = travelValid(tvUI.draft); $("#travel-build").disabled = !good; $("#travel-note").textContent = good ? "Ready." : "Answer the first four to build the plan";
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); if (!travelValid(tvUI.draft)) return;
+    const a = {}; TRAVEL_Q.forEach((q) => { const v = tvUI.draft[q.key]; if (q.multi ? Array.isArray(v) && v.length : q.opts.some((o) => o[0] === v)) a[q.key] = q.multi ? v.filter((x) => q.opts.some((o) => o[0] === x)) : v; });
+    try { await store.setSingle("travelAnswers", a); } catch (err) { $("#travelquiz-err").textContent = SAVE_FAIL; return; }
+    tvUI.editing = false; renderTravel(); $("#travelplan").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); toast("Travel plan built");
+  });
+}
+function travelContext() {
+  const a = state.travelAnswers; if (!travelValid(a)) return "Travel profile: not filled in yet (the questions are below the globe on the Atlas page).";
+  const t = travelPlan(a);
+  const ans = TRAVEL_Q.filter((q) => a[q.key]).map((q) => `${q.q} ${q.multi ? a[q.key].map((v) => tlabel(q.key, v)).join(", ") : tlabel(q.key, a[q.key])}`).join("\n");
+  return `Travel profile answers:\n${ans}\nPlanned trips shown to them (next 12 months): ${t.trips.map((tr) => `${tr.stops.map((x) => x.name).join(" + ")} in ${MONTHS[tr.month - 1]} ${tr.year}, ${tr.days} days, about ${usd0.format(tr.cost)}`).join("; ") || "none fit"}.\nEstimated travel budget: ${usd0.format(t.yearCost)} a year.\nTop-ranked places: ${t.ranked.slice(0, 8).map((r) => `${r.p.name} (go ${monthLabel(r.when)}${r.warn.length ? "; " + r.warn.join(" ") : ""})`).join("; ")}.`;
+}
+
 function renderAtlas() {
   if (atlasUI.selectedId && !state.destinations.some((d) => d.id === atlasUI.selectedId)) atlasUI.selectedId = null;
   if (!atlasUI.selectedId && state.destinations.length) atlasUI.selectedId = sortedPlaces()[0].id;
-  renderFamilyChips(); renderPlaceList(); renderDetail();
+  renderFamilyChips(); renderPlaceList(); renderDetail(); renderTravel();
   if (globe) { globe.setMarkers(state.destinations); globe.setVisible(new Set(visiblePlaces().map((p) => p.id))); globe.setSelected(atlasUI.selectedId); }
 }
 
@@ -1912,7 +2146,7 @@ function renderBizQuiz(el, has) {
     e.preventDefault(); if (!bizValid(bUI.draft)) return;
     const a = {}; BIZ_Q.forEach((q) => { const v = bUI.draft[q.key]; if (q.multi ? Array.isArray(v) && v.length : q.opts.some((o) => o[0] === v)) a[q.key] = q.multi ? v.filter((x) => q.opts.some((o) => o[0] === x)) : v; });
     try { await store.setSingle("bizAnswers", a); } catch (err) { $("#bizquiz-err").textContent = SAVE_FAIL; return; }
-    bUI.editing = false; renderBiz(); $("#bizplan").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); toast("Business plan built");
+    bUI.editing = false; renderBiz(); renderTravel(); $("#bizplan").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); toast("Business plan built");
   });
 }
 async function tickMilestone(id, on) {
@@ -2333,7 +2567,7 @@ const ASSISTANTS = {
     context() {
       const sel = state.destinations.find((d) => d.id === atlasUI.selectedId);
       const lines = sortedPlaces().map((p) => `- ${p.name} [id: ${p.id}] ${fmtCoord(p.lat, p.lon)}, ${p.family}, ${p.terrain || ""}${p.visited ? `, BEEN THERE${p.visitedOn ? " (" + p.visitedOn + ")" : ""}` : ""}. Note: ${p.note || "none"}`);
-      return `Their atlas (${state.destinations.length} places, ${state.destinations.filter((p) => p.visited).length} visited):\n${lines.join("\n")}\n\nCurrently open on screen: ${sel ? sel.name : "nothing"}.\nTraining status (for trek difficulty): ${state.answers ? `${label("experience", state.answers.experience)}, trains ${state.answers.days} days a week, goal ${label("goal", state.answers.goal)}` : "no training plan yet"}.`;
+      return `${travelContext()}\n\nTheir atlas (${state.destinations.length} places, ${state.destinations.filter((p) => p.visited).length} visited):\n${lines.join("\n")}\n\nCurrently open on screen: ${sel ? sel.name : "nothing"}.\nTraining status (for trek difficulty): ${state.answers ? `${label("experience", state.answers.experience)}, trains ${state.answers.days} days a week, goal ${label("goal", state.answers.goal)}` : "no training plan yet"}.`;
     },
     tools: () => [
       { name: "add_place", description: "Add a new destination to the user's atlas and globe. Only use when the user asks to add a place. Returns the new place id.",
@@ -2691,13 +2925,14 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(),
     destinations, projects,
     income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
     readingList: books, milestones, currentStage: stage,
     training: { answers, activePlan: plan, completedSessions: trainingLog },
+    travel: { answers: travelAnswers, plan: travelValid(travelAnswers) ? (({ trips, yearCost }) => ({ trips, yearCost }))(travelPlan(travelAnswers)) : null },
     business: { answers: bizAnswers, plan: bizValid(bizAnswers) ? bizPlan(bizAnswers) : null, completedMilestones: bizDone },
   }, null, 2);
 }
@@ -2808,6 +3043,10 @@ document.addEventListener("click", async (e) => {
     case "rebuild": tUI.rebuilding = true; tUI.draft = draftFrom(state.answers); renderTraining(); window.scrollTo({ top: 0 }); break;
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
+    case "travel-edit": tvUI.editing = true; tvUI.draft = JSON.parse(JSON.stringify(state.travelAnswers || {})); renderTravel(); { const f = $("#travelquiz input:checked") || $("#travelquiz input"); f && f.focus(); } break;
+    case "travel-cancel": tvUI.editing = false; renderTravel(); break;
+    case "travel-more": tvUI.showAll = !tvUI.showAll; renderTravel(); break;
+    case "travel-show": selectPlace(b.dataset.id); window.scrollTo({ top: 0, behavior: reduceMotion.matches ? "auto" : "smooth" }); break;
     case "biz-edit": bUI.editing = true; bUI.draft = JSON.parse(JSON.stringify(state.bizAnswers || {})); renderBiz(); { const f = $("#bizquiz input:checked") || $("#bizquiz input"); f && f.focus(); } break;
     case "biz-cancel": bUI.editing = false; renderBiz(); break;
     case "plan-view": tUI.view = b.dataset.v; renderTraining(); $(`[data-act=plan-view][data-v="${b.dataset.v}"]`).focus(); break;
