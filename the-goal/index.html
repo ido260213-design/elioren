@@ -335,6 +335,27 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .phases th,.phases td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--hairline)}
 .phases thead th{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
 .phases tbody th{font-weight:600}
+.biz{padding:20px 22px;display:grid;gap:18px}
+.biz-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.biz-model{font-size:1.35rem;margin-top:4px}
+.biz-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:720px){.biz-grid{grid-template-columns:1fr}}
+.biz-grid p{font-size:.92rem;margin-top:4px}
+.biz-target .val{font:500 1.5rem/1.2 var(--f-mono);margin:4px 0 8px}
+.biz-target .val .muted{font-size:.95rem}
+.biz-bar{width:100%;height:8px}
+.biz-offers{margin:6px 0 0;padding-left:1.2em;display:grid;gap:3px;font-size:.93rem}
+.biz-phases{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:10px}
+.biz-phases>li{border:1px solid var(--hairline);border-radius:var(--r-sm);padding:10px 14px;background:var(--paper)}
+.ph-head{display:flex;justify-content:space-between;gap:10px;font-size:.92rem;margin-bottom:6px}
+.ph-head .muted{font-size:.8rem}
+.biz-phases ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.ms{display:flex;gap:10px;align-items:flex-start;font-size:.9rem;cursor:pointer}
+.ms input{width:17px;height:17px;margin-top:2px;accent-color:var(--moss);flex:none}
+.ms input:checked+span{color:var(--muted);text-decoration:line-through}
+.biz-rhythm{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px;font-size:.92rem}
+.biz-rhythm li{display:flex;justify-content:space-between;border-bottom:1px solid var(--hairline);padding:4px 0}
+.why-inline ul{margin:6px 0 0;padding-left:1.2em;display:grid;gap:3px;font-size:.92rem}
 .plan-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;align-items:center}
 
 /* ---------- AI assistants ---------- */
@@ -502,6 +523,11 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
           <summary>All income entries</summary>
           <ul class="entry-list" id="entry-list"></ul>
         </details>
+      </section>
+
+      <section aria-labelledby="biz-h">
+        <div class="sec-head"><div><h2 id="biz-h">Business plan</h2><p class="sub">Built from your answers. Tick milestones off as you go.</p></div></div>
+        <div id="bizplan"></div>
       </section>
 
       <section aria-labelledby="proj-h">
@@ -692,9 +718,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [] };
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [] };
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log" };
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 let loaded = false;
 
@@ -734,6 +760,7 @@ const store = {
     const singles = await Promise.all(Object.values(SINGLE_PATHS).map((p) => db.doc(p).get()));
     Object.keys(SINGLE_PATHS).forEach((k, i) => { const s = singles[i]; state[k] = s.exists ? { ...s.data() } : null; });
     state.trainingLog = state.trainingLog && Array.isArray(state.trainingLog.entries) ? state.trainingLog.entries.slice() : [];
+    state.bizDone = state.bizDone && Array.isArray(state.bizDone.done) ? state.bizDone.done.map(String) : [];
   },
   async loadLocal() {
     let raw = null, ok = true;
@@ -754,8 +781,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -776,7 +803,7 @@ const store = {
     if (this.mode === "db") {
       const ref = this.db.doc(SINGLE_PATHS[key]);
       if (data === null) await ref.delete();
-      else await ref.set(key === "trainingLog" ? { entries: data } : data);
+      else await ref.set(key === "trainingLog" ? { entries: data } : key === "bizDone" ? { done: data } : data);
     }
     state[key] = data;
     if (this.mode !== "db") this.saveLocal();
@@ -1598,7 +1625,7 @@ $("#form-income").addEventListener("submit", async (e) => {
   if (dErr) { $("#if-date").focus(); return; }
   const obj = { id: uid(), cents: a.cents, date, note: $("#if-note").value.trim(), createdAt: new Date().toISOString() };
   try { await store.put("income", obj); } catch (err) { $("#if-save-err").textContent = SAVE_FAIL; return; }
-  closeDialogs(); renderEarnings(); toast(`${money(obj.cents)} logged`);
+  closeDialogs(); renderEarnings(); renderBiz(); toast(`${money(obj.cents)} logged`);
 });
 $("#if-amount").addEventListener("input", () => { if ($("#if-amount").getAttribute("aria-invalid") === "true") { const a = parseAmount($("#if-amount").value); $("#if-amount-err").textContent = a.err || ""; $("#if-amount").setAttribute("aria-invalid", a.err ? "true" : "false"); } });
 
@@ -1727,7 +1754,180 @@ $("#form-log").addEventListener("submit", async (e) => {
   closeDialogs(); renderTimeline(); toast("Entry added to the field log");
 });
 
-function renderJourney() { renderStage(); renderEarnings(); renderProjects(); renderBooks(); renderTimeline(); }
+/* ---------- business plan: questions → a rule-based personal plan ---------- */
+const BIZ_Q = [
+  { key: "model", req: true, q: "What kind of online business fits you best?", opts: [["services", "Services: freelance or consulting"], ["products", "Digital products and courses"], ["content", "Content and audience: video, newsletter, affiliate"], ["ecom", "E-commerce"], ["saas", "Software (SaaS)"], ["unsure", "Not sure yet"]] },
+  { key: "skills", req: true, multi: true, q: "What are you strongest at?", hint: "Pick all that apply.", opts: [["writing", "Writing"], ["design", "Design"], ["video", "Video and photo"], ["code", "Coding"], ["selling", "Selling and talking to people"], ["teaching", "Teaching"], ["marketing", "Marketing"], ["outdoors", "Travel and outdoors know-how"]] },
+  { key: "hours", req: true, q: "How many hours a week can you put in?", opts: [["5", "Under 10"], ["15", "10-20"], ["30", "20-40"], ["45", "40+"]] },
+  { key: "target", req: true, q: "How much a month do you need to travel the way you want?", opts: [["2000", "$2,000"], ["5000", "$5,000"], ["10000", "$10,000"], ["20000", "$20,000+"]] },
+  { key: "budget", q: "What can you spend to get started?", opts: [["low", "Under $500"], ["mid", "$500-2,000"], ["high", "$2,000-10,000"], ["big", "$10,000+"]] },
+  { key: "horizon", q: "When do you want it to fund the travel?", opts: [["6", "In 6 months"], ["12", "In a year"], ["24", "In 2 years"], ["36", "No rush"]] },
+  { key: "audience", q: "Do you already have an audience anywhere?", opts: [["none", "None yet"], ["small", "Under 1,000"], ["mid", "1,000-10,000"], ["big", "10,000+"]] },
+  { key: "risk", q: "How do you want to handle risk?", opts: [["safe", "Keep a steady income while I build"], ["allin", "Go all-in for a while"]] },
+  { key: "roadHours", q: "On the road, how much do you want to work?", opts: [["1", "About an hour a day"], ["3", "A few hours a day"], ["8", "Full workdays"]] },
+];
+const blabel = (key, v) => { const q = BIZ_Q.find((x) => x.key === key); const o = q && q.opts.find((o) => o[0] === v); return o ? o[1] : ""; };
+function bizValid(a) {
+  if (!a) return false;
+  return BIZ_Q.filter((q) => q.req).every((q) => q.multi ? Array.isArray(a[q.key]) && a[q.key].some((v) => q.opts.some((o) => o[0] === v)) : q.opts.some((o) => o[0] === a[q.key]));
+}
+const MODELS = {
+  services: { name: "A service business", short: "Services", base: 6, unit: (t) => `${Math.ceil(t / 1500)} ${Math.ceil(t / 1500) === 1 ? "client" : "clients"} on a $1,500/month retainer`,
+    offers: { writing: "Content writing retainers for outdoor and travel brands", design: "Brand and website design packages", video: "Video editing for creators and brands", code: "Web development on a monthly retainer", selling: "Done-for-you sales outreach for small companies", teaching: "1:1 coaching in what you know best", marketing: "Paid ads management for small brands", outdoors: "Custom trip planning for travelers who want wild, quiet places" },
+    first: "Offer one clear package to 10 people you could help this month", road: "Clients expect answers: set fixed hours that work across time zones, and put your process into templates so the work doesn't depend on where you are." },
+  products: { name: "Digital products and courses", short: "Products", base: 9, unit: (t) => `about ${Math.ceil(t / 49)} sales a month of a $49 guide, or ${Math.ceil(t / 299)} of a $299 course`,
+    offers: { writing: "Guides and ebooks", design: "Templates and presets (Notion, Canva, Lightroom)", video: "A video course", code: "Code templates and starter kits", selling: "A sales course for freelancers", teaching: "An online course or small cohort", marketing: "Marketing playbooks and swipe files", outdoors: "Trek route guides and packing systems for wild trips" },
+    first: "Pre-sell the product to 5 people before you build it", road: "Products sell while you're offline. Keep delivery automatic (payment → instant download) and batch support into one hour a day." },
+  content: { name: "A content and audience business", short: "Content", base: 18, unit: (t) => `roughly ${Math.ceil(t).toLocaleString("en-US")} engaged followers (about $1 each a month from sponsors, affiliate links and your own products)`,
+    offers: { writing: "A newsletter about uncrowded places", design: "A visual brand around wild travel", video: "A YouTube channel on wild, quiet travel", code: "A blog with free tools for travelers", selling: "Sponsorship-driven content with brand partners", teaching: "Tutorial videos in your area of skill", marketing: "An audience you grow on 1-2 platforms and monetize with affiliates", outdoors: "Gear reviews and trip reports with affiliate links" },
+    first: "Publish once a week for 12 weeks without skipping", road: "Your trips are the content: batch-record on the road, edit on rest days, and schedule posts ahead." },
+  ecom: { name: "An e-commerce brand", short: "E-commerce", base: 9, unit: (t) => `about ${Math.ceil(t / 25).toLocaleString("en-US")} orders a month at $25 profit each`,
+    offers: { writing: "A small brand with strong product stories", design: "Print-on-demand outdoor designs", video: "Products sold through short-form video", code: "A niche store with custom features", selling: "Wholesale to outdoor shops", teaching: "Kits sold with how-to guides", marketing: "One hero product, tested with small ad budgets", outdoors: "Curated gear kits for specific trips" },
+    first: "Order samples and test one product with a small audience", road: "Use a fulfillment partner so nothing ships from you, and keep a buffer of stock before long trips." },
+  saas: { name: "A small software product (SaaS)", short: "SaaS", base: 15, unit: (t) => `about ${Math.ceil(t / 29).toLocaleString("en-US")} customers paying $29/month`,
+    offers: { writing: "A writing tool for a specific niche", design: "A design tool for a specific workflow", video: "A tool for video creators", code: "A small tool for freelancers or travelers", selling: "A simple CRM for one type of business", teaching: "A learning or quiz tool", marketing: "A marketing automation tool", outdoors: "A trip-planning tool for wild routes" },
+    first: "Ship a first version to 5 real users", road: "Automate monitoring and support, keep an on-call plan, and don't launch big changes right before a trip." },
+};
+function pickModel(a) {
+  if (a.model !== "unsure") return a.model;
+  const s = { services: 0, products: 0, content: 0, saas: 0, ecom: 0 };
+  const add = { code: { saas: 2, services: 1 }, selling: { services: 2 }, writing: { products: 1, content: 1 }, teaching: { products: 2 }, video: { content: 2 }, design: { services: 1, products: 1 }, marketing: { ecom: 1, content: 1 }, outdoors: { content: 2, products: 1 } };
+  (a.skills || []).forEach((k) => Object.entries(add[k] || {}).forEach(([m, v]) => (s[m] += v)));
+  if (a.audience === "mid" || a.audience === "big") { s.content += 2; s.products += 2; }
+  if (a.hours === "5") { s.products += 1; s.services -= 1; }
+  if (a.roadHours === "1") { s.products += 1; s.services -= 1; }
+  return Object.keys(s).reduce((best, m) => (s[m] > s[best] ? m : best), "services");
+}
+function bizPlan(a) {
+  const key = pickModel(a), M = MODELS[key], T = Number(a.target), hours = Number(a.hours);
+  const hoursF = { 5: 1.6, 15: 1.2, 30: 1, 45: .8 }[hours] || 1, audF = a.audience === "mid" || a.audience === "big" ? .7 : a.audience === "small" ? .9 : 1;
+  const targetF = { 2000: .7, 5000: 1, 10000: 1.4, 20000: 1.9 }[T] || 1;
+  const months = Math.max(3, Math.round(M.base * hoursF * audF * targetF));
+  const horizon = a.horizon ? Number(a.horizon) : null;
+  const offers = [...new Set((a.skills || []).map((k) => M.offers[k]).filter(Boolean))].slice(0, 3);
+  const $ = (n) => usd0.format(n);
+  const ph = (f) => Math.max(1, Math.round(months * f));
+  const phases = [
+    { name: "Validate", months: ph(.1), items: ["Write your offer in one sentence: who it's for and what it gets them", key === "products" ? M.first : "Talk to 10 people who could buy it", "Get 3 people to say yes, or pay in advance"] },
+    { name: "First revenue", months: ph(.25), items: [key === "products" ? "Deliver the product to the people who pre-paid" : M.first, "Land your first paying customer and log it on this page", "Collect a testimonial or result you can show"] },
+    { name: "Make it repeatable", months: ph(.35), items: [`Reach ${$(Math.round(T * .3 / 100) * 100)}/month`, "Find one channel that brings you customers every week", "Set a standard price and a simple sales page"] },
+    { name: "Road-ready", months: ph(.3), items: [`Reach ${$(T)}/month for 3 months in a row`, "Everything runs asynchronously: templates, docs, scheduled posts", "Run the business for two weeks from somewhere else, as a test"] },
+  ].map((p, i) => ({ ...p, items: p.items.map((t) => ({ id: "m" + hashStr(t).toString(36), text: t })) }));
+  let start = 1; phases.forEach((p) => { p.from = start; p.to = start + p.months - 1; start += p.months; });
+  const total = start - 1;
+  const sellShare = a.audience === "big" ? .3 : .4;
+  const rhythm = [["Build and deliver", Math.round(hours * (1 - sellShare - .15))], ["Sell and market", Math.round(hours * sellShare)], ["Learn and plan", Math.max(1, Math.round(hours * .15))]];
+  const budget = { low: "Spend almost nothing until someone pays: free tiers of email, payment and website tools are enough.", mid: "Put money into a domain, a paid email tool and one skill that unblocks you. Skip ads until you know what sells.", high: "You can buy speed: a good designer, a course that teaches your channel, or a small ads test ($300-500) once the offer is proven.", big: "Keep most of it as runway. Spend on proven help (a freelancer or assistant) after the first sales, not before." }[a.budget] || "";
+  const risk = { safe: `Keep your steady income until the business brings in about ${$(Math.round(T * .5 / 100) * 100)}/month for 3 months in a row. Then cut back.`, allin: "Set a runway before you start: how many months of savings you'll spend, and the date you'll decide whether to continue." }[a.risk] || "";
+  const road = [M.road];
+  if (a.roadHours === "1") road.push(key === "services" ? "An hour a day is tight for client work. Plan to hire help or move toward packaged products before long trips." : "An hour a day works if sales and delivery are automatic. Protect that hour every day, in any time zone.");
+  if (a.roadHours === "3") road.push("A few hours a day fits most models. Keep them in the same slot each day, even on travel days.");
+  if (a.roadHours === "8") road.push("Full workdays on the road need good internet: plan base towns between the wild stretches.");
+  const why = [
+    a.model === "unsure" ? `${M.name} suits your strengths${a.audience === "mid" || a.audience === "big" ? " and your existing audience" : ""}.` : `You chose ${M.name[0].toLowerCase() + M.name.slice(1)}.`,
+    `Your target of ${$(T)}/month means ${M.unit(T)}.`,
+    `At ${blabel("hours", a.hours).toLowerCase()} hours a week, this usually takes about ${total} months to become road-ready.`,
+  ];
+  if (horizon && horizon < 36 && total > horizon) why.push(`That's longer than your ${horizon}-month goal. To close the gap: add hours, aim for a smaller first target, or start with services to fund it.`);
+  else if (horizon && horizon < 36) why.push(`That fits your ${horizon}-month goal.`);
+  return { key, name: M.name, short: M.short, target: T, unit: M.unit(T), months: total, horizon, offers, phases, rhythm, budget, risk, road, why };
+}
+const bUI = { editing: false, draft: {} };
+function bizProgress(p) {
+  const t = incomeTotals();
+  const byMonth = {}; state.income.forEach((e) => { const m = String(e.date).slice(0, 7); byMonth[m] = (byMonth[m] || 0) + (Number(e.cents) || 0); });
+  const best = Math.max(0, ...Object.values(byMonth));
+  return { month: t.month, best, pct: Math.min(100, Math.round((t.month / 100) / p.target * 100)) };
+}
+function renderBiz() {
+  const el = $("#bizplan"); if (!el) return;
+  const a = state.bizAnswers, has = bizValid(a);
+  if (!has || bUI.editing) return renderBizQuiz(el, has);
+  const p = bizPlan(a), done = new Set(state.bizDone || []), prog = bizProgress(p);
+  const total = p.phases.reduce((n, ph) => n + ph.items.length, 0), ticked = p.phases.reduce((n, ph) => n + ph.items.filter((i) => done.has(i.id)).length, 0);
+  el.innerHTML = `
+    <div class="card biz">
+      <div class="biz-top">
+        <div><span class="eyebrow">Your business plan</span><h3 class="biz-model">${esc(p.name)}</h3></div>
+        <button class="btn small" type="button" data-act="biz-edit">Change answers</button>
+      </div>
+      <div class="biz-grid">
+        <div class="biz-target">
+          <span class="eyebrow">Monthly travel income</span>
+          <div class="val num">${money(prog.month)} <span class="muted">of ${usd0.format(p.target)}</span></div>
+          <div class="been-bar biz-bar" aria-hidden="true"><i style="width:${prog.pct}%"></i></div>
+          <p class="muted">${prog.month ? `This month is ${prog.pct}% of your target.` : "Nothing logged this month yet."}${prog.best ? ` Best month so far: ${money(prog.best)}.` : ""}</p>
+        </div>
+        <div class="biz-math">
+          <span class="eyebrow">What it takes</span>
+          <p>${esc(p.unit[0].toUpperCase() + p.unit.slice(1))}.</p>
+          <p class="muted">Rough rules of thumb. Your own numbers will replace them once sales come in.</p>
+        </div>
+      </div>
+      ${p.offers.length ? `<div><span class="eyebrow">Offers that fit your strengths</span><ul class="biz-offers">${p.offers.map((o) => `<li>${esc(o)}</li>`).join("")}</ul></div>` : ""}
+      <div>
+        <div class="row" style="justify-content:space-between"><span class="eyebrow">Roadmap · about ${p.months} months</span><span class="muted num" style="font-size:.8rem">${ticked} of ${total} done</span></div>
+        <ol class="biz-phases">${p.phases.map((ph) => `
+          <li><div class="ph-head"><strong>${esc(ph.name)}</strong><span class="muted num">${ph.from === ph.to ? `month ${ph.from}` : `months ${ph.from}-${ph.to}`}</span></div>
+            <ul>${ph.items.map((it) => `<li><label class="ms"><input type="checkbox" data-act="biz-tick" data-id="${it.id}" ${done.has(it.id) ? "checked" : ""}><span>${esc(it.text)}</span></label></li>`).join("")}</ul></li>`).join("")}</ol>
+        <span class="err" id="biz-err"></span>
+      </div>
+      <div class="biz-grid">
+        <div><span class="eyebrow">Your week</span><ul class="biz-rhythm">${p.rhythm.map(([k, h]) => `<li><span>${esc(k)}</span><span class="num">${h} h</span></li>`).join("")}</ul></div>
+        <div><span class="eyebrow">Running it from the road</span>${p.road.map((t) => `<p>${esc(t)}</p>`).join("")}</div>
+      </div>
+      ${p.budget || p.risk ? `<div class="biz-grid">${p.budget ? `<div><span class="eyebrow">Money in</span><p>${esc(p.budget)}</p></div>` : ""}${p.risk ? `<div><span class="eyebrow">Risk</span><p>${esc(p.risk)}</p></div>` : ""}</div>` : ""}
+      <div class="why-inline"><span class="eyebrow">Why this plan fits you</span><ul>${p.why.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></div>
+    </div>`;
+}
+function renderBizQuiz(el, has) {
+  const d = bUI.draft;
+  const ok = bizValid(d);
+  el.innerHTML = `
+    <form class="card quiz" id="bizquiz" novalidate>
+      <div>
+        <span class="eyebrow">${has ? "Update your business plan" : "Your business plan"}</span>
+        <h3 style="margin-top:6px;font-size:1.2rem">${has ? "Change what's different. The rest stays as it was." : "A few questions, and you get a plan built around you"}</h3>
+        <p class="muted" style="margin-top:6px">The first four are needed. The rest make it more personal. Sterling sees your answers too.</p>
+      </div>
+      ${BIZ_Q.map((q, i) => `
+        ${i === 4 ? `<div class="quiz-optional"><h3 class="quiz-group">Make it personal <span class="muted">(optional)</span></h3></div>` : ""}
+        <fieldset><legend>${q.req ? `<span class="qn">${i + 1}/4</span>` : ""}${esc(q.q)}</legend>${q.hint ? `<span class="hint">${esc(q.hint)}</span>` : ""}
+          <div class="choice">${q.opts.map(([v, l]) => `<input type="${q.multi ? "checkbox" : "radio"}" name="b-${q.key}" id="bq-${q.key}-${v}" value="${v}" ${q.multi ? (Array.isArray(d[q.key]) && d[q.key].includes(v) ? "checked" : "") : d[q.key] === v ? "checked" : ""}><label for="bq-${q.key}-${v}">${esc(l)}</label>`).join("")}</div>
+        </fieldset>`).join("")}
+      <div class="quiz-foot">
+        <button class="btn primary" type="submit" id="biz-build" ${ok ? "" : "disabled"}>Build my business plan</button>
+        ${has ? `<button class="btn" type="button" data-act="biz-cancel">Keep the current plan</button>` : ""}
+        <span class="muted" id="biz-note" style="font-size:.88rem" aria-live="polite">${ok ? "Ready." : "Answer the first four to build the plan"}</span>
+        <span class="err" id="bizquiz-err"></span>
+      </div>
+    </form>`;
+  const form = $("#bizquiz");
+  form.addEventListener("change", (e) => {
+    const t = e.target; if (!t.name) return; const k = t.name.slice(2);
+    bUI.draft[k] = t.type === "checkbox" ? $$(`input[name="${t.name}"]:checked`, form).map((i) => i.value) : t.value;
+    const good = bizValid(bUI.draft); $("#biz-build").disabled = !good; $("#biz-note").textContent = good ? "Ready." : "Answer the first four to build the plan";
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault(); if (!bizValid(bUI.draft)) return;
+    const a = {}; BIZ_Q.forEach((q) => { const v = bUI.draft[q.key]; if (q.multi ? Array.isArray(v) && v.length : q.opts.some((o) => o[0] === v)) a[q.key] = q.multi ? v.filter((x) => q.opts.some((o) => o[0] === x)) : v; });
+    try { await store.setSingle("bizAnswers", a); } catch (err) { $("#bizquiz-err").textContent = SAVE_FAIL; return; }
+    bUI.editing = false; renderBiz(); $("#bizplan").scrollIntoView({ behavior: reduceMotion.matches ? "auto" : "smooth", block: "start" }); toast("Business plan built");
+  });
+}
+async function tickMilestone(id, on) {
+  const done = new Set(state.bizDone || []); on ? done.add(id) : done.delete(id);
+  try { await store.setSingle("bizDone", [...done]); } catch (err) { $("#biz-err").textContent = SAVE_FAIL; renderBiz(); return; }
+  renderBiz(); const cb = $(`[data-act=biz-tick][data-id="${id}"]`); cb && cb.focus();
+}
+function bizContext() {
+  const a = state.bizAnswers; if (!bizValid(a)) return "Business profile: not filled in yet (the questions are on The Journey page).";
+  const p = bizPlan(a), done = new Set(state.bizDone || []);
+  const ans = BIZ_Q.filter((q) => a[q.key]).map((q) => `${q.q} ${q.multi ? a[q.key].map((v) => blabel(q.key, v)).join(", ") : blabel(q.key, a[q.key])}`).join("\n");
+  return `Business profile answers:\n${ans}\nPlan shown to them: ${p.name}; target ${usd0.format(p.target)}/month = ${p.unit}; about ${p.months} months to road-ready.\nOffer ideas: ${p.offers.join("; ") || "none"}\nRoadmap:\n${p.phases.map((ph) => `${ph.name} (months ${ph.from}-${ph.to}): ${ph.items.map((i) => (done.has(i.id) ? "[done] " : "[ ] ") + i.text).join("; ")}`).join("\n")}`;
+}
+
+function renderJourney() { renderStage(); renderEarnings(); renderBiz(); renderProjects(); renderBooks(); renderTimeline(); }
 
 /* ============================ TRAINING ============================ */
 const QUESTIONS = [
@@ -2168,14 +2368,14 @@ const ASSISTANTS = {
     name: "Sterling", tab: "journey", role: "Master of business",
     intro: "I think in offers, pricing, channels and cash. Tell me where the business stands and I'll tell you the next move. I can also add projects and books for you.",
     persona: "You are Sterling, a master of business, specifically of small, profitable online businesses run by one person who travels: productized services, info products and courses, content and audience businesses, affiliate, e-commerce, SaaS. You know offer design, pricing, positioning, customer acquisition, sales, retention, cash flow, and automating so the business runs from anywhere. You are numbers-driven and direct, and you always end with the next concrete action.",
-    starters: () => ["What should I focus on this week?", "Give me 5 online business ideas that fit this life", "How should I price my first offer?", "What should I read next, and why?"],
+    starters: () => [bizValid(state.bizAnswers) ? "What's my next milestone, and how do I hit it fast?" : "What should I focus on this week?", "Give me 5 online business ideas that fit this life", "How should I price my first offer?", "What should I read next, and why?"],
     context() {
       const t = incomeTotals();
       const st = state.stage && state.stage.stage ? `${state.stage.stage}. What's true right now: ${state.stage.description || "not written"}` : "Not started yet";
       const projects = state.projects.map((p) => `- ${p.name} [${p.status}${p.archived ? ", archived" : ""}]: ${p.description || "no description"}`).join("\n") || "none yet";
       const recent = state.income.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15).map((e) => `- ${e.date}: ${money(e.cents)}${e.note ? " (" + e.note + ")" : ""}`).join("\n") || "none yet";
       const books = state.books.map((b) => `- ${b.title}${b.author ? " by " + b.author : ""} [${BOOK_STATUS[b.status]}${b.rating ? ", rated " + b.rating + "/5" : ""}]`).join("\n") || "none yet";
-      return `Business stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
+      return `${bizContext()}\n\nBusiness stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
     },
     tools: () => [
       { name: "add_project", description: "Add a project card to the user's Current projects. Only when the user asks to add or track a project.",
@@ -2491,13 +2691,14 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(),
     destinations, projects,
     income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
     readingList: books, milestones, currentStage: stage,
     training: { answers, activePlan: plan, completedSessions: trainingLog },
+    business: { answers: bizAnswers, plan: bizValid(bizAnswers) ? bizPlan(bizAnswers) : null, completedMilestones: bizDone },
   }, null, 2);
 }
 async function doExport() {
@@ -2607,11 +2808,14 @@ document.addEventListener("click", async (e) => {
     case "rebuild": tUI.rebuilding = true; tUI.draft = draftFrom(state.answers); renderTraining(); window.scrollTo({ top: 0 }); break;
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
+    case "biz-edit": bUI.editing = true; bUI.draft = JSON.parse(JSON.stringify(state.bizAnswers || {})); renderBiz(); { const f = $("#bizquiz input:checked") || $("#bizquiz input"); f && f.focus(); } break;
+    case "biz-cancel": bUI.editing = false; renderBiz(); break;
     case "plan-view": tUI.view = b.dataset.v; renderTraining(); $(`[data-act=plan-view][data-v="${b.dataset.v}"]`).focus(); break;
   }
 });
 document.addEventListener("change", async (e) => {
   const t = e.target;
+  if (t.dataset.act === "biz-tick") { tickMilestone(t.dataset.id, t.checked); return; }
   if (t.dataset.act === "proj-status") {
     const p = state.projects.find((x) => x.id === t.dataset.id); if (!p) return;
     try { await store.put("projects", { ...p, status: t.value }); } catch (err) { $("#proj-err-" + p.id).textContent = SAVE_FAIL; t.value = p.status; return; }
