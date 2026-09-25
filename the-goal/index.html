@@ -323,6 +323,18 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .quiz fieldset .hint{font-size:.8rem;color:var(--muted);margin:-4px 0 2px}
 .personalize{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 18px;margin-bottom:18px;border-color:color-mix(in srgb,var(--gold) 50%,transparent);background:color-mix(in srgb,var(--gold) 8%,var(--raised))}
 .why{padding:16px 20px;margin-bottom:18px}
+.body-check{display:grid;gap:10px;padding:16px 18px;border:1px dashed var(--hairline-strong);border-radius:12px;background:color-mix(in srgb,var(--moss) 5%,var(--raised))}
+.body-check h3{margin:0}
+.body-check p{margin:0}
+.body-check textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--hairline-strong);border-radius:10px;background:var(--raised);color:var(--ink);resize:vertical}
+.body-privacy{font-size:.8rem}
+.body-prev{display:flex;gap:8px}
+.body-prev img{width:88px;height:118px;object-fit:cover;border-radius:10px;border:1px solid var(--hairline)}
+.body-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;margin:0}
+.body-facts dt{font-size:.78rem;color:var(--muted)}
+.body-facts dd{margin:2px 0 0}
+.body-plan{padding:16px 20px;margin-bottom:18px;display:grid;gap:8px}
+.body-plan p{margin:0}
 .why h3{margin-bottom:6px}
 .why ul{margin:0;padding-left:1.2em;display:grid;gap:3px}
 .swap{color:var(--gold);font-weight:500}
@@ -816,9 +828,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [] };
+const state = { destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null };
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries" };
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 const SEED_V = 2; // bump when places are added to seed.json; each place's "since" says which version added it
 const newSeedPlaces = (seed, fromV) => (seed.destinations || []).filter((d) => (d.since || 1) > fromV).map(({ since, ...d }) => d);
@@ -870,6 +882,7 @@ const store = {
     state.bizDone = state.bizDone && Array.isArray(state.bizDone.done) ? state.bizDone.done.map(String) : [];
     state.favRecipes = state.favRecipes && Array.isArray(state.favRecipes.ids) ? state.favRecipes.ids.map(String) : [];
     state.countries = state.countries && Array.isArray(state.countries.names) ? state.countries.names.map(String) : [];
+    state.bodyCheck = normBody(state.bodyCheck);
   },
   async loadLocal() {
     let raw = null, ok = true;
@@ -887,6 +900,7 @@ const store = {
     if (!Array.isArray(state.myrecipes)) state.myrecipes = [];
     if (!Array.isArray(state.countries)) state.countries = [];
     if (!Array.isArray(state.photos)) state.photos = [];
+    state.bodyCheck = normBody(state.bodyCheck);
     if (raw && (state.seedV || 1) < SEED_V) {
       const seed = await fetchSeed();
       if (seed) { const have = new Set(state.destinations.map((d) => d.id)); for (const d of newSeedPlaces(seed, state.seedV || 1)) if (!have.has(d.id)) state.destinations.push(d); state.seedV = SEED_V; }
@@ -898,8 +912,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -2583,7 +2597,7 @@ const BANK = {
   core: { gym: ["Cable Pallof press", "Hanging knee raise", "Weighted plank"], home: ["Band Pallof press", "Dumbbell dead bug", "Weighted plank"], bw: ["Dead bug", "Plank", "Hollow body hold"] },
   carry: { gym: ["Farmer's carry", "Heavy farmer's carry", "Loaded carry with sled push"], home: ["Dumbbell farmer's carry", "Suitcase carry", "Double overhead carry"], bw: ["Loaded backpack walk", "Bear crawl", "Hill sprints"] },
 };
-const PATTERN_LABEL = { squat: "Squat", hinge: "Hinge", hpush: "Horizontal push", vpush: "Vertical push", hpull: "Horizontal pull", vpull: "Vertical pull", core: "Core", carry: "Carry / conditioning" };
+const PATTERN_LABEL = { posture: "Posture", squat: "Squat", hinge: "Hinge", hpush: "Horizontal push", vpush: "Vertical push", hpull: "Horizontal pull", vpull: "Vertical pull", core: "Core", carry: "Carry / conditioning" };
 const POOLS = {
   "Full Body A": ["squat", "hpush", "hpull", "core", "hinge"],
   "Full Body B": ["hinge", "vpush", "vpull", "core", "carry"],
@@ -2705,6 +2719,58 @@ function tripPlan(dest, when, weekdays) {
   return { id: dest.id, name: dest.name, family: dest.family, weeks, hikeDay, focus, phases: phases.filter((ph) => ph.weeks > 0),
     taperNote: "In the taper, cut every lifting session to two sets and keep the long hike easy. You want to arrive fresh, not tired." };
 }
+
+// Photo check-in. Summit looks at a photo once; only the written notes below are kept. The photo itself is never stored.
+const BODY_BUILD = { slim: "Slim", average: "Average", athletic: "Athletic", muscular: "Muscular", heavier: "Carrying some extra weight" };
+const BODY_POSTURE = { rounded_shoulders: "Shoulders rounding forward", forward_head: "Head sitting forward of the shoulders", anterior_tilt: "Pelvis tipped forward (arched lower back)", uneven: "One side higher or bigger than the other" };
+const BODY_FOCUS = { upper: "Upper body", back: "Back and posture", legs: "Legs", glutes: "Glutes", core: "Core", fat_loss: "Losing some fat", mobility: "Mobility" };
+function normBody(b) {
+  if (!b || typeof b !== "object" || typeof b.notes !== "string") return null;
+  const pick = (arr, map, max) => Array.isArray(arr) ? [...new Set(arr.map(String))].filter((k) => map[k]).slice(0, max) : [];
+  const bf = typeof b.bodyFat === "string" && /^\s*\d{1,2}\s*[-–]\s*\d{1,2}\s*%?\s*$/.test(b.bodyFat) ? b.bodyFat.replace(/\s|%/g, "").replace("–", "-") + "%" : "";
+  return {
+    notes: b.notes.trim().slice(0, 800), build: BODY_BUILD[b.build] ? b.build : "", bodyFat: bf,
+    posture: pick(b.posture, BODY_POSTURE, 4), focus: pick(b.focus, BODY_FOCUS, 3),
+    suggestGoal: ["muscle", "lean", "general", "endurance"].includes(b.suggestGoal) ? b.suggestGoal : "",
+    at: typeof b.at === "string" ? b.at : new Date().toISOString(),
+  };
+}
+const POSTURE_EX = { gym: "Face pull", home: "Band pull-apart", bw: "Prone Y-T-W raise" };
+const FOCUS_PATTERNS = { upper: ["hpush", "vpush", "hpull", "vpull"], back: ["hpull", "vpull"], legs: ["squat", "hinge"], glutes: ["hinge"], core: ["core"] };
+// What the photo changes in the plan. Rules, like the rest of the plan: same notes, same changes.
+function applyBody(body, sessionsList, equipOf, why, extras) {
+  if (!body) return;
+  const posture = body.posture.includes("rounded_shoulders") || body.posture.includes("forward_head") || body.focus.includes("back");
+  sessionsList.forEach(([list, equip]) => list.forEach((s) => {
+    const ex = s.exercises;
+    if (posture && ex.some((x) => ["hpush", "vpush", "hpull", "vpull"].includes(x.pattern))) {
+      const i = ex.findIndex((x) => x.pattern === "core");
+      ex.splice(i < 0 ? ex.length : i, 0, { pattern: "posture", name: POSTURE_EX[equip], prescription: "2 × 15", swap: "From your photo" });
+    }
+    const done = new Set();
+    body.focus.forEach((f) => (FOCUS_PATTERNS[f] || []).forEach((pat) => {
+      if (done.has(f)) return;
+      const x = ex.find((e) => e.pattern === pat && !e.extraSet);
+      if (!x) return;
+      const m = x.prescription.match(/^(\d+) × (.*)$/); if (!m || Number(m[1]) >= 5) return;
+      x.prescription = `${Number(m[1]) + 1} × ${m[2]}`; x.extraSet = true; done.add(f);
+    }));
+  }));
+  const warm = [];
+  if (body.posture.includes("forward_head")) warm.push("Chin tucks against a wall, 2 × 10");
+  if (body.posture.includes("rounded_shoulders")) warm.push("Doorway chest stretch, 30 seconds a side");
+  if (body.posture.includes("anterior_tilt")) warm.push("Half-kneeling hip flexor stretch, 30 seconds a side, squeezing the glute", "Dead bug, 2 × 8 a side");
+  if (body.focus.includes("mobility")) warm.push("World's greatest stretch, 5 a side");
+  extras.warmup = warm;
+  if (posture) why.push(`From your photo: a ${POSTURE_EX[equipOf].toLowerCase()} added to every upper-body day for your posture.`);
+  const fl = body.focus.filter((f) => FOCUS_PATTERNS[f]).map((f) => BODY_FOCUS[f].toLowerCase());
+  if (fl.length) why.push(`From your photo: one extra set where you need it most (${fl.join(", ")}).`);
+  if (warm.length) why.push(`From your photo: ${warm.length} warm-up ${warm.length === 1 ? "drill" : "drills"} for ${body.posture.length ? "posture" : "mobility"}.`);
+  if (body.posture.includes("uneven")) { why.push("From your photo: start single-side exercises with your weaker side, and match its reps on the other side."); extras.uneven = true; }
+  if (body.focus.includes("fat_loss") || body.build === "heavier") extras.cond = body.build === "heavier"
+    ? " Walk 8,000-10,000 steps a day, and pick easy-on-the-joints cardio (bike, rower, incline walk) until running feels good."
+    : " Walk 8,000-10,000 steps a day: it burns more than most people expect and doesn't eat into recovery.";
+}
 function generatePlan(a) {
   const split = SPLITS[a.days]; const g = GOALS[a.goal], x = normExtras(a);
   const weekdays = x.weekdays || split.weekdays.slice();
@@ -2728,11 +2794,15 @@ function generatePlan(a) {
   if (mode) why.push(`Cardio uses ${mode}.`);
   if (roadEquip) why.push(`A road version of every session, for trips where you only have ${{ gym: "a hotel gym", home: "bands and light dumbbells", bw: "your bodyweight" }[x.road]}.`);
   if (dest) why.push(`Trail prep for ${dest.name}: ${tripPlan(dest, x.tripWhen, weekdays).weeks} weeks, long hikes with a pack.`);
+  const body = state.bodyCheck, bx = {}, roadSessions = roadEquip ? build(roadEquip) : null;
+  applyBody(body, [[sessions, a.equipment], ...(roadSessions ? [[roadSessions, roadEquip]] : [])], a.equipment, why, bx);
+  if (bx.cond) cond += bx.cond;
   return {
     version: 2, answers: { ...a }, split: split.name, weekdays,
     goal: label("goal", a.goal), rest: g.rest, progression: g.prog, conditioning: cond, warmup: WARMUP, recovery,
-    sessions, sessionsRoad: roadEquip ? build(roadEquip) : null, roadLabel: roadEquip ? xlabel("road", x.road) : "",
+    sessions, sessionsRoad: roadSessions, roadLabel: roadEquip ? xlabel("road", x.road) : "",
     trip: dest ? tripPlan(dest, x.tripWhen, weekdays) : null, why,
+    body: body ? { warmup: bx.warmup || [], uneven: !!bx.uneven, at: body.at } : null,
     builtAt: new Date().toISOString(),
   };
 }
@@ -2781,6 +2851,7 @@ function renderQuiz(el, hasPlan) {
         <h2 style="margin-top:6px">${hasPlan ? "Change what's different. The rest stays as it was." : "Set up the plan"}</h2>
         <p class="muted" style="margin-top:6px">The plan is built from rules, not luck. The same answers always give the same plan. Your logged sessions are kept whatever you change.</p>
       </div>
+      <div id="body-card"></div>
       <h3 class="quiz-group">The basics</h3>
       ${QUESTIONS.map((q, i) => `
         <fieldset><legend><span class="qn">${i + 1}/5</span>${esc(q.q)}</legend>
@@ -2798,6 +2869,7 @@ function renderQuiz(el, hasPlan) {
         <span class="err" id="quiz-err"></span>
       </div>
     </form>`;
+  renderBodyCard();
   const form = $("#quiz");
   const sync = () => {
     const s = quizState();
@@ -2824,6 +2896,84 @@ function renderQuiz(el, hasPlan) {
     tUI.rebuilding = false; tUI.view = "home"; renderTraining(); window.scrollTo({ top: 0 }); toast("Plan built");
   });
 }
+const bcUI = { busy: false, error: "", preview: [] };
+function renderBodyCard() {
+  const el = $("#body-card"); if (!el) return;
+  const b = state.bodyCheck, canRead = !!(ai.sample && ai.images);
+  if (!b && !canRead && !bcUI.busy) { el.innerHTML = ""; return; }
+  const accept = ai.images ? ai.images.mediaTypes.join(",") : "image/*";
+  const maxN = ai.images ? Math.min(2, ai.images.maxCount || 1) : 1;
+  const fileBtn = (text, primary) => canRead ? `<label class="btn small ${primary ? "primary" : ""} file-btn"><input type="file" id="body-file" accept="${esc(accept)}" ${maxN > 1 ? "multiple" : ""} ${bcUI.busy ? "disabled" : ""}>${esc(text)}</label>` : "";
+  const suggest = b && b.suggestGoal && tUI.draft.goal !== b.suggestGoal ? `<button class="btn small" type="button" data-act="body-goal">Use Summit's pick for the goal: ${esc(label("goal", b.suggestGoal))}</button>` : "";
+  let body;
+  if (bcUI.busy) body = `
+    <div class="body-prev">${bcUI.preview.map((u) => `<img src="${u}" alt="">`).join("")}</div>
+    <p class="muted" aria-live="polite">Summit is looking at your ${bcUI.preview.length > 1 ? "photos" : "photo"}…</p>`;
+  else if (b) body = `
+    <dl class="body-facts">
+      ${b.build ? `<div><dt>Build</dt><dd>${esc(BODY_BUILD[b.build])}</dd></div>` : ""}
+      ${b.bodyFat ? `<div><dt>Body fat (rough guess)</dt><dd class="num">${esc(b.bodyFat)}</dd></div>` : ""}
+      ${b.posture.length ? `<div><dt>Posture</dt><dd>${b.posture.map((k) => esc(BODY_POSTURE[k])).join("; ")}</dd></div>` : ""}
+      ${b.focus.length ? `<div><dt>Focus</dt><dd>${b.focus.map((k) => esc(BODY_FOCUS[k])).join(", ")}</dd></div>` : ""}
+    </dl>
+    <label class="lbl" for="body-notes">Summit's notes <span class="muted">(you can edit them)</span></label>
+    <textarea id="body-notes" rows="3" maxlength="800">${esc(b.notes)}</textarea>
+    <div class="row">${suggest}${fileBtn("New photo", false)}<button class="btn small ghost" type="button" data-act="body-remove">Remove check-in</button></div>
+    <p class="muted" style="font-size:.84rem">The plan below uses these notes when you build it: posture drills, extra sets where you need them, and cardio advice.</p>`;
+  else body = `
+    <p>Add a photo of yourself and Summit will read your build and posture, then tailor the plan: posture drills, extra sets where you need them most, and the right kind of cardio.</p>
+    <p class="muted" style="font-size:.88rem">Best photo: full body, standing straight, fitted clothes, good light. Front or side view${maxN > 1 ? ", or one of each" : ""}.</p>
+    <div class="row">${fileBtn(maxN > 1 ? "Add 1 or 2 photos" : "Add a photo", true)}</div>`;
+  el.innerHTML = `<section class="body-check" aria-labelledby="body-h">
+    <span class="eyebrow">Start with a photo <span class="muted">(optional)</span></span>
+    <h3 id="body-h">Photo check-in</h3>
+    ${body}
+    <span class="err" id="body-err" role="alert">${esc(bcUI.error)}</span>
+    <p class="muted body-privacy">Your photo only goes to Summit so it can look at it. It is never saved, not here and not in the database. Only the written notes are kept, and you can remove them any time.</p>
+  </section>`;
+  const inp = $("#body-file"); if (inp) inp.addEventListener("change", () => { if (inp.files && inp.files.length) readBodyPhotos(inp.files); });
+  const ta = $("#body-notes"); if (ta) ta.addEventListener("change", async () => {
+    const nb = normBody({ ...state.bodyCheck, notes: ta.value });
+    try { await store.setSingle("bodyCheck", nb); } catch (e) { bcUI.error = SAVE_FAIL; renderBodyCard(); }
+  });
+}
+async function readBodyPhotos(fileList) {
+  await aiReady;
+  if (!ai.sample || !ai.images) { bcUI.error = "Summit can't look at photos in this view."; renderBodyCard(); return; }
+  const maxN = Math.min(2, ai.images.maxCount || 1), types = ai.images.mediaTypes || [];
+  const files = [...fileList].slice(0, maxN);
+  if (files.some((f) => types.length && !types.includes(f.type))) { bcUI.error = `That file type doesn't work. Use ${types.map((t) => t.split("/")[1].toUpperCase()).join(", ")}.`; renderBodyCard(); return; }
+  if (files.some((f) => ai.images.maxInputBytes && f.size > ai.images.maxInputBytes)) { bcUI.error = "That photo is too big. Try a smaller one or a screenshot of it."; renderBodyCard(); return; }
+  bcUI.busy = true; bcUI.error = ""; bcUI.preview = files.map((f) => URL.createObjectURL(f)); renderBodyCard();
+  const a = tUI.draft || {};
+  const prompt = `You are Summit, a master fitness coach. The attached ${files.length > 1 ? `${files.length} photos show` : "photo shows"} the person you coach. They asked you to look so their training plan fits their body.${a.goal ? ` Their stated goal: ${label("goal", a.goal)}.` : ""}${a.experience ? ` Experience: ${label("experience", a.experience)}.` : ""}
+Look only at what matters for training: overall build, a rough body-fat range, posture (shoulders, head position, pelvis, left-right balance) and which areas would gain the most from training.
+Be kind, neutral and specific, like a good coach in a first session. No comments on attractiveness, no medical diagnoses, no weight in kilos or pounds. Posture items only when you can actually see them.
+If the photo doesn't clearly show a person's body (only a face, heavy clothes, very dark, not a person), set "clear" to false and explain in "notes" what photo would work. If the person looks under 18, leave "bodyFat" empty and keep the notes general.
+Reply with only a JSON object:
+{"clear": true or false, "build": one of ${JSON.stringify(Object.keys(BODY_BUILD))}, "bodyFat": "a range like \\"15-20%\\"" or "", "posture": array using only ${JSON.stringify(Object.keys(BODY_POSTURE))}, "focus": 1 to 3 items using only ${JSON.stringify(Object.keys(BODY_FOCUS))}, "suggestGoal": one of ["muscle","lean","general","endurance"] or "", "notes": "2 to 4 short sentences written to them: what you see and what the plan should do about it"}`;
+  try {
+    const x = await ai.sample.json(prompt, { images: files, cache: false });
+    if (!x || x.clear === false) bcUI.error = (x && typeof x.notes === "string" && x.notes.trim()) || "Summit couldn't see enough in that photo. Try a full-body photo in good light.";
+    else {
+      const b = normBody({ ...x, at: new Date().toISOString() });
+      if (!b || !b.notes) throw { code: "bad_reply" };
+      await store.setSingle("bodyCheck", b);
+      if (!tUI.draft.goal && b.suggestGoal) tUI.draft.goal = b.suggestGoal;
+      toast("Photo check-in saved. The photo itself wasn't kept.");
+    }
+  } catch (e) {
+    const c = e && e.code;
+    bcUI.error = c === "image_rejected" ? "That photo couldn't be read. Try a JPEG or PNG under 20 MB."
+      : c === "images_unavailable" ? "Summit can't look at photos in this view."
+      : c === "rate_limited" || c === "usage_limit" ? "Summit is busy right now. Try again in a minute."
+      : c === "invalid_json" || c === "bad_reply" ? "Summit's answer came back garbled. Try again."
+      : "That didn't work. Check your connection and try again.";
+  } finally {
+    bcUI.preview.forEach((u) => URL.revokeObjectURL(u)); bcUI.preview = []; bcUI.busy = false;
+    if ($("#quiz")) renderTraining(); else renderBodyCard();
+  }
+}
 function weekInfo() {
   const plan = state.plan; const mon = mondayOf(new Date()); const tISO = todayISO();
   const days = []; for (let i = 0; i < 7; i++) { const d = addDays(mon, i); days.push({ i, d, iso: iso(d) }); }
@@ -2835,6 +2985,17 @@ function weekInfo() {
     x.done = logged.get(x.iso) || null; x.today = x.iso === tISO;
   });
   return { days, count: days.filter((x) => x.done).length, target: plan.sessions.length };
+}
+function bodyPlanCard(p) {
+  const b = state.bodyCheck;
+  if (!b) return ai.sample && ai.images ? `<div class="card personalize"><div><strong>Add a photo check-in.</strong> <span class="muted">Summit looks at your build and posture and tailors the plan. The photo isn't saved.</span></div><button class="btn small" type="button" data-act="rebuild">Add a photo</button></div>` : "";
+  const stale = !p.body || p.body.at !== b.at;
+  return `<article class="card body-plan">
+    <span class="eyebrow">From your photo check-in</span>
+    <p>${esc(b.notes)}</p>
+    ${p.body && p.body.warmup.length && !stale ? `<p class="muted" style="font-size:.9rem"><strong>Add to every warm-up:</strong> ${p.body.warmup.map(esc).join("; ")}.</p>` : ""}
+    ${stale ? `<div class="row"><span class="muted" style="font-size:.88rem">Your check-in is newer than this plan.</span><button class="btn small primary" type="button" data-act="rebuild">Rebuild to use it</button></div>` : ""}
+  </article>`;
 }
 function renderPlan(el) {
   const p = state.plan, a = state.answers;
@@ -2879,6 +3040,7 @@ function renderPlan(el) {
       </div>
       <span class="err" id="week-err"></span>
     </section>
+    ${bodyPlanCard(p)}
     ${p.why && p.why.length ? `<article class="card why"><h3>Why this plan fits you</h3><ul>${p.why.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></article>` : ""}
     ${p.sessionsRoad ? `<div class="seg-toggle" role="group" aria-label="Which version of the sessions"><button type="button" data-act="plan-view" data-v="home" aria-pressed="${!road}">At home</button><button type="button" data-act="plan-view" data-v="road" aria-pressed="${road}">On the road: ${esc(p.roadLabel.toLowerCase())}</button></div>` : ""}
     <div class="sessions">
@@ -2904,7 +3066,7 @@ function renderPlan(el) {
         <div><dt>Progression</dt><dd>${esc(p.progression)}</dd></div>
         <div><dt>Conditioning</dt><dd>${esc(p.conditioning)}</dd></div>
         ${p.recovery ? `<div><dt>Recovery</dt><dd>${esc(p.recovery)}</dd></div>` : ""}
-        <div><dt>Every session</dt><dd>${esc(WARMUP)}</dd></div>
+        <div><dt>Every session</dt><dd>${esc(WARMUP)}${p.body && p.body.warmup.length ? ` Then: ${p.body.warmup.map(esc).join("; ")}.` : ""}${p.body && p.body.uneven ? " On single-side exercises, start with your weaker side and match its reps on the other." : ""}</dd></div>
       </dl>
     </article>
     <div class="plan-actions">
@@ -3040,12 +3202,13 @@ const ASSISTANTS = {
     persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. The app has a library of 530+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
     starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
-      if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice.";
+      const bc = state.bodyCheck ? `\nPhoto check-in (Summit's own earlier read of their photo; the photo itself isn't available): ${[state.bodyCheck.build && "build " + BODY_BUILD[state.bodyCheck.build], state.bodyCheck.bodyFat && "body fat roughly " + state.bodyCheck.bodyFat, state.bodyCheck.posture.length && "posture: " + state.bodyCheck.posture.map((k) => BODY_POSTURE[k]).join(", "), state.bodyCheck.focus.length && "focus: " + state.bodyCheck.focus.map((k) => BODY_FOCUS[k]).join(", ")].filter(Boolean).join("; ")}. Notes: ${state.bodyCheck.notes}` : "";
+      if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice." + bc;
       const a = state.answers, p = state.plan, w = weekInfo();
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
       const week = w.days.map((d) => `${d.iso}${d.today ? " (today)" : ""}: ${d.done ? "trained " + d.done.session : d.planned ? "planned " + d.planned + ", not done" : "rest"}`).join("\n");
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
-      return `Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("A steep 1-hour hike feels: " + xlabel("hike", x.hike)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.road) out.push("On the road they have: " + xlabel("road", x.road)); if (p.recovery) out.push("Recovery note: " + p.recovery); if (p.trip) out.push(`Next trip: ${p.trip.name} (${p.trip.family}), about ${p.trip.weeks} weeks out. Trail prep phases: ${p.trip.phases.map((ph) => `${ph.name} weeks ${ph.from}-${ph.to}: long hike ${ph.hike}, pack ${ph.pack}`).join("; ")}.`); if (p.sessionsRoad) out.push("Road version sessions: " + p.sessionsRoad.map((s) => s.name + ": " + s.exercises.map((e) => e.name).join(", ")).join(" | ")); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}`;
+      return `Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("A steep 1-hour hike feels: " + xlabel("hike", x.hike)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.road) out.push("On the road they have: " + xlabel("road", x.road)); if (p.recovery) out.push("Recovery note: " + p.recovery); if (p.trip) out.push(`Next trip: ${p.trip.name} (${p.trip.family}), about ${p.trip.weeks} weeks out. Trail prep phases: ${p.trip.phases.map((ph) => `${ph.name} weeks ${ph.from}-${ph.to}: long hike ${ph.hike}, pack ${ph.pack}`).join("; ")}.`); if (p.sessionsRoad) out.push("Road version sessions: " + p.sessionsRoad.map((s) => s.name + ": " + s.exercises.map((e) => e.name).join(", ")).join(" | ")); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
     },
     tools: () => summitRecipeTools(),
   },
@@ -3207,8 +3370,9 @@ async function aiInit() {
   if (!(window.claude && typeof window.claude.use === "function")) { ai.sample = null; ai.blocked = "The assistants work when this dossier is opened in Claude. Here they can't reach Claude."; return; }
   try { ai.sample = await window.claude.use("sample"); } catch (e) { ai.sample = null; }
   if (!ai.sample) { ai.blocked = "The assistants aren't available in this view."; return; }
-  try { const lim = await ai.sample.limits(); ai.tools = !!(lim && lim.tools); } catch (e) { ai.tools = false; }
+  try { const lim = await ai.sample.limits(); ai.tools = !!(lim && lim.tools); ai.images = lim && lim.images ? lim.images : null; } catch (e) { ai.tools = false; ai.images = null; }
   if (ai.open) renderAI();
+  renderBodyCard();
 }
 const aiReady = aiInit();
 
@@ -3563,13 +3727,13 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(),
     destinations, projects,
     income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
     readingList: books, milestones, currentStage: stage,
-    training: { answers, activePlan: plan, completedSessions: trainingLog },
+    training: { answers, activePlan: plan, completedSessions: trainingLog, photoCheckIn: bodyCheck },
     recipes: { favorites: favRecipes, myRecipes: myrecipes },
     countriesBeenTo: [...visitedCountryMap().keys()].sort(), photos: photos.map(({ id, country, placeId, caption, addedAt, assetId }) => ({ id, country, placeId, caption, addedAt, assetId: assetId || null })),
     travel: { answers: travelAnswers, plan: travelValid(travelAnswers) ? (({ trips, yearCost }) => ({ trips, yearCost }))(travelPlan(travelAnswers)) : null },
@@ -3680,6 +3844,8 @@ document.addEventListener("click", async (e) => {
     case "del-log": jUI.confirm = "log:" + id; renderTimeline(); break;
     case "del-log-yes": try { await store.remove("milestones", id); jUI.confirm = null; renderTimeline(); toast("Entry deleted"); } catch (err) { toast(SAVE_FAIL, true); } break;
     // training
+    case "body-goal": if (state.bodyCheck && state.bodyCheck.suggestGoal) { tUI.draft.goal = state.bodyCheck.suggestGoal; renderTraining(); } break;
+    case "body-remove": { try { await store.setSingle("bodyCheck", null); bcUI.error = ""; toast("Photo check-in removed"); } catch (e) { bcUI.error = SAVE_FAIL; } if ($("#quiz")) renderTraining(); else renderBodyCard(); break; }
     case "rebuild": tUI.rebuilding = true; tUI.draft = draftFrom(state.answers); renderTraining(); window.scrollTo({ top: 0 }); break;
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
