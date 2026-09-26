@@ -236,6 +236,19 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .store-table .acts{white-space:nowrap;text-align:right}
 .store-table tbody th{font-weight:500;white-space:nowrap}
 .day-preview{margin:4px 0 0}
+.lib-tabs{margin-bottom:10px}
+.lib-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:10px}
+.lib-card{padding:14px 16px;display:grid;gap:8px;align-content:start}
+.lib-card h3{margin:0;font-size:1.05rem}
+.lib-by{font-size:.82rem}
+.lib-big{margin:0;font-size:.93rem}
+.lib-card details summary{cursor:pointer;font-size:.86rem;color:var(--moss)}
+.lib-card details ul{margin:6px 0;padding-left:1.1em;display:grid;gap:4px;font-size:.88rem}
+.lib-use{font-size:.82rem;margin:4px 0 0}
+.lib-note{font-size:.82rem;margin:4px 0 0;color:var(--gold)}
+.lib-acts{gap:6px;flex-wrap:wrap;align-items:center}
+.start-badge{font:500 .7rem/1 var(--f-body, inherit);color:var(--gold);white-space:nowrap;vertical-align:middle}
 .money-card{display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 20px;margin-bottom:14px}
 .money-val{font:500 1.5rem/1.2 var(--f-mono)}
 .money-form{gap:8px;flex-wrap:wrap;align-items:center}
@@ -717,6 +730,11 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
         </div>
         <div class="seg" id="book-seg" role="group" aria-label="Show reading list section"></div>
         <div class="books" id="books"></div>
+      </section>
+
+      <section aria-labelledby="lib-h">
+        <div class="sec-head"><div><h2 id="lib-h">Sterling's library</h2><p class="sub">The big ideas from the most important business and money books and thinkers. Sterling uses them when he advises you.</p></div></div>
+        <div id="library"></div>
       </section>
 
       <section aria-labelledby="goals-h" class="goals-head">
@@ -2416,6 +2434,61 @@ function storeStartCard() {
   return "";
 }
 
+
+/* ---------- Sterling's library: key ideas of the great business and money books and thinkers ---------- */
+let LIBRARY = null, libLoading = null;
+function loadLibrary() {
+  if (LIBRARY) return Promise.resolve(LIBRARY);
+  return libLoading || (libLoading = fetch("library.json").then((r) => { if (!r.ok) throw 0; return r.json(); })
+    .then((j) => { LIBRARY = j && Array.isArray(j.items) ? j : { items: [], topics: [] }; renderLibrary(); return LIBRARY; })
+    .catch(() => { libLoading = null; return null; }));
+}
+const TOPIC_LABEL = { offers: "Offers", pricing: "Pricing", marketing: "Marketing", ads: "Ads", copywriting: "Copywriting", brand: "Personal brand", sales: "Sales", customers: "Customers", startup: "Starting up", ecommerce: "E-commerce", strategy: "Strategy", systems: "Systems", money: "Money", investing: "Investing", mindset: "Mindset", habits: "Habits", negotiation: "Negotiation", leadership: "Leadership", story: "Stories" };
+const lUI = { tab: "book", topic: "all", open: null, all: false };
+function libraryLookup(query, topic) {
+  if (!LIBRARY) return [];
+  const words = String(query || "").toLowerCase().split(/[^a-z0-9$]+/).filter((w) => w.length > 2);
+  return LIBRARY.items.map((x) => {
+    const hay = `${x.name} ${x.by} ${x.big} ${x.ideas.join(" ")} ${x.use || ""} ${x.topics.join(" ")}`.toLowerCase();
+    let sc = topic && x.topics.includes(topic) ? 5 : 0;
+    words.forEach((w) => { if (x.name.toLowerCase().includes(w) || x.by.toLowerCase().includes(w)) sc += 6; if (x.topics.includes(w)) sc += 4; if (hay.includes(w)) sc += 1; });
+    return [sc, x];
+  }).filter(([sc]) => sc > 0).sort((a, b) => b[0] - a[0]).slice(0, 5).map(([, x]) => x);
+}
+function libraryIndex() {
+  if (!LIBRARY) return "";
+  const books = LIBRARY.items.filter((x) => x.type === "book").map((x) => `${x.name} (${x.by})${x.start ? "*" : ""}`).join("; ");
+  const minds = LIBRARY.items.filter((x) => x.type === "mind").map((x) => x.name).join("; ");
+  return `Your library (the key ideas of these, summarized, are available through library_lookup; * = good first reads for a beginner):\nBooks: ${books}\nMinds: ${minds}`;
+}
+const inReadingList = (name) => state.books.some((b) => b.title.trim().toLowerCase() === name.toLowerCase());
+function renderLibrary() {
+  const el = $("#library"); if (!el) return;
+  if (!LIBRARY) { el.innerHTML = `<p class="muted">Opening the library…</p>`; loadLibrary(); return; }
+  const items = LIBRARY.items.filter((x) => x.type === lUI.tab && (lUI.topic === "all" || (lUI.topic === "start" ? x.start : x.topics.includes(lUI.topic))));
+  const topics = [...new Set(LIBRARY.items.filter((x) => x.type === lUI.tab).flatMap((x) => x.topics))];
+  const nb = LIBRARY.items.filter((x) => x.type === "book").length, nm = LIBRARY.items.length - nb;
+  el.innerHTML = `
+    <div class="seg-toggle lib-tabs" role="group" aria-label="Library section"><button type="button" data-act="lib-tab" data-v="book" aria-pressed="${lUI.tab === "book"}">Books <span class="mono">${nb}</span></button><button type="button" data-act="lib-tab" data-v="mind" aria-pressed="${lUI.tab === "mind"}">Great minds <span class="mono">${nm}</span></button></div>
+    <div class="chips lib-chips" role="group" aria-label="Filter by topic">
+      <button type="button" class="chip" data-act="lib-topic" data-v="all" aria-pressed="${lUI.topic === "all"}">All</button>
+      ${lUI.tab === "book" ? `<button type="button" class="chip" data-act="lib-topic" data-v="start" aria-pressed="${lUI.topic === "start"}">★ Start here</button>` : ""}
+      ${topics.map((t) => `<button type="button" class="chip" data-act="lib-topic" data-v="${t}" aria-pressed="${lUI.topic === t}">${esc(TOPIC_LABEL[t] || t)}</button>`).join("")}
+    </div>
+    <div class="lib-grid">${(lUI.all ? items : items.slice(0, 8)).map((x) => `
+      <article class="card lib-card">
+        <div class="lib-top"><div><h3>${esc(x.name)}${x.start ? ` <span class="start-badge" title="A good first read">★ Start here</span>` : ""}</h3><div class="muted lib-by">${esc(x.by)}${x.year ? ` · ${x.year}` : ""}</div></div></div>
+        <p class="lib-big">${esc(x.big)}</p>
+        <details ${lUI.open === x.id ? "open" : ""} data-lib="${x.id}"><summary>Key ideas</summary><ul>${x.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>${x.use ? `<p class="muted lib-use">${esc(x.use)}</p>` : ""}${x.fun ? `<p class="muted lib-use">${esc(x.fun)}</p>` : ""}${x.note ? `<p class="lib-note">${esc(x.note)}</p>` : ""}</details>
+        <div class="row lib-acts">
+          ${x.type === "book" ? (inReadingList(x.name) ? `<span class="muted" style="font-size:.84rem">✓ In your reading list</span>` : `<button class="btn small" type="button" data-act="lib-add" data-id="${x.id}">Add to reading list</button>`) : ""}
+          <button class="btn ghost small" type="button" data-act="lib-ask" data-id="${x.id}">Ask Sterling about it</button>
+        </div>
+      </article>`).join("")}</div>
+    ${items.length > 8 ? `<button class="btn small" type="button" data-act="lib-all">${lUI.all ? "Show fewer" : `Show all ${items.length}`}</button>` : ""}
+    <p class="muted" style="font-size:.8rem">Summaries of the main ideas in our own words, not the books themselves. The full books are worth reading: start with the ★ ones.</p>`;
+}
+document.addEventListener("toggle", (e) => { const d = e.target; if (d.dataset && d.dataset.lib) lUI.open = d.open ? d.dataset.lib : (lUI.open === d.dataset.lib ? null : lUI.open); }, true);
 // Money put into the business (kept in the profile so every assistant sees it) and the setup checklist.
 const SETUP_STEPS = (minor) => minor ? [
   ["talk", "Tell your parents the plan and get their OK"],
@@ -2711,6 +2784,7 @@ function renderBooks() {
         </li>`).join("")}</ul>` : `<p class="empty">${BOOK_EMPTY[k]}</p>`}
     </div>`;
   }).join("");
+  renderLibrary(); // keeps "In your reading list" marks current
 }
 function openBookForm(b) {
   jUI.editingBook = b ? b.id : null;
@@ -2937,7 +3011,7 @@ function bizContext() {
   return `Business profile answers:\n${ans}\nPlan shown to them: ${p.name}; target ${usd0.format(p.target)}/month = ${p.unit}; about ${p.months} months to road-ready.\nOffer ideas: ${p.offers.join("; ") || "none"}\nRoadmap:\n${p.phases.map((ph) => `${ph.name} (months ${ph.from}-${ph.to}): ${ph.items.map((i) => (done.has(i.id) ? "[done] " : "[ ] ") + i.text).join("; ")}`).join("\n")}`;
 }
 
-function renderJourney() { updateStoreDot(); renderStage(); renderEarnings(); renderStore(); renderBiz(); renderProjects(); renderBooks(); renderTimeline(); }
+function renderJourney() { updateStoreDot(); renderStage(); renderEarnings(); renderStore(); renderBiz(); renderProjects(); renderBooks(); renderLibrary(); renderTimeline(); }
 
 /* ============================ TRAINING ============================ */
 const QUESTIONS = [
@@ -3634,7 +3708,7 @@ const ASSISTANTS = {
       const projects = state.projects.map((p) => `- ${p.name} [${p.status}${p.archived ? ", archived" : ""}]: ${p.description || "no description"}`).join("\n") || "none yet";
       const recent = state.income.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15).map((e) => `- ${e.date}: ${money(e.cents)}${e.note ? " (" + e.note + ")" : ""}`).join("\n") || "none yet";
       const books = state.books.map((b) => `- ${b.title}${b.author ? " by " + b.author : ""} [${BOOK_STATUS[b.status]}${b.rating ? ", rated " + b.rating + "/5" : ""}]`).join("\n") || "none yet";
-      return `${bizContext()}\n\n${storeContext()}\n\nBusiness stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
+      return `${libraryIndex()}\nWhen you use an idea from the library, say where it comes from (for example "from $100M Offers by Alex Hormozi"). Describe ideas in your own words; never invent quotes. When they ask what to read, pick from the library, starting with the ★ beginner books that fit their age and stage.\n\n${bizContext()}\n\n${storeContext()}\n\nBusiness stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
     },
     tools: () => [
       { name: "log_store_day", description: `Save or update one day's store numbers when the user tells you them (for example "yesterday 3 sales, $75 in, $20 on ads"). Today is ${todayISO()}; "yesterday" is ${iso(addDays(parseISO(todayISO()), -1))}. Amounts are US dollars. Only include the fields they gave: fields you leave out keep their saved value (or 0 for a new day). If something important is missing (usually product costs), log what they gave and ask for the rest. Returns the day's profit and the change from the day before.`,
@@ -3651,6 +3725,12 @@ const ASSISTANTS = {
           return { ok: true, saved: { date, orders: day.orders, revenue: day.revenueC / 100, product_costs: day.productC / 100, ad_spend: day.adsC / 100, other_costs: day.otherC / 100, refunds: day.refundsC / 100 }, profit: dayProfit(day) / 100,
             vs_previous_day: prev ? { date: prev.date, profit_change: (dayProfit(day) - dayProfit(prev)) / 100, revenue_change: (day.revenueC - prev.revenueC) / 100, orders_change: day.orders - prev.orders } : null,
             last_7_days_profit: s.w7.profit / 100, money_in_business: s.cashC != null ? s.cashC / 100 : null };
+        } },
+      { name: "library_lookup", description: "Look up the key ideas of the great business and money books and thinkers in your library. Call it before giving advice on offers, pricing, marketing, ads, sales, money, investing, strategy, habits or mindset, and when they ask what to read. Returns up to 5 entries with the big idea, key principles and when to use them.",
+        inputSchema: { type: "object", properties: { query: { type: "string", description: "what the advice is about, or a book or person's name" }, topic: { type: "string", enum: Object.keys(TOPIC_LABEL) } }, required: ["query"] },
+        async execute(i) {
+          await loadLibrary(); const r = libraryLookup(i.query, i.topic);
+          return { results: r.map((x) => ({ type: x.type, name: x.name, by: x.by, big_idea: x.big, key_ideas: x.ideas, when_to_use: x.use || "", caution: x.note || "", good_first_read: !!x.start })), note: r.length ? "Summaries in our own words. Name the source when you use an idea; don't invent quotes." : "Nothing matched; try a broader query or a topic." };
         } },
       { name: "update_business_money", description: "Change how much money the user has put into the business, when they tell you they got or added money, or the total changed. mode 'add' adds the amount to the current total; 'set' replaces the total.",
         inputSchema: { type: "object", properties: { amount: { type: "number", description: "US dollars, positive" }, mode: { type: "string", enum: ["add", "set"] } }, required: ["amount", "mode"] },
@@ -4261,6 +4341,14 @@ document.addEventListener("click", async (e) => {
     case "day-del": sUI.confirm = id; renderStore(); break;
     case "day-del-no": sUI.confirm = null; renderStore(); break;
     case "day-del-yes": { sUI.confirm = null; try { await store.remove("storedays", id); toast(`${fmtDate(id)} deleted`); } catch (e) { toast(SAVE_FAIL, true); } renderStore(); break; }
+    case "lib-tab": lUI.tab = b.dataset.v; lUI.topic = "all"; lUI.all = false; renderLibrary(); break;
+    case "lib-topic": lUI.topic = b.dataset.v; lUI.all = false; renderLibrary(); break;
+    case "lib-all": lUI.all = !lUI.all; renderLibrary(); break;
+    case "lib-add": { const x = LIBRARY && LIBRARY.items.find((i) => i.id === id); if (!x || inReadingList(x.name)) break;
+      const obj = { id: uid(), title: x.name, author: x.by, status: "want", note: x.big, rating: null, addedAt: todayISO(), finishedAt: null };
+      try { await store.put("books", obj); } catch (e) { toast(SAVE_FAIL, true); break; } renderBooks(); renderLibrary(); toast(`${x.name} added to your reading list`); break; }
+    case "lib-ask": { const x = LIBRARY && LIBRARY.items.find((i) => i.id === id); if (!x) break;
+      openAI("sterling"); setTimeout(() => { const i = $("#ai-input"); if (i) { i.value = x.type === "book" ? `What can I use from ${x.name} for my business right now?` : `What would ${x.name} tell me to do with my business right now?`; i.focus(); } }, 60); break; }
     case "setup-show": sUI.showSetup = !sUI.showSetup; renderStore(); break;
     case "day-all": sUI.showAll = !sUI.showAll; renderStore(); break;
     case "ai-open": openAI(b.dataset.ai); break;
@@ -4409,6 +4497,7 @@ globe = createGlobe($("#globe-wrap"));
 if (!globe) { $("#globe-wrap").hidden = true; $("#globe-help").hidden = true; $("#globe-fallback").hidden = false; $(".place-list").style.maxHeight = "none"; }
 renderAtlas(); renderJourney(); renderTraining();
 $("#profile-form").addEventListener("submit", (e) => { e.preventDefault(); saveProfile(); });
+loadLibrary();
 loadCountries().then(() => { renderCountriesPanel(); refreshCountryOverlay(); });
 store.init().then(() => {
   chatSyncInit(); photoStore.init().then(() => { renderDetailPhotos(); renderCountryDialog(); });
