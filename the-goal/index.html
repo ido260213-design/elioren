@@ -733,7 +733,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
       </section>
 
       <section aria-labelledby="lib-h">
-        <div class="sec-head"><div><h2 id="lib-h">Sterling's library</h2><p class="sub">The big ideas from the most important business and money books and thinkers. Sterling uses them when he advises you.</p></div></div>
+        <div class="sec-head"><div><h2 id="lib-h">Sterling's library</h2><p class="sub">The big ideas from the most important business, money and marketing books, great minds and marketing geniuses. Sterling uses them when he advises you.</p></div></div>
         <div id="library"></div>
       </section>
 
@@ -2443,7 +2443,7 @@ function loadLibrary() {
     .then((j) => { LIBRARY = j && Array.isArray(j.items) ? j : { items: [], topics: [] }; renderLibrary(); return LIBRARY; })
     .catch(() => { libLoading = null; return null; }));
 }
-const TOPIC_LABEL = { offers: "Offers", pricing: "Pricing", marketing: "Marketing", ads: "Ads", copywriting: "Copywriting", brand: "Personal brand", sales: "Sales", customers: "Customers", startup: "Starting up", ecommerce: "E-commerce", strategy: "Strategy", systems: "Systems", money: "Money", investing: "Investing", mindset: "Mindset", habits: "Habits", negotiation: "Negotiation", leadership: "Leadership", story: "Stories" };
+const TOPIC_LABEL = { offers: "Offers", pricing: "Pricing", marketing: "Marketing", ads: "Ads", copywriting: "Copywriting", brand: "Personal brand", sales: "Sales", customers: "Customers", startup: "Starting up", ecommerce: "E-commerce", strategy: "Strategy", systems: "Systems", money: "Money", investing: "Investing", mindset: "Mindset", habits: "Habits", negotiation: "Negotiation", leadership: "Leadership", story: "Stories", psychology: "Psychology" };
 const lUI = { tab: "book", topic: "all", open: null, all: false };
 function libraryLookup(query, topic) {
   if (!LIBRARY) return [];
@@ -2458,18 +2458,20 @@ function libraryLookup(query, topic) {
 function libraryIndex() {
   if (!LIBRARY) return "";
   const books = LIBRARY.items.filter((x) => x.type === "book").map((x) => `${x.name} (${x.by})${x.start ? "*" : ""}`).join("; ");
-  const minds = LIBRARY.items.filter((x) => x.type === "mind").map((x) => x.name).join("; ");
-  return `Your library (the key ideas of these, summarized, are available through library_lookup; * = good first reads for a beginner):\nBooks: ${books}\nMinds: ${minds}`;
+  const minds = LIBRARY.items.filter((x) => x.type === "mind" && x.group !== "marketing").map((x) => x.name).join("; ");
+  const mkt = LIBRARY.items.filter((x) => x.type === "mind" && x.group === "marketing").map((x) => x.name).join("; ");
+  return `Your library (the key ideas of these, summarized, are available through library_lookup; * = good first reads for a beginner):\nBooks: ${books}\nGreat minds: ${minds}\nMarketing geniuses: ${mkt}\nFor marketing, ads, copy and brand questions, think like these marketing geniuses and say whose idea you're using.`;
 }
 const inReadingList = (name) => state.books.some((b) => b.title.trim().toLowerCase() === name.toLowerCase());
 function renderLibrary() {
   const el = $("#library"); if (!el) return;
   if (!LIBRARY) { el.innerHTML = `<p class="muted">Opening the library…</p>`; loadLibrary(); return; }
-  const items = LIBRARY.items.filter((x) => x.type === lUI.tab && (lUI.topic === "all" || (lUI.topic === "start" ? x.start : x.topics.includes(lUI.topic))));
-  const topics = [...new Set(LIBRARY.items.filter((x) => x.type === lUI.tab).flatMap((x) => x.topics))];
-  const nb = LIBRARY.items.filter((x) => x.type === "book").length, nm = LIBRARY.items.length - nb;
+  const inTab = (x) => lUI.tab === "book" ? x.type === "book" : x.type === "mind" && (lUI.tab === "marketer" ? x.group === "marketing" : x.group !== "marketing");
+  const items = LIBRARY.items.filter((x) => inTab(x) && (lUI.topic === "all" || (lUI.topic === "start" ? x.start : x.topics.includes(lUI.topic))));
+  const topics = [...new Set(LIBRARY.items.filter(inTab).flatMap((x) => x.topics))];
+  const nb = LIBRARY.items.filter((x) => x.type === "book").length, nk = LIBRARY.items.filter((x) => x.group === "marketing").length, nm = LIBRARY.items.length - nb - nk;
   el.innerHTML = `
-    <div class="seg-toggle lib-tabs" role="group" aria-label="Library section"><button type="button" data-act="lib-tab" data-v="book" aria-pressed="${lUI.tab === "book"}">Books <span class="mono">${nb}</span></button><button type="button" data-act="lib-tab" data-v="mind" aria-pressed="${lUI.tab === "mind"}">Great minds <span class="mono">${nm}</span></button></div>
+    <div class="seg-toggle lib-tabs" role="group" aria-label="Library section"><button type="button" data-act="lib-tab" data-v="book" aria-pressed="${lUI.tab === "book"}">Books <span class="mono">${nb}</span></button><button type="button" data-act="lib-tab" data-v="mind" aria-pressed="${lUI.tab === "mind"}">Great minds <span class="mono">${nm}</span></button><button type="button" data-act="lib-tab" data-v="marketer" aria-pressed="${lUI.tab === "marketer"}">Marketing geniuses <span class="mono">${nk}</span></button></div>
     <div class="chips lib-chips" role="group" aria-label="Filter by topic">
       <button type="button" class="chip" data-act="lib-topic" data-v="all" aria-pressed="${lUI.topic === "all"}">All</button>
       ${lUI.tab === "book" ? `<button type="button" class="chip" data-act="lib-topic" data-v="start" aria-pressed="${lUI.topic === "start"}">★ Start here</button>` : ""}
@@ -3726,11 +3728,11 @@ const ASSISTANTS = {
             vs_previous_day: prev ? { date: prev.date, profit_change: (dayProfit(day) - dayProfit(prev)) / 100, revenue_change: (day.revenueC - prev.revenueC) / 100, orders_change: day.orders - prev.orders } : null,
             last_7_days_profit: s.w7.profit / 100, money_in_business: s.cashC != null ? s.cashC / 100 : null };
         } },
-      { name: "library_lookup", description: "Look up the key ideas of the great business and money books and thinkers in your library. Call it before giving advice on offers, pricing, marketing, ads, sales, money, investing, strategy, habits or mindset, and when they ask what to read. Returns up to 5 entries with the big idea, key principles and when to use them.",
+      { name: "library_lookup", description: "Look up the key ideas of the great business, money and marketing books, thinkers and marketing geniuses in your library. Call it before giving advice on offers, pricing, marketing, ads, sales, money, investing, strategy, habits or mindset, and when they ask what to read. Returns up to 5 entries with the big idea, key principles and when to use them.",
         inputSchema: { type: "object", properties: { query: { type: "string", description: "what the advice is about, or a book or person's name" }, topic: { type: "string", enum: Object.keys(TOPIC_LABEL) } }, required: ["query"] },
         async execute(i) {
           await loadLibrary(); const r = libraryLookup(i.query, i.topic);
-          return { results: r.map((x) => ({ type: x.type, name: x.name, by: x.by, big_idea: x.big, key_ideas: x.ideas, when_to_use: x.use || "", caution: x.note || "", good_first_read: !!x.start })), note: r.length ? "Summaries in our own words. Name the source when you use an idea; don't invent quotes." : "Nothing matched; try a broader query or a topic." };
+          return { results: r.map((x) => ({ type: x.type === "mind" && x.group === "marketing" ? "marketing genius" : x.type, name: x.name, by: x.by, big_idea: x.big, key_ideas: x.ideas, when_to_use: x.use || "", caution: x.note || "", good_first_read: !!x.start })), note: r.length ? "Summaries in our own words. Name the source when you use an idea; don't invent quotes." : "Nothing matched; try a broader query or a topic." };
         } },
       { name: "update_business_money", description: "Change how much money the user has put into the business, when they tell you they got or added money, or the total changed. mode 'add' adds the amount to the current total; 'set' replaces the total.",
         inputSchema: { type: "object", properties: { amount: { type: "number", description: "US dollars, positive" }, mode: { type: "string", enum: ["add", "set"] } }, required: ["amount", "mode"] },
