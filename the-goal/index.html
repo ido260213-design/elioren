@@ -769,9 +769,11 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
     <div class="seg-toggle train-switch" role="group" aria-label="Training section">
       <button type="button" data-act="train-sec" data-v="plan" aria-pressed="true">Training plan</button>
       <button type="button" data-act="train-sec" data-v="recipes" aria-pressed="false">Healthy recipes</button>
+      <button type="button" data-act="train-sec" data-v="library" aria-pressed="false">Summit's library</button>
     </div>
     <div id="training"></div>
     <div id="kitchen" hidden></div>
+    <div id="summit-library-wrap" hidden><p class="muted" style="margin:0 0 12px">The key ideas from the best training books, coaches, legendary athletes and fitness creators. Summit uses them when he coaches you.</p><div id="summit-library"></div></div>
   </section>
 </main>
 <p class="foot" id="foot"></p>
@@ -2435,62 +2437,73 @@ function storeStartCard() {
 }
 
 
-/* ---------- Sterling's library: key ideas of the great business and money books and thinkers ---------- */
-let LIBRARY = null, libLoading = null;
-function loadLibrary() {
-  if (LIBRARY) return Promise.resolve(LIBRARY);
-  return libLoading || (libLoading = fetch("library.json").then((r) => { if (!r.ok) throw 0; return r.json(); })
-    .then((j) => { LIBRARY = j && Array.isArray(j.items) ? j : { items: [], topics: [] }; renderLibrary(); return LIBRARY; })
-    .catch(() => { libLoading = null; return null; }));
+/* ---------- assistant libraries: key ideas of the great books, thinkers and creators, per assistant ---------- */
+const LIBS = {
+  sterling: { url: "library.json", host: "#library", ai: "sterling", data: null, loading: null, ui: { tab: "book", topic: "all", open: null, all: false } },
+  summit: { url: "summit-library.json", host: "#summit-library", ai: "summit", data: null, loading: null, ui: { tab: "book", topic: "all", open: null, all: false } },
+};
+function loadLibrary(key) {
+  if (!key) return Promise.all(Object.keys(LIBS).map(loadLibrary));
+  const L = LIBS[key]; if (L.data) return Promise.resolve(L.data);
+  return L.loading || (L.loading = fetch(L.url).then((r) => { if (!r.ok) throw 0; return r.json(); })
+    .then((j) => { L.data = j && Array.isArray(j.items) && Array.isArray(j.tabs) ? j : null; renderLibrary(key); return L.data; })
+    .catch(() => { L.loading = null; return null; }));
 }
-const TOPIC_LABEL = { offers: "Offers", pricing: "Pricing", marketing: "Marketing", ads: "Ads", copywriting: "Copywriting", brand: "Personal brand", sales: "Sales", customers: "Customers", startup: "Starting up", ecommerce: "E-commerce", strategy: "Strategy", systems: "Systems", money: "Money", investing: "Investing", mindset: "Mindset", habits: "Habits", negotiation: "Negotiation", leadership: "Leadership", story: "Stories", psychology: "Psychology" };
-const lUI = { tab: "book", topic: "all", open: null, all: false };
-function libraryLookup(query, topic) {
-  if (!LIBRARY) return [];
+function libraryLookup(query, topic, key) {
+  const D = LIBS[key].data; if (!D) return [];
   const words = String(query || "").toLowerCase().split(/[^a-z0-9$]+/).filter((w) => w.length > 2);
-  return LIBRARY.items.map((x) => {
+  return D.items.map((x) => {
     const hay = `${x.name} ${x.by} ${x.big} ${x.ideas.join(" ")} ${x.use || ""} ${x.topics.join(" ")}`.toLowerCase();
     let sc = topic && x.topics.includes(topic) ? 5 : 0;
     words.forEach((w) => { if (x.name.toLowerCase().includes(w) || x.by.toLowerCase().includes(w)) sc += 6; if (x.topics.includes(w)) sc += 4; if (hay.includes(w)) sc += 1; });
     return [sc, x];
   }).filter(([sc]) => sc > 0).sort((a, b) => b[0] - a[0]).slice(0, 5).map(([, x]) => x);
 }
-function libraryIndex() {
-  if (!LIBRARY) return "";
-  const books = LIBRARY.items.filter((x) => x.type === "book").map((x) => `${x.name} (${x.by})${x.start ? "*" : ""}`).join("; ");
-  const minds = LIBRARY.items.filter((x) => x.type === "mind" && x.group !== "marketing").map((x) => x.name).join("; ");
-  const mkt = LIBRARY.items.filter((x) => x.type === "mind" && x.group === "marketing").map((x) => x.name).join("; ");
-  return `Your library (the key ideas of these, summarized, are available through library_lookup; * = good first reads for a beginner):\nBooks: ${books}\nGreat minds: ${minds}\nMarketing geniuses: ${mkt}\nFor marketing, ads, copy and brand questions, think like these marketing geniuses and say whose idea you're using.`;
+function libraryIndex(key) {
+  const D = LIBS[key].data; if (!D) return "";
+  const lines = D.tabs.map((t) => `${t.index}: ${D.items.filter((x) => x.tab === t.id).map((x) => x.type === "book" ? `${x.name} (${x.by})${x.start ? "*" : ""}` : x.name).join("; ")}`);
+  return `Your library (the key ideas of these, summarized, are available through library_lookup; * = good first reads for a beginner):\n${lines.join("\n")}\n${D.promptNote || ""}\nWhen you use an idea from the library, say where it comes from. Describe ideas in your own words; never invent quotes. When they ask what to read or who to follow, pick from the library, starting with the ★ beginner picks that fit their age and stage.`;
+}
+function libraryTool(key) {
+  const D = LIBS[key].data;
+  return { name: "library_lookup", description: `Look up the key ideas of the books, people and creators in your library. Call it before giving advice on ${key === "summit" ? "training, muscle, strength, mobility, injuries, cardio, sports, sleep, food or mindset" : "offers, pricing, marketing, ads, sales, money, investing, strategy, habits or mindset"}, and when they ask what to read or who to learn from. Returns up to 5 entries with the big idea, key principles, when to use them and any caution.`,
+    inputSchema: { type: "object", properties: { query: { type: "string", description: "what the advice is about, or a book or person's name" }, ...(D ? { topic: { type: "string", enum: D.topics } } : {}) }, required: ["query"] },
+    async execute(i) {
+      await loadLibrary(key); const T = LIBS[key].data ? Object.fromEntries(LIBS[key].data.tabs.map((t) => [t.id, t.label])) : {};
+      const r = libraryLookup(i.query, i.topic, key);
+      return { results: r.map((x) => ({ type: T[x.tab] || x.type, name: x.name, by: x.by, big_idea: x.big, key_ideas: x.ideas, when_to_use: x.use || "", caution: x.note || "", good_first_read: !!x.start })), note: r.length ? "Summaries in our own words. Name the source when you use an idea; don't invent quotes." : "Nothing matched; try a broader query or a topic." };
+    } };
 }
 const inReadingList = (name) => state.books.some((b) => b.title.trim().toLowerCase() === name.toLowerCase());
-function renderLibrary() {
-  const el = $("#library"); if (!el) return;
-  if (!LIBRARY) { el.innerHTML = `<p class="muted">Opening the library…</p>`; loadLibrary(); return; }
-  const inTab = (x) => lUI.tab === "book" ? x.type === "book" : x.type === "mind" && (lUI.tab === "marketer" ? x.group === "marketing" : x.group !== "marketing");
-  const items = LIBRARY.items.filter((x) => inTab(x) && (lUI.topic === "all" || (lUI.topic === "start" ? x.start : x.topics.includes(lUI.topic))));
-  const topics = [...new Set(LIBRARY.items.filter(inTab).flatMap((x) => x.topics))];
-  const nb = LIBRARY.items.filter((x) => x.type === "book").length, nk = LIBRARY.items.filter((x) => x.group === "marketing").length, nm = LIBRARY.items.length - nb - nk;
+function renderLibrary(key) {
+  if (!key) { Object.keys(LIBS).forEach((k) => renderLibrary(k)); return; }
+  const L = LIBS[key], el = $(L.host); if (!el) return;
+  const D = L.data, U = L.ui, who = ASSISTANTS[L.ai].name;
+  if (!D) { el.innerHTML = `<p class="muted">Opening the library…</p>`; loadLibrary(key); return; }
+  const inTab = (x) => x.tab === U.tab;
+  const items = D.items.filter((x) => inTab(x) && (U.topic === "all" || (U.topic === "start" ? x.start : x.topics.includes(U.topic))));
+  const topics = [...new Set(D.items.filter(inTab).flatMap((x) => x.topics))];
   el.innerHTML = `
-    <div class="seg-toggle lib-tabs" role="group" aria-label="Library section"><button type="button" data-act="lib-tab" data-v="book" aria-pressed="${lUI.tab === "book"}">Books <span class="mono">${nb}</span></button><button type="button" data-act="lib-tab" data-v="mind" aria-pressed="${lUI.tab === "mind"}">Great minds <span class="mono">${nm}</span></button><button type="button" data-act="lib-tab" data-v="marketer" aria-pressed="${lUI.tab === "marketer"}">Marketing geniuses <span class="mono">${nk}</span></button></div>
+    <div class="seg-toggle lib-tabs" role="group" aria-label="Library section">${D.tabs.map((t) => `<button type="button" data-act="lib-tab" data-lib-key="${key}" data-v="${t.id}" aria-pressed="${U.tab === t.id}">${esc(t.label)} <span class="mono">${D.items.filter((x) => x.tab === t.id).length}</span></button>`).join("")}</div>
     <div class="chips lib-chips" role="group" aria-label="Filter by topic">
-      <button type="button" class="chip" data-act="lib-topic" data-v="all" aria-pressed="${lUI.topic === "all"}">All</button>
-      ${lUI.tab === "book" ? `<button type="button" class="chip" data-act="lib-topic" data-v="start" aria-pressed="${lUI.topic === "start"}">★ Start here</button>` : ""}
-      ${topics.map((t) => `<button type="button" class="chip" data-act="lib-topic" data-v="${t}" aria-pressed="${lUI.topic === t}">${esc(TOPIC_LABEL[t] || t)}</button>`).join("")}
+      <button type="button" class="chip" data-act="lib-topic" data-lib-key="${key}" data-v="all" aria-pressed="${U.topic === "all"}">All</button>
+      ${items.some((x) => x.start) || U.topic === "start" ? `<button type="button" class="chip" data-act="lib-topic" data-lib-key="${key}" data-v="start" aria-pressed="${U.topic === "start"}">★ Start here</button>` : ""}
+      ${topics.map((t) => `<button type="button" class="chip" data-act="lib-topic" data-lib-key="${key}" data-v="${t}" aria-pressed="${U.topic === t}">${esc((D.topicLabels || {})[t] || t)}</button>`).join("")}
     </div>
-    <div class="lib-grid">${(lUI.all ? items : items.slice(0, 8)).map((x) => `
+    <div class="lib-grid">${(U.all ? items : items.slice(0, 8)).map((x) => `
       <article class="card lib-card">
-        <div class="lib-top"><div><h3>${esc(x.name)}${x.start ? ` <span class="start-badge" title="A good first read">★ Start here</span>` : ""}</h3><div class="muted lib-by">${esc(x.by)}${x.year ? ` · ${x.year}` : ""}</div></div></div>
+        <div class="lib-top"><div><h3>${esc(x.name)}${x.start ? ` <span class="start-badge" title="A good first pick">★ Start here</span>` : ""}</h3><div class="muted lib-by">${esc(x.by)}${x.year ? ` · ${x.year}` : ""}</div></div></div>
         <p class="lib-big">${esc(x.big)}</p>
-        <details ${lUI.open === x.id ? "open" : ""} data-lib="${x.id}"><summary>Key ideas</summary><ul>${x.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>${x.use ? `<p class="muted lib-use">${esc(x.use)}</p>` : ""}${x.fun ? `<p class="muted lib-use">${esc(x.fun)}</p>` : ""}${x.note ? `<p class="lib-note">${esc(x.note)}</p>` : ""}</details>
+        <details ${U.open === x.id ? "open" : ""} data-lib="${x.id}" data-lib-key="${key}"><summary>Key ideas</summary><ul>${x.ideas.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>${x.use ? `<p class="muted lib-use">${esc(x.use)}</p>` : ""}${x.fun ? `<p class="muted lib-use">${esc(x.fun)}</p>` : ""}${x.note ? `<p class="lib-note">${esc(x.note)}</p>` : ""}</details>
         <div class="row lib-acts">
-          ${x.type === "book" ? (inReadingList(x.name) ? `<span class="muted" style="font-size:.84rem">✓ In your reading list</span>` : `<button class="btn small" type="button" data-act="lib-add" data-id="${x.id}">Add to reading list</button>`) : ""}
-          <button class="btn ghost small" type="button" data-act="lib-ask" data-id="${x.id}">Ask Sterling about it</button>
+          ${x.type === "book" ? (inReadingList(x.name) ? `<span class="muted" style="font-size:.84rem">✓ In your reading list</span>` : `<button class="btn small" type="button" data-act="lib-add" data-lib-key="${key}" data-id="${x.id}">Add to reading list</button>`) : ""}
+          <button class="btn ghost small" type="button" data-act="lib-ask" data-lib-key="${key}" data-id="${x.id}">Ask ${esc(who)} about it</button>
         </div>
       </article>`).join("")}</div>
-    ${items.length > 8 ? `<button class="btn small" type="button" data-act="lib-all">${lUI.all ? "Show fewer" : `Show all ${items.length}`}</button>` : ""}
-    <p class="muted" style="font-size:.8rem">Summaries of the main ideas in our own words, not the books themselves. The full books are worth reading: start with the ★ ones.</p>`;
+    ${items.length > 8 ? `<button class="btn small" type="button" data-act="lib-all" data-lib-key="${key}">${U.all ? "Show fewer" : `Show all ${items.length}`}</button>` : ""}
+    <p class="muted" style="font-size:.8rem">Summaries of the main ideas in our own words, not the books or videos themselves. The originals are worth your time: start with the ★ ones.</p>`;
 }
-document.addEventListener("toggle", (e) => { const d = e.target; if (d.dataset && d.dataset.lib) lUI.open = d.open ? d.dataset.lib : (lUI.open === d.dataset.lib ? null : lUI.open); }, true);
+document.addEventListener("toggle", (e) => { const d = e.target; if (!d.dataset || !d.dataset.lib) return; const U = LIBS[d.dataset.libKey].ui; U.open = d.open ? d.dataset.lib : (U.open === d.dataset.lib ? null : U.open); }, true);
 // Money put into the business (kept in the profile so every assistant sees it) and the setup checklist.
 const SETUP_STEPS = (minor) => minor ? [
   ["talk", "Tell your parents the plan and get their OK"],
@@ -3710,7 +3723,7 @@ const ASSISTANTS = {
       const projects = state.projects.map((p) => `- ${p.name} [${p.status}${p.archived ? ", archived" : ""}]: ${p.description || "no description"}`).join("\n") || "none yet";
       const recent = state.income.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15).map((e) => `- ${e.date}: ${money(e.cents)}${e.note ? " (" + e.note + ")" : ""}`).join("\n") || "none yet";
       const books = state.books.map((b) => `- ${b.title}${b.author ? " by " + b.author : ""} [${BOOK_STATUS[b.status]}${b.rating ? ", rated " + b.rating + "/5" : ""}]`).join("\n") || "none yet";
-      return `${libraryIndex()}\nWhen you use an idea from the library, say where it comes from (for example "from $100M Offers by Alex Hormozi"). Describe ideas in your own words; never invent quotes. When they ask what to read, pick from the library, starting with the ★ beginner books that fit their age and stage.\n\n${bizContext()}\n\n${storeContext()}\n\nBusiness stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
+      return `${libraryIndex("sterling")}\n\n${bizContext()}\n\n${storeContext()}\n\nBusiness stage: ${st}\nIncome (USD): today ${money(t.today)}, this week ${money(t.week)}, this month ${money(t.month)}, all-time ${money(t.all)}.\nRecent income entries:\n${recent}\nProjects:\n${projects}\nReading list:\n${books}`;
     },
     tools: () => [
       { name: "log_store_day", description: `Save or update one day's store numbers when the user tells you them (for example "yesterday 3 sales, $75 in, $20 on ads"). Today is ${todayISO()}; "yesterday" is ${iso(addDays(parseISO(todayISO()), -1))}. Amounts are US dollars. Only include the fields they gave: fields you leave out keep their saved value (or 0 for a new day). If something important is missing (usually product costs), log what they gave and ask for the rest. Returns the day's profit and the change from the day before.`,
@@ -3728,12 +3741,7 @@ const ASSISTANTS = {
             vs_previous_day: prev ? { date: prev.date, profit_change: (dayProfit(day) - dayProfit(prev)) / 100, revenue_change: (day.revenueC - prev.revenueC) / 100, orders_change: day.orders - prev.orders } : null,
             last_7_days_profit: s.w7.profit / 100, money_in_business: s.cashC != null ? s.cashC / 100 : null };
         } },
-      { name: "library_lookup", description: "Look up the key ideas of the great business, money and marketing books, thinkers and marketing geniuses in your library. Call it before giving advice on offers, pricing, marketing, ads, sales, money, investing, strategy, habits or mindset, and when they ask what to read. Returns up to 5 entries with the big idea, key principles and when to use them.",
-        inputSchema: { type: "object", properties: { query: { type: "string", description: "what the advice is about, or a book or person's name" }, topic: { type: "string", enum: Object.keys(TOPIC_LABEL) } }, required: ["query"] },
-        async execute(i) {
-          await loadLibrary(); const r = libraryLookup(i.query, i.topic);
-          return { results: r.map((x) => ({ type: x.type === "mind" && x.group === "marketing" ? "marketing genius" : x.type, name: x.name, by: x.by, big_idea: x.big, key_ideas: x.ideas, when_to_use: x.use || "", caution: x.note || "", good_first_read: !!x.start })), note: r.length ? "Summaries in our own words. Name the source when you use an idea; don't invent quotes." : "Nothing matched; try a broader query or a topic." };
-        } },
+      libraryTool("sterling"),
       { name: "update_business_money", description: "Change how much money the user has put into the business, when they tell you they got or added money, or the total changed. mode 'add' adds the amount to the current total; 'set' replaces the total.",
         inputSchema: { type: "object", properties: { amount: { type: "number", description: "US dollars, positive" }, mode: { type: "string", enum: ["add", "set"] } }, required: ["amount", "mode"] },
         async execute(i) {
@@ -3768,14 +3776,15 @@ const ASSISTANTS = {
     starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
       const bc = state.bodyCheck && !isMinor() ? `\nPhoto check-in (Summit's own earlier read of their photo; the photo itself isn't available): ${[state.bodyCheck.build && "build " + BODY_BUILD[state.bodyCheck.build], state.bodyCheck.bodyFat && "body fat roughly " + state.bodyCheck.bodyFat, state.bodyCheck.posture.length && "posture: " + state.bodyCheck.posture.map((k) => BODY_POSTURE[k]).join(", "), state.bodyCheck.focus.length && "focus: " + state.bodyCheck.focus.map((k) => BODY_FOCUS[k]).join(", ")].filter(Boolean).join("; ")}. Notes: ${state.bodyCheck.notes}` : "";
-      if (!validPlan(state.plan, state.answers)) return "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice." + bc;
+      const lib = libraryIndex("summit"), libPre = lib ? lib + "\n\n" : "";
+      if (!validPlan(state.plan, state.answers)) return libPre + "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice." + bc;
       const a = state.answers, p = state.plan, w = weekInfo();
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
       const week = w.days.map((d) => `${d.iso}${d.today ? " (today)" : ""}: ${d.done ? "trained " + d.done.session : d.planned ? "planned " + d.planned + ", not done" : "rest"}`).join("\n");
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
-      return `Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("A steep 1-hour hike feels: " + xlabel("hike", x.hike)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.road) out.push("On the road they have: " + xlabel("road", x.road)); if (p.recovery) out.push("Recovery note: " + p.recovery); if (p.trip) out.push(`Next trip: ${p.trip.name} (${p.trip.family}), about ${p.trip.weeks} weeks out. Trail prep phases: ${p.trip.phases.map((ph) => `${ph.name} weeks ${ph.from}-${ph.to}: long hike ${ph.hike}, pack ${ph.pack}`).join("; ")}.`); if (p.sessionsRoad) out.push("Road version sessions: " + p.sessionsRoad.map((s) => s.name + ": " + s.exercises.map((e) => e.name).join(", ")).join(" | ")); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
+      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("A steep 1-hour hike feels: " + xlabel("hike", x.hike)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.road) out.push("On the road they have: " + xlabel("road", x.road)); if (p.recovery) out.push("Recovery note: " + p.recovery); if (p.trip) out.push(`Next trip: ${p.trip.name} (${p.trip.family}), about ${p.trip.weeks} weeks out. Trail prep phases: ${p.trip.phases.map((ph) => `${ph.name} weeks ${ph.from}-${ph.to}: long hike ${ph.hike}, pack ${ph.pack}`).join("; ")}.`); if (p.sessionsRoad) out.push("Road version sessions: " + p.sessionsRoad.map((s) => s.name + ": " + s.exercises.map((e) => e.name).join(", ")).join(" | ")); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
     },
-    tools: () => summitRecipeTools(),
+    tools: () => [...summitRecipeTools(), libraryTool("summit")],
   },
 };
 const TAB_AI = { atlas: "atlas", journey: "sterling", training: "summit" };
@@ -4267,9 +4276,10 @@ Nutrition is per serving and must add up (kcal ≈ 4×protein + 4×carbs + 9×fa
 }
 function showTrainSection(s) {
   kUI.section = s;
-  $("#training").hidden = s !== "plan"; $("#kitchen").hidden = s !== "recipes";
+  $("#training").hidden = s !== "plan"; $("#kitchen").hidden = s !== "recipes"; $("#summit-library-wrap").hidden = s !== "library";
   $$("[data-act=train-sec]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === s)));
   if (s === "recipes") renderKitchen();
+  if (s === "library") renderLibrary("summit");
 }
 // Summit can look recipes up in the library
 function summitRecipeTools() {
@@ -4343,14 +4353,14 @@ document.addEventListener("click", async (e) => {
     case "day-del": sUI.confirm = id; renderStore(); break;
     case "day-del-no": sUI.confirm = null; renderStore(); break;
     case "day-del-yes": { sUI.confirm = null; try { await store.remove("storedays", id); toast(`${fmtDate(id)} deleted`); } catch (e) { toast(SAVE_FAIL, true); } renderStore(); break; }
-    case "lib-tab": lUI.tab = b.dataset.v; lUI.topic = "all"; lUI.all = false; renderLibrary(); break;
-    case "lib-topic": lUI.topic = b.dataset.v; lUI.all = false; renderLibrary(); break;
-    case "lib-all": lUI.all = !lUI.all; renderLibrary(); break;
-    case "lib-add": { const x = LIBRARY && LIBRARY.items.find((i) => i.id === id); if (!x || inReadingList(x.name)) break;
+    case "lib-tab": { const k = b.dataset.libKey, U = LIBS[k].ui; U.tab = b.dataset.v; U.topic = "all"; U.all = false; renderLibrary(k); break; }
+    case "lib-topic": { const k = b.dataset.libKey, U = LIBS[k].ui; U.topic = b.dataset.v; U.all = false; renderLibrary(k); break; }
+    case "lib-all": { const k = b.dataset.libKey; LIBS[k].ui.all = !LIBS[k].ui.all; renderLibrary(k); break; }
+    case "lib-add": { const D = LIBS[b.dataset.libKey].data, x = D && D.items.find((i) => i.id === id); if (!x || inReadingList(x.name)) break;
       const obj = { id: uid(), title: x.name, author: x.by, status: "want", note: x.big, rating: null, addedAt: todayISO(), finishedAt: null };
       try { await store.put("books", obj); } catch (e) { toast(SAVE_FAIL, true); break; } renderBooks(); renderLibrary(); toast(`${x.name} added to your reading list`); break; }
-    case "lib-ask": { const x = LIBRARY && LIBRARY.items.find((i) => i.id === id); if (!x) break;
-      openAI("sterling"); setTimeout(() => { const i = $("#ai-input"); if (i) { i.value = x.type === "book" ? `What can I use from ${x.name} for my business right now?` : `What would ${x.name} tell me to do with my business right now?`; i.focus(); } }, 60); break; }
+    case "lib-ask": { const L = LIBS[b.dataset.libKey], x = L.data && L.data.items.find((i) => i.id === id); if (!x) break;
+      openAI(L.ai); setTimeout(() => { const i = $("#ai-input"); if (i) { i.value = (x.type === "book" ? L.data.askBook : L.data.askMind).replace("{name}", x.name); i.focus(); } }, 60); break; }
     case "setup-show": sUI.showSetup = !sUI.showSetup; renderStore(); break;
     case "day-all": sUI.showAll = !sUI.showAll; renderStore(); break;
     case "ai-open": openAI(b.dataset.ai); break;

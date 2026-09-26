@@ -490,13 +490,19 @@ for b in BOOKS:
     id_, name, by, year, topics, start, big, ideas, use = b[:9]
     note = b[9] if len(b) > 9 else ""
     assert all(t in TOPICS for t in topics), (id_, topics)
-    out.append({"id": id_, "type": "book", "name": name, "by": by, "year": year, "topics": topics, "start": start, "big": big, "ideas": ideas, "use": use, **({"note": note} if note else {})})
+    out.append({"id": id_, "type": "book", "tab": "book", "name": name, "by": by, "year": year, "topics": topics, "start": start, "big": big, "ideas": ideas, "use": use, **({"note": note} if note else {})})
 for m in MINDS:
     id_, name, role, topics, big, ideas, fun = m[:7]
     group = m[7] if len(m) > 7 else "business"
     assert all(t in TOPICS for t in topics), (id_, topics)
-    out.append({"id": id_, "type": "mind", "group": group, "name": name, "by": role, "topics": topics, "big": big, "ideas": ideas, **({"fun": fun} if fun else {})})
+    out.append({"id": id_, "type": "mind", "tab": "marketer" if group == "marketing" else "mind", "group": group, "name": name, "by": role, "topics": topics, "big": big, "ideas": ideas, **({"fun": fun} if fun else {})})
 ids = [x["id"] for x in out]
 assert len(ids) == len(set(ids)), "duplicate id"
-json.dump({"version": 1, "topics": TOPICS, "items": out}, sys.stdout, ensure_ascii=False, separators=(",", ":"))
+LABELS = {"offers": "Offers", "pricing": "Pricing", "marketing": "Marketing", "ads": "Ads", "copywriting": "Copywriting", "brand": "Personal brand", "sales": "Sales", "customers": "Customers", "startup": "Starting up", "ecommerce": "E-commerce", "strategy": "Strategy", "systems": "Systems", "money": "Money", "investing": "Investing", "mindset": "Mindset", "habits": "Habits", "negotiation": "Negotiation", "leadership": "Leadership", "story": "Stories", "psychology": "Psychology"}
+assert set(LABELS) == set(TOPICS)
+json.dump({"version": 2, "topics": TOPICS, "topicLabels": LABELS,
+  "tabs": [{"id": "book", "label": "Books", "index": "Books"}, {"id": "mind", "label": "Great minds", "index": "Great minds"}, {"id": "marketer", "label": "Marketing geniuses", "index": "Marketing geniuses"}],
+  "askBook": "What can I use from {name} for my business right now?", "askMind": "What would {name} tell me to do with my business right now?",
+  "promptNote": "For marketing, ads, copy and brand questions, think like these marketing geniuses and say whose idea you're using.",
+  "items": out}, sys.stdout, ensure_ascii=False, separators=(",", ":"))
 sys.stderr.write(f"{sum(1 for x in out if x['type']=='book')} books, {sum(1 for x in out if x['type']=='mind' and x['group']=='business')} minds, {sum(1 for x in out if x['type']=='mind' and x['group']=='marketing')} marketing geniuses\n")
