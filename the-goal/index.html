@@ -373,7 +373,20 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .session{padding:16px 18px}
 .session h3{margin:2px 0 10px}
 .ex-list{list-style:none;margin:0;padding:0}
-.ex-list li{display:grid;grid-template-columns:1fr auto;gap:12px;padding:8px 0;border-top:1px solid var(--hairline);align-items:baseline}
+.ex-list > li{border-top:1px solid var(--hairline)}
+.ex summary{display:grid;grid-template-columns:1fr auto;gap:12px;padding:8px 0;align-items:baseline;cursor:pointer;list-style:none}
+.ex summary::-webkit-details-marker{display:none}
+.ex summary .ex-name::before{content:"▸";display:inline-block;width:1em;color:var(--moss);font-size:.8rem}
+.ex[open] summary .ex-name::before{content:"▾"}
+.ex summary .pat{margin-left:1em}
+.ex-body{padding:0 0 10px;display:grid;gap:6px;font-size:.9rem}
+.ex-body p{margin:0}
+.ex-steps,.warm-steps{margin:0;padding-left:1.2em;display:grid;gap:3px}
+.ex-works,.ex-alt{font-size:.84rem}
+.read-plan{padding:16px 20px;margin-bottom:14px}
+.read-plan h3{margin:0 0 6px}
+.read-plan ul{margin:0;padding-left:1.1em;display:grid;gap:5px;font-size:.93rem}
+.prog-ex{display:block;margin-top:6px;color:var(--muted);font-size:.9rem}
 .ex-list .pat{display:block;font-size:.74rem;color:var(--muted)}
 .ex-list .rx{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;font-size:.88rem;white-space:nowrap}
 .howto{padding:18px 20px;display:grid;gap:12px}
@@ -3138,6 +3151,136 @@ const BANK = {
   core: { gym: ["Cable Pallof press", "Hanging knee raise", "Weighted plank"], home: ["Band Pallof press", "Dumbbell dead bug", "Weighted plank"], bw: ["Dead bug", "Plank", "Hollow body hold"] },
   carry: { gym: ["Farmer's carry", "Heavy farmer's carry", "Loaded carry with sled push"], home: ["Dumbbell farmer's carry", "Suitcase carry", "Double overhead carry"], bw: ["Loaded backpack walk", "Bear crawl", "Hill sprints"] },
 };
+// How to do every exercise the plan can prescribe: what it works, three steps, the one cue that matters most.
+// b: true marks barbell lifts (for under-18s: only with a coach or adult watching).
+const EX_GUIDE = {
+  // squat
+  "Goblet squat": { w: "Thighs, glutes, core", s: ["Hold a dumbbell or kettlebell against your chest with both hands.", "Feet a bit wider than your hips, toes slightly out. Sit down between your heels, chest up.", "Go as low as you can with a flat back, then stand up by pushing the floor away."], t: "Knees follow your toes; don't let them cave inward." },
+  "Barbell back squat": { b: true, w: "Thighs, glutes, back, core", s: ["Bar on your upper back (not your neck), hands just outside your shoulders.", "Brace your stomach like you're about to be poked, then sit down and back.", "Go to at least thighs parallel with the floor, then drive up."], t: "Keep your whole foot on the floor and your chest proud." },
+  "Front squat": { b: true, w: "Thighs, core, upper back", s: ["Bar rests on the front of your shoulders, elbows pointing forward and high.", "Squat straight down, keeping your torso tall.", "Stand up leading with your elbows."], t: "If your elbows drop, the bar rolls forward: keep them up." },
+  "Bodyweight squat": { w: "Thighs, glutes", s: ["Feet shoulder-width, arms out in front for balance.", "Sit down like there's a chair behind you, chest up.", "Go as low as is comfortable, then stand up tall and squeeze your glutes."], t: "Go slow on the way down (2-3 seconds) to make it harder." },
+  "Dumbbell goblet squat": { w: "Thighs, glutes, core", s: ["Hold one dumbbell vertically against your chest.", "Feet a bit wider than hips, sit down between your heels.", "Pause at the bottom for a second, then stand up."], t: "Elbows point down and stay inside your knees." },
+  "Bulgarian split squat": { w: "Thighs, glutes, balance", s: ["Put the top of your back foot on a bench or couch behind you.", "Front foot about a big step forward. Lower straight down until your back knee almost touches the floor.", "Push through the front heel to come up. Do all reps, then switch legs."], t: "Most of your weight stays on the front leg." },
+  "Split squat": { w: "Thighs, glutes, balance", s: ["Stand in a long stride: one foot forward, one back, back heel up.", "Lower your back knee straight down toward the floor.", "Push through the front foot to rise. Finish one side, then switch."], t: "Keep your torso upright and your front knee over your foot." },
+  "Assisted pistol squat": { w: "Thighs, glutes, balance", s: ["Hold a doorframe or pole. Stand on one leg, the other leg out in front.", "Slowly squat down on the standing leg as low as you can control.", "Use your hands only as much as you need to stand back up."], t: "Control beats depth: go only as low as you can come up from." },
+  "Box squat to a bench": { w: "Thighs, glutes (easy on the knees)", s: ["Stand in front of a bench or box at about knee height.", "Sit back until you lightly touch it, without flopping down.", "Stand up by driving your hips forward."], t: "Touch and go: don't relax on the bench." },
+  "Dumbbell box squat": { w: "Thighs, glutes (easy on the knees)", s: ["Hold a dumbbell at your chest, stand in front of a chair.", "Sit back to lightly touch the chair.", "Stand up tall without rocking."], t: "Sit back with your hips so your knees don't slide forward." },
+  "Box squat (sit to stand)": { w: "Thighs, glutes (easy on the knees)", s: ["Stand in front of a chair, arms forward.", "Sit down slowly, touch the seat.", "Stand up without using your hands."], t: "Lower the chair height over the weeks to make it harder." },
+  "Leg press": { w: "Thighs, glutes", s: ["Sit in the machine, feet shoulder-width in the middle of the platform.", "Unlock and lower the platform until your knees are around 90 degrees.", "Push back up without locking your knees hard."], t: "Keep your lower back flat against the pad." },
+  // hinge
+  "Kettlebell deadlift": { w: "Glutes, hamstrings, back", s: ["Kettlebell between your feet. Push your hips back and grab the handle.", "Flat back, shoulders over the bell, arms straight.", "Stand up by driving your hips forward, then lower it the same way."], t: "It's a hip movement, not a squat: hips back, shins nearly vertical." },
+  "Barbell Romanian deadlift": { b: true, w: "Hamstrings, glutes, back", s: ["Hold the bar at your hips, knees slightly bent.", "Push your hips back and slide the bar down your thighs until you feel a stretch.", "Squeeze your glutes to stand back up."], t: "Bar stays touching your legs; back stays flat." },
+  "Barbell deadlift": { b: true, w: "Whole back of the body, grip", s: ["Bar over the middle of your feet. Grab it just outside your legs.", "Chest up, flat back, pull the slack out of the bar.", "Push the floor away until you stand tall, then lower with control."], t: "Never round your back to lift more. Lower the weight instead." },
+  "Dumbbell Romanian deadlift": { w: "Hamstrings, glutes", s: ["Hold dumbbells in front of your thighs, knees soft.", "Push your hips back, dumbbells slide down your legs to around your knees.", "Squeeze your glutes to come up."], t: "Feel the stretch in the back of your legs, not your lower back." },
+  "Single-leg dumbbell RDL": { w: "Hamstrings, glutes, balance", s: ["Hold a dumbbell in the hand opposite your standing leg.", "Hinge forward as your free leg reaches back, body like a seesaw.", "Come back up slowly. Finish one side, then switch."], t: "Keep your hips level; don't let them twist open." },
+  "Band good morning": { w: "Hamstrings, glutes, lower back", s: ["Stand on a band, loop it behind your neck/upper back.", "Push your hips back with a flat back until you feel a stretch.", "Drive your hips forward to stand up."], t: "Soft knees, flat back, slow and controlled." },
+  "Glute bridge": { w: "Glutes, hamstrings", s: ["Lie on your back, knees bent, feet flat near your bottom.", "Push through your heels and lift your hips until your body is straight from knees to shoulders.", "Squeeze for 1 second at the top, lower slowly."], t: "Squeeze your glutes, don't arch your lower back." },
+  "Single-leg glute bridge": { w: "Glutes, hamstrings", s: ["Like a glute bridge, but one leg is lifted straight.", "Push through the heel on the floor to lift your hips.", "Keep your hips level. Finish one side, then switch."], t: "If your hips tilt, go back to two legs." },
+  "Nordic curl progression": { w: "Hamstrings (protects against pulls)", s: ["Kneel with your ankles held down (under a couch or by someone).", "Keep your body straight and lean forward as slowly as you can.", "Catch yourself with your hands, push back up. Only lean as far as you control."], t: "It's very hard: a slow lower of a few centimeters counts." },
+  "Hip thrust": { w: "Glutes", s: ["Upper back against a bench, barbell or dumbbell across your hips (use a pad).", "Feet flat, push through your heels to lift your hips level with your shoulders.", "Pause and squeeze, then lower."], t: "Chin tucked, ribs down: the movement is at the hips only." },
+  "Dumbbell hip thrust": { w: "Glutes", s: ["Back against a couch or bench, dumbbell on your hips.", "Drive your hips up until your body is flat like a table.", "Squeeze for a second, lower slowly."], t: "Shins vertical at the top." },
+  // horizontal push
+  "Machine chest press": { w: "Chest, shoulders, triceps", s: ["Set the seat so the handles are at mid-chest.", "Push the handles forward until your arms are straight.", "Bring them back slowly until you feel a stretch in your chest."], t: "Shoulders down and back against the pad." },
+  "Dumbbell bench press": { w: "Chest, shoulders, triceps", s: ["Lie on a bench, dumbbells above your chest.", "Lower them to the sides of your chest, elbows at about 45 degrees.", "Press back up until your arms are straight."], t: "Feet flat on the floor, upper back tight." },
+  "Barbell bench press": { b: true, w: "Chest, shoulders, triceps", s: ["Lie on the bench, eyes under the bar, hands a bit wider than shoulders.", "Lower the bar to your lower chest with control.", "Press it back up over your shoulders."], t: "Always use a spotter or safety arms." },
+  "Band chest press": { w: "Chest, shoulders, triceps", s: ["Band behind your back (or anchored behind you) at chest height.", "Press your hands forward until your arms are straight.", "Return slowly."], t: "Step forward to add tension and make it harder." },
+  "Dumbbell floor press": { w: "Chest, triceps (easy on the shoulders)", s: ["Lie on the floor, knees bent, dumbbells above your chest.", "Lower until your upper arms touch the floor.", "Press back up."], t: "Pause when your arms touch; don't bounce." },
+  "Neutral-grip dumbbell press": { w: "Chest, triceps (easy on the shoulders)", s: ["Lie on a bench, dumbbells with palms facing each other.", "Lower them beside your chest, elbows close to your body.", "Press up."], t: "The palms-facing grip is gentler on the shoulders." },
+  "Incline push-up": { w: "Chest, shoulders, triceps", s: ["Hands on a table, bench or wall, body in a straight line.", "Lower your chest to the edge.", "Push back up."], t: "The lower the surface, the harder it gets." },
+  "Push-up": { w: "Chest, shoulders, triceps, core", s: ["Hands a bit wider than your shoulders, body straight like a plank.", "Lower until your chest is just above the floor, elbows at about 45 degrees.", "Push the floor away to come up."], t: "Squeeze your glutes so your hips don't sag." },
+  "Deficit push-up": { w: "Chest, shoulders, triceps", s: ["Hands on two books or push-up handles, so your chest goes lower than your hands.", "Lower slowly into the stretch.", "Push up strong."], t: "Only when regular push-ups feel easy for 15+." },
+  // vertical push
+  "Machine shoulder press": { w: "Shoulders, triceps", s: ["Sit with your back against the pad, handles at shoulder height.", "Press up until your arms are straight.", "Lower slowly to shoulder height."], t: "Don't arch your back off the pad." },
+  "Dumbbell shoulder press": { w: "Shoulders, triceps", s: ["Sit or stand, dumbbells at shoulder height, palms forward.", "Press them overhead until your arms are straight.", "Lower back to your shoulders."], t: "Squeeze your stomach so your lower back doesn't arch." },
+  "Barbell overhead press": { b: true, w: "Shoulders, triceps, core", s: ["Bar on your front shoulders, hands just outside them.", "Squeeze glutes and stomach, press the bar straight up past your face.", "Lock out overhead, then lower with control."], t: "Move your head back slightly so the bar goes straight up." },
+  "Band overhead press": { w: "Shoulders, triceps", s: ["Stand on a band, hands at your shoulders.", "Press up until your arms are straight.", "Lower slowly."], t: "Keep your ribs down; don't lean back." },
+  "Seated dumbbell press": { w: "Shoulders, triceps", s: ["Sit tall, back supported, dumbbells at your shoulders.", "Press overhead.", "Lower slowly."], t: "Stop just before the dumbbells touch at the top." },
+  "Standing dumbbell press": { w: "Shoulders, triceps, core", s: ["Stand tall, dumbbells at your shoulders.", "Brace your stomach and glutes, press overhead.", "Lower with control."], t: "No leaning back: if you have to, it's too heavy." },
+  "Pike push-up": { w: "Shoulders, triceps", s: ["Start in a push-up, walk your feet in so your hips are high (upside-down V).", "Bend your elbows to bring your head toward the floor between your hands.", "Push back up."], t: "The higher your hips, the more it works your shoulders." },
+  "Elevated pike push-up": { w: "Shoulders, triceps", s: ["Pike position with your feet on a chair or couch.", "Lower your head toward the floor.", "Press back up."], t: "Build up to this from regular pike push-ups." },
+  "Wall-supported handstand push-up": { w: "Shoulders, triceps", s: ["Kick up into a handstand facing away from the wall, heels on it.", "Lower your head slowly toward a cushion on the floor.", "Press back up. Start with just holding the handstand."], t: "Advanced: only when elevated pike push-ups feel easy." },
+  "Landmine press": { w: "Shoulders, chest (easy on the shoulders)", s: ["One end of a barbell in a corner or landmine, hold the other end at your shoulder.", "Press it up and forward until your arm is straight.", "Lower back to your shoulder. Finish one side, then switch."], t: "The angled path is kinder to your shoulders." },
+  "Half-kneeling single-arm dumbbell press": { w: "Shoulders, core (easy on the shoulders)", s: ["Kneel on one knee, dumbbell at the shoulder on the same side as the knee down.", "Press up, slightly forward.", "Lower slowly, then switch sides."], t: "Squeeze the glute of the down knee to stay stable." },
+  // horizontal pull
+  "Seated cable row": { w: "Upper back, lats, biceps", s: ["Sit tall, feet on the platform, handle at arm's length.", "Pull the handle to your stomach, squeezing your shoulder blades together.", "Let it go forward slowly."], t: "Don't swing your body; only your arms and back move." },
+  "Dumbbell row": { w: "Upper back, lats, biceps", s: ["One hand and knee on a bench, dumbbell in the other hand.", "Pull the dumbbell to your hip, elbow close to your body.", "Lower slowly. Finish one side, then switch."], t: "Think 'elbow to back pocket'." },
+  "Barbell row": { b: true, w: "Upper back, lats, lower back", s: ["Hinge forward with a flat back, bar hanging at arm's length.", "Pull the bar to your lower chest.", "Lower with control."], t: "Keep your back angle the same the whole time." },
+  "Band row": { w: "Upper back, biceps", s: ["Anchor a band at chest height (door anchor or around a pole).", "Pull the handles to your ribs, shoulder blades together.", "Return slowly."], t: "Pause for a second with your shoulder blades squeezed." },
+  "Single-arm dumbbell row": { w: "Upper back, lats, biceps", s: ["Hand on a chair or couch, flat back, dumbbell in the other hand.", "Row it to your hip.", "Lower slowly, then switch."], t: "Don't twist your chest open to lift more." },
+  "Chest-supported dumbbell row": { w: "Upper back (easy on the lower back)", s: ["Lie face down on an incline bench, dumbbells hanging.", "Row both dumbbells up, squeezing your shoulder blades.", "Lower slowly."], t: "Your chest stays on the bench the whole time." },
+  "Chest-supported row": { w: "Upper back (easy on the lower back)", s: ["Chest against the machine pad, grab the handles.", "Pull back until your elbows pass your body.", "Return slowly."], t: "Keep your chest on the pad." },
+  "Table row (feet on floor)": { w: "Upper back, biceps", s: ["Lie under a sturdy table, grip its edge.", "Keep your body straight from heels to shoulders.", "Pull your chest to the table, then lower."], t: "Check the table is strong enough first." },
+  "Inverted row": { w: "Upper back, biceps, core", s: ["Hang under a bar at waist height, body straight, heels on the floor.", "Pull your chest to the bar.", "Lower with control."], t: "The more horizontal your body, the harder it is." },
+  "Feet-elevated inverted row": { w: "Upper back, biceps, core", s: ["Like an inverted row, with your feet on a box or bench.", "Pull your chest to the bar.", "Lower slowly."], t: "Keep your hips up in a straight line." },
+  // vertical pull
+  "Lat pulldown": { w: "Lats, upper back, biceps", s: ["Sit with knees under the pad, hands a bit wider than shoulders.", "Pull the bar to your upper chest, elbows down and back.", "Let it rise slowly."], t: "Lean back only a little; no swinging." },
+  "Neutral-grip lat pulldown": { w: "Lats, biceps (easy on the shoulders)", s: ["Use the handle where your palms face each other.", "Pull to your upper chest.", "Return slowly."], t: "Think about pulling your elbows into your pockets." },
+  "Assisted pull-up": { w: "Lats, upper back, biceps", s: ["Use the assisted machine or a band under your knees.", "Pull until your chin is over the bar.", "Lower all the way down slowly."], t: "Use less help over the weeks." },
+  "Pull-up": { w: "Lats, upper back, biceps, grip", s: ["Hang from a bar, hands a bit wider than shoulders.", "Pull until your chin is over the bar.", "Lower slowly until your arms are straight."], t: "Full hang at the bottom; no kicking." },
+  "Band pulldown": { w: "Lats, upper back", s: ["Anchor a band high (top of a door).", "Kneel and pull the handles down to your chest.", "Return slowly."], t: "Shoulders down, away from your ears." },
+  "Doorframe row": { w: "Upper back, biceps", s: ["Stand in a doorway, hold both sides of the frame.", "Lean back with straight arms, feet close to the door.", "Pull your chest to the frame, then lower."], t: "Walk your feet closer to the door to make it harder." },
+  "Band-assisted pull-up": { w: "Lats, upper back, biceps", s: ["Loop a band over the bar and put a foot or knee in it.", "Pull your chin over the bar.", "Lower slowly."], t: "Move to a thinner band as you get stronger." },
+  "Negative pull-up": { w: "Lats, upper back, biceps", s: ["Jump or step up so your chin is over the bar.", "Lower yourself as slowly as you can (aim for 3-5 seconds).", "Step down and repeat."], t: "This is how most people earn their first pull-up." },
+  // core
+  "Cable Pallof press": { w: "Core (resisting twisting)", s: ["Stand side-on to a cable at chest height, handle at your chest.", "Press it straight out in front, don't let it pull you around.", "Bring it back. Finish one side, then switch."], t: "Stay square; the challenge is not moving." },
+  "Band Pallof press": { w: "Core (resisting twisting)", s: ["Band anchored at chest height, stand side-on.", "Press the band straight out and hold for a second.", "Return. Finish one side, then switch."], t: "Step further away to make it harder." },
+  "Hanging knee raise": { w: "Lower stomach, grip", s: ["Hang from a bar.", "Bring your knees up toward your chest without swinging.", "Lower slowly."], t: "Curl your hips up, don't just lift your legs." },
+  "Weighted plank": { w: "Whole core", s: ["Forearm plank with a weight plate on your upper back (someone places it).", "Body straight, squeeze glutes and stomach.", "Hold for the time given."], t: "Only when a normal plank for 60 seconds feels easy." },
+  "Dumbbell dead bug": { w: "Deep core", s: ["Lie on your back holding a dumbbell above your chest, knees up at 90 degrees.", "Lower one leg toward the floor while keeping your lower back pressed down.", "Bring it back, switch legs."], t: "If your back arches off the floor, move less." },
+  "Dead bug": { w: "Deep core", s: ["Lie on your back, arms up to the ceiling, knees bent at 90 degrees.", "Slowly lower the opposite arm and leg toward the floor.", "Return and switch sides."], t: "Lower back stays glued to the floor. Breathe out as you reach." },
+  "Plank": { w: "Whole core, shoulders", s: ["Forearms on the floor under your shoulders, legs straight.", "Body in one line from head to heels.", "Squeeze glutes and stomach and hold."], t: "Quality over time: stop when your hips sag." },
+  "Hollow body hold": { w: "Whole core", s: ["Lie on your back, press your lower back into the floor.", "Lift your shoulders and legs a little, arms by your ears.", "Hold like a banana shape."], t: "Bend your knees to make it easier." },
+  // carry / conditioning
+  "Farmer's carry": { w: "Grip, shoulders, core, legs", s: ["Pick up a heavy dumbbell or kettlebell in each hand.", "Stand tall, shoulders back.", "Walk with short, steady steps for the distance given."], t: "Don't let the weights pull your shoulders down." },
+  "Heavy farmer's carry": { w: "Grip, whole body", s: ["Heavier weights than your normal carry.", "Brace your core, stand tall.", "Walk slowly and steadily."], t: "Put them down before your grip fails, not after." },
+  "Loaded carry with sled push": { w: "Legs, lungs, whole body", s: ["Carry weights for the first half, then push a sled for the second half.", "Low body angle on the sled, drive with your legs.", "Rest, then repeat."], t: "Push hard but steady; it's conditioning, not a sprint." },
+  "Dumbbell farmer's carry": { w: "Grip, shoulders, core", s: ["A dumbbell in each hand.", "Stand tall and walk.", "Turn around slowly and walk back."], t: "Walk like you're balancing a book on your head." },
+  "Suitcase carry": { w: "Core (sides), grip", s: ["A weight in one hand only.", "Walk without leaning to either side.", "Switch hands halfway."], t: "The core work is in staying straight." },
+  "Double overhead carry": { w: "Shoulders, core", s: ["Press two dumbbells overhead, arms straight.", "Walk with your ribs down and arms locked.", "Lower carefully when done."], t: "Go light: this is harder than it looks." },
+  "Loaded backpack walk": { w: "Legs, core, lungs", s: ["Put books or water bottles in a school backpack.", "Walk briskly, standing tall.", "Go for the distance given."], t: "Start light; add weight a little at a time." },
+  "Bear crawl": { w: "Shoulders, core, coordination", s: ["On hands and toes, knees just off the floor.", "Crawl forward moving opposite hand and foot together.", "Keep your back flat and hips low."], t: "Slow and controlled beats fast and sloppy." },
+  "Hill sprints": { w: "Legs, lungs, speed", s: ["Find a short, steep hill (or stairs).", "Sprint up hard for 10-15 seconds.", "Walk down slowly to recover fully, then repeat."], t: "Full rest between sprints keeps them fast and safe." },
+  // posture
+  "Face pull": { w: "Rear shoulders, upper back (posture)", s: ["Cable or band at face height, rope handle.", "Pull toward your forehead, hands going wide.", "Squeeze your shoulder blades, return slowly."], t: "Light weight, perfect squeeze." },
+  "Band pull-apart": { w: "Rear shoulders, upper back (posture)", s: ["Hold a band in front of you at shoulder height, arms straight.", "Pull it apart until it touches your chest.", "Return slowly."], t: "Keep your shoulders down, away from your ears." },
+  "Prone Y-T-W raise": { w: "Upper back, rear shoulders (posture)", s: ["Lie face down, arms out in a Y shape, thumbs up.", "Lift your arms a little and hold 2 seconds. Then T shape, then W shape.", "That's one rep."], t: "Tiny lifts done well; don't strain your neck." },
+};
+
+// Plain-words explanations for the plan: what "4 × 6-10" means, how to do each exercise, and how to progress.
+function rxWords(rx) {
+  const m = String(rx).match(/^(\d+) × (.+)$/); if (!m) return rx;
+  const n = Number(m[1]), r = m[2].replace("-", " to ");
+  if (/\/leg$/.test(m[2])) return `${n} sets of ${r.replace("/leg", "")} reps on each leg`;
+  if (/s$/.test(m[2])) return `${n} ${n === 1 ? "hold" : "holds"} of ${r.replace(/s$/, "")} seconds`;
+  if (/m$/.test(m[2])) return `${n} ${n === 1 ? "walk" : "walks"} of ${r.replace(/m$/, "")} meters`;
+  return `${n} sets of ${r} reps`;
+}
+function exInfo(e, equip) {
+  const base = e.name.replace(/, 3-second lower$/, ""), g = EX_GUIDE[base];
+  const list = BANK[e.pattern] && BANK[e.pattern][equip], i = list ? list.indexOf(base) : -1;
+  return { g, slow: base !== e.name, easier: i > 0 ? list[i - 1] : null, harder: i >= 0 && i < list.length - 1 ? list[i + 1] : null };
+}
+function exDetails(e, equip, rest) {
+  const x = exInfo(e, equip), g = x.g;
+  const restTxt = e.pattern === "posture" || e.pattern === "core" ? "short rest (30-45s)" : `rest ${rest} between sets`;
+  return `<details class="ex"><summary><span class="ex-name">${esc(e.name)}<span class="pat">${esc(PATTERN_LABEL[e.pattern] || "")}${e.swap ? ` · <span class="swap">${esc(e.swap)}</span>` : ""}</span></span><span class="rx">${esc(e.prescription)}</span></summary>
+    <div class="ex-body">
+      <p class="rx-words"><strong>${esc(rxWords(e.prescription))}</strong> · ${esc(restTxt)}</p>
+      ${g ? `<p class="muted ex-works">Works: ${esc(g.w)}</p>
+      <ol class="ex-steps">${g.s.map((t) => `<li>${esc(t)}</li>`).join("")}</ol>
+      <p class="ex-tip"><strong>Tip:</strong> ${esc(g.t)}</p>` : ""}
+      ${x.slow ? `<p class="ex-tip">Lower slowly for 3 seconds on every rep: that's what makes this version work.</p>` : ""}
+      ${g && g.b && isMinor() ? `<p class="lib-note">At your age: only with a coach or adult watching, and never a max attempt.</p>` : ""}
+      ${x.easier || x.harder ? `<p class="muted ex-alt">${x.easier ? `Too hard? Do <strong>${esc(x.easier)}</strong>. ` : ""}${x.harder ? `Too easy for all sets? Move up to <strong>${esc(x.harder)}</strong>.` : ""}</p>` : ""}
+    </div></details>`;
+}
+const PROG_EXAMPLE = {
+  muscle: "Example: week 1 you do 4 × 6 with 10 kg. Next time, try for 7 reps in each set, then 8. When all 4 sets reach 10 clean reps, go up to 12 kg and start again at 6 reps.",
+  lean: "Example: week 1 you rest 60 seconds between sets. Keep the same weight and cut rest by about 5-10 seconds each week. When you're at 45 seconds and every rep is clean, add a little weight.",
+  general: "Example: pick a weight you could lift about 15 times. When you can do 12 reps in every set, go up a little in weight and start again at 8 reps.",
+  endurance: "Example: add reps first, up to 20 in every set. Then take 5-10 seconds off your rest. Only when both feel easy, add a little weight.",
+};
+const WARMUP_STEPS = ["3-5 minutes of easy cardio: a light jog, jumping jacks or skipping", "10 bodyweight squats and 10 lunges (5 each leg)", "10 arm circles each way and 10 band pull-aparts or wall slides", "5 inchworms or 5 easy push-ups", "1-2 light sets of your first exercise before the real sets"];
 const PATTERN_LABEL = { posture: "Posture", squat: "Squat", hinge: "Hinge", hpush: "Horizontal push", vpush: "Vertical push", hpull: "Horizontal pull", vpull: "Vertical pull", core: "Core", carry: "Carry / conditioning" };
 const POOLS = {
   "Full Body A": ["squat", "hpush", "hpull", "core", "hinge"],
@@ -3565,20 +3708,30 @@ function renderPlan(el) {
     </section>
     ${bodyPlanCard(p)}
     ${p.why && p.why.length ? `<article class="card why"><h3>Why this plan fits you</h3><ul>${p.why.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></article>` : ""}
+    <article class="card read-plan">
+      <h3>How to read your plan</h3>
+      <ul>
+        <li><strong>${esc((list[0] && list[0].exercises[0] && list[0].exercises[0].prescription) || "3 × 8-12")}</strong> means ${esc(rxWords((list[0] && list[0].exercises[0] && list[0].exercises[0].prescription) || "3 × 8-12"))}. <span class="muted">"/leg" means each leg, "s" is seconds to hold, "m" is meters to walk.</span></li>
+        <li><strong>How heavy?</strong> Pick a weight (or version) where the last 2 reps of each set are hard, but your form still looks clean. If form breaks, it's too heavy.</li>
+        <li><strong>Rest</strong> ${esc(p.rest)} between sets, so you're ready to do the next set well.</li>
+        <li><strong>Tap any exercise</strong> to see how to do it, the most important tip, and an easier or harder version.</li>
+      </ul>
+    </article>
     <div class="sessions">
       ${list.map((s, i) => `
         <article class="card lift session">
           <span class="eyebrow">Day ${i + 1} · ${DAY_NAMES[p.weekdays[i]]}${road ? " · road version" : ""}</span>
           <h3>${esc(s.name)}</h3>
-          <ol class="ex-list">${s.exercises.map((e) => `<li><span>${esc(e.name)}<span class="pat">${esc(e.pattern === "trail" ? "Trail prep" : PATTERN_LABEL[e.pattern] || "")}${e.swap ? ` · <span class="swap">${esc(e.swap)}</span>` : ""}</span></span><span class="rx">${esc(e.prescription)}</span></li>`).join("")}</ol>
+          <ol class="ex-list">${s.exercises.map((e) => `<li>${exDetails(e, a.equipment, p.rest)}</li>`).join("")}</ol>
         </article>`).join("")}
     </div>
     <article class="card howto">
       <h3>How to run it</h3>
       <dl>
-        <div><dt>Progression</dt><dd>${esc(p.progression)}</dd></div>
+        <div><dt>Progression</dt><dd>${esc(p.progression)}${PROG_EXAMPLE[a.goal] ? `<span class="prog-ex">${esc(PROG_EXAMPLE[a.goal])}</span>` : ""}${a.equipment === "bw" ? `<span class="prog-ex">With bodyweight: when every set reaches the top of the rep range, move up to the harder version shown under that exercise.</span>` : ""}</dd></div>
         <div><dt>Conditioning</dt><dd>${esc(p.conditioning)}</dd></div>
         ${p.recovery ? `<div><dt>Recovery</dt><dd>${esc(p.recovery)}</dd></div>` : ""}
+        <div><dt>Warm-up (5-10 min)</dt><dd><ol class="warm-steps">${WARMUP_STEPS.map((t) => `<li>${esc(t)}</li>`).join("")}</ol></dd></div>
         <div><dt>Every session</dt><dd>${esc(WARMUP)}${p.body && p.body.warmup.length ? ` Then: ${p.body.warmup.map(esc).join("; ")}.` : ""}${p.body && p.body.uneven ? " On single-side exercises, start with your weaker side and match its reps on the other." : ""}</dd></div>
       </dl>
     </article>
