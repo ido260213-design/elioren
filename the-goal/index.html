@@ -767,7 +767,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
     <div class="page-head">
       <div>
         <h1>Training</h1>
-        <p>The places on the atlas are mountains, trails and altitude. This is the part that decides whether you can actually get up them.</p>
+        <p>Get stronger, faster and healthier. Your training plan, healthy recipes, and Summit to coach you.</p>
       </div>
       <button class="btn ask-btn" type="button" data-act="ai-open" data-ai="summit"><span class="av av-summit" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19l6-10 4 6 2-3 6 7z"/><path d="M9 9l1.5 2.5"/></svg></span>Ask Summit</button>
     </div>
@@ -3121,7 +3121,7 @@ function renderJourney() { updateStoreDot(); renderStage(); renderEarnings(); re
 
 /* ============================ TRAINING ============================ */
 const QUESTIONS = [
-  { key: "goal", q: "What's the goal right now?", opts: [["muscle", "Build muscle"], ["lean", "Lean out"], ["general", "General fitness"], ["endurance", "Endurance for the trail"]] },
+  { key: "goal", q: "What's the goal right now?", opts: [["muscle", "Build muscle"], ["lean", "Lean out"], ["general", "General fitness"], ["endurance", "Endurance and conditioning"]] },
   { key: "experience", q: "How much training have you actually done?", opts: [["new", "New to it"], ["onoff", "On and off"], ["consistent", "Consistent for a year or more"]] },
   { key: "days", q: "How many days a week can you really commit?", opts: [["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]] },
   { key: "equipment", q: "What do you have to train with?", opts: [["gym", "Full gym"], ["home", "Dumbbells and bands at home"], ["bw", "Bodyweight only"]] },
@@ -3162,8 +3162,8 @@ const SPLITS = {
 const GOALS = {
   muscle: { sets: 4, reps: "6-10", rest: "90-120s", prog: "Add a rep before you add weight. Once every set hits the top of the range with clean form, put the weight up and start again at the bottom.", cond: "Optional: 10 minutes easy walking after the session. It helps recovery, it won't cost you muscle." },
   lean: { sets: 3, reps: "10-15", rest: "45-60s", prog: "Keep the weight steady and shorten the rest before you add load. The point is density, not maximum weight.", cond: "Finish with 10 minutes: 30 seconds hard, 90 seconds easy, on a bike, rower, or hill." },
-  general: { sets: 3, reps: "8-12", rest: "60-90s", prog: "When all sets hit 12 clean reps, add a little weight. No rush.", cond: "Add one longer walk or hike on a rest day. That's the whole cardio requirement." },
-  endurance: { sets: 3, reps: "12-20", rest: "45s", prog: "Chase reps and shorter rest, not heavier weight. Strength here is about holding a pace under a pack.", cond: "Add 25-40 minutes of easy zone 2 work on two non-training days — a run, a ride, or a loaded hike." },
+  general: { sets: 3, reps: "8-12", rest: "60-90s", prog: "When all sets hit 12 clean reps, add a little weight. No rush.", cond: "Add one longer walk, bike ride or pickup game on a rest day. That's the whole cardio requirement." },
+  endurance: { sets: 3, reps: "12-20", rest: "45s", prog: "Chase reps and shorter rest, not heavier weight. Strength here is about holding a hard pace for longer.", cond: "Add 25-40 minutes of easy zone 2 work on two non-training days — a run, a ride, or a swim." },
 };
 const WARMUP = "Warm up 5-10 minutes before every session. Add weight only when every set finishes with clean form — a rep that looks bad is a rep that costs you later.";
 const EXP_INDEX = { new: 0, onoff: 1, consistent: 2 };
@@ -3177,18 +3177,15 @@ const EXTRA = [
   { group: "Your week", key: "cardio", q: "Favorite way to do cardio?", opts: [["run", "Running"], ["bike", "Cycling"], ["row", "Rowing"], ["hike", "Walking or hiking"], ["swim", "Swimming"]] },
   { group: "Your body", key: "limits", multi: true, q: "Anything to go easy on?", opts: [["knees", "Knees"], ["back", "Lower back"], ["shoulders", "Shoulders"]], hint: "Pick any that apply, or leave it empty." },
   { group: "Your body", key: "sleep", q: "How much do you usually sleep?", opts: [["low", "Under 6 hours"], ["mid", "6-7 hours"], ["good", "7+ hours"]] },
-  { group: "Your body", key: "hike", q: "How does a steep 1-hour hike feel right now?", opts: [["easy", "Easy"], ["ok", "Manageable"], ["tough", "Tough"]] },
-  { group: "On the road", key: "road", q: "When you travel, what will you usually have?", opts: [["gym", "A hotel gym"], ["home", "Bands and light dumbbells"], ["bw", "Just bodyweight"], ["same", "The same as at home"]] },
-  { group: "Your next trip", key: "trip", select: true, q: "What's the next big trip you're training for?" },
-  { group: "Your next trip", key: "tripWhen", q: "When is it?", opts: [["1", "Within a month"], ["3", "In 1-3 months"], ["6", "In 3-6 months"], ["9", "6+ months away"]] },
+  { group: "Your body", key: "hike", q: "How do 20 minutes of steady running feel right now?", opts: [["easy", "Easy"], ["ok", "Manageable"], ["tough", "Tough"]] },
+  { group: "Your sport", key: "sport", q: "Do you play a sport?", opts: [["basketball", "Basketball"], ["football", "Football (soccer)"], ["racket", "Tennis or padel"], ["combat", "Martial arts"], ["other", "Another sport"], ["none", "No sport right now"]] },
 ];
 const xlabel = (key, v) => { const q = EXTRA.find((x) => x.key === key); const o = q && q.opts && q.opts.find((o) => o[0] === v); return o ? o[1] : ""; };
 function normExtras(a) {
   const e = {}, n = Number(a.days), one = (k) => { const q = EXTRA.find((x) => x.key === k); if (q.opts.some((o) => o[0] === a[k])) e[k] = a[k]; };
   if (Array.isArray(a.weekdays)) { const w = [...new Set(a.weekdays.map(Number))].filter((x) => x >= 0 && x <= 6).sort((x, y) => x - y); if (w.length === n) e.weekdays = w; }
   if (Array.isArray(a.limits)) { const l = ["knees", "back", "shoulders"].filter((x) => a.limits.includes(x)); if (l.length) e.limits = l; }
-  ["cardio", "sleep", "hike", "road"].forEach(one);
-  if (a.trip && a.trip !== "none" && state.destinations.some((d) => d.id === a.trip)) { e.trip = a.trip; one("tripWhen"); }
+  ["cardio", "sleep", "hike", "sport"].forEach(one);
   return e;
 }
 // Joint-friendly swaps: same movement pattern, less load on the named area.
@@ -3198,7 +3195,6 @@ const SWAPS = {
   shoulders: { label: "Shoulder-friendly swap", vpush: { gym: "Landmine press", home: "Half-kneeling single-arm dumbbell press", bw: "Incline push-up" }, hpush: { gym: "Neutral-grip dumbbell press", home: "Dumbbell floor press", bw: "Incline push-up" }, vpull: { gym: "Neutral-grip lat pulldown", home: "Band pulldown", bw: "Inverted row" } },
 };
 const CARDIO_TEXT = { run: "running", bike: "cycling", row: "rowing", hike: "brisk walking or hill hiking", swim: "swimming" };
-const MOUNTAIN = ["alpine", "arctic"];
 function validAnswers(a) { return !!a && QUESTIONS.every((q) => q.opts.some((o) => o[0] === a[q.key])); }
 
 function buildSession(name, count, expIdx, equip, goal, opt = {}) {
@@ -3225,40 +3221,8 @@ function buildSession(name, count, expIdx, equip, goal, opt = {}) {
     exercises.push({ pattern: p, name: nm, ...(swap ? { swap } : {}),
       prescription: p === "core" ? `${sets} × 30-45s` : p === "carry" ? `${sets} × 40m` : `${sets} × ${g.reps}` });
   });
-  if (opt.trail && ordered.some((x) => x.p === "squat" || x.p === "hinge")) {
-    const i = exercises.findIndex((x) => x.pattern === "core");
-    exercises.splice(i < 0 ? exercises.length : i, 0, { pattern: "trail", name: limits.includes("knees") ? "Low step-up with a backpack" : "Loaded step-up with a backpack", prescription: "3 × 10/leg" });
-  }
+
   return { name, exercises };
-}
-function tripPlan(dest, when, weekdays) {
-  const weeks = { "1": 4, "3": 10, "6": 20, "9": 26 }[when] || 12;
-  const hikeDay = [5, 6, 4, 3, 2, 1, 0].find((d) => !weekdays.includes(d));
-  const mountain = MOUNTAIN.includes(dest.family);
-  const focus = {
-    alpine: "Steep climbs and long descents. Train step-ups, stairs and slow, controlled downhills. Above about 2,500 m, build acclimatization days into the trip itself: fitness helps, but it doesn't prevent altitude sickness.",
-    arctic: "Cold, snow and long days on uneven ground. Winter hiking or snowshoeing if you can, steady pacing in layers, and ankle strength.",
-    arid: "Heat and soft sand. Long walks on sand or trails, early starts, and practice drinking on a schedule before you're thirsty.",
-    rainforest: "Heat, humidity and mud. Long humid hikes, grip and ankle stability, and a pace you can hold while soaked in sweat.",
-    ocean: "Water and coastal trails. Swim or paddle twice a week, build shoulder and core endurance, and hike cliff paths with a light pack.",
-    city: "Long days on foot: 20,000+ steps on pavement, stairs and hills. Build walking endurance, strong calves and feet, and a back that's happy under a daypack all day.",
-  }[dest.family] || "Long days on your feet with a pack.";
-  const pack = mountain ? [6, 9, 12] : dest.family === "ocean" ? [3, 5, 7] : [5, 8, 10];
-  let phases;
-  if (weeks <= 4) phases = [
-    { name: "Sharpen", weeks: weeks - 1, hike: mountain ? "3-4 h with climbing" : "2-3 h", pack: `${pack[1]}-${pack[2]} kg` },
-    { name: "Taper", weeks: 1, hike: "1-2 h easy", pack: "light" }];
-  else {
-    const taper = weeks >= 20 ? 2 : 1, base = Math.round((weeks - taper) * .4), build = Math.round((weeks - taper) * .4), peak = weeks - taper - base - build;
-    phases = [
-      { name: "Base", weeks: base, hike: "1.5-2 h", pack: `${pack[0]} kg` },
-      { name: "Build", weeks: build, hike: mountain ? "3-4 h, add climbing" : "3-4 h", pack: `${pack[1]} kg` },
-      { name: "Peak", weeks: peak, hike: mountain ? "5-6 h, back-to-back days" : "5-6 h", pack: `${pack[2]} kg (trip weight)` },
-      { name: "Taper", weeks: taper, hike: "1-2 h easy", pack: "light" }];
-  }
-  let start = 1; phases.forEach((ph) => { ph.from = start; ph.to = start + ph.weeks - 1; start += ph.weeks; });
-  return { id: dest.id, name: dest.name, family: dest.family, weeks, hikeDay, focus, phases: phases.filter((ph) => ph.weeks > 0),
-    taperNote: "In the taper, cut every lifting session to two sets and keep the long hike easy. You want to arrive fresh, not tired." };
 }
 
 // Photo check-in. Summit looks at a photo once; only the written notes below are kept. The photo itself is never stored.
@@ -3315,13 +3279,11 @@ function applyBody(body, sessionsList, equipOf, why, extras) {
 function generatePlan(a) {
   const split = SPLITS[a.days]; const g = GOALS[a.goal], x = normExtras(a);
   const weekdays = x.weekdays || split.weekdays.slice();
-  const dest = x.trip ? state.destinations.find((d) => d.id === x.trip) : null;
-  const opt = { limits: x.limits, fewerSets: x.sleep === "low", trail: !!(dest && (MOUNTAIN.includes(dest.family) || a.goal === "endurance")) };
+  const opt = { limits: x.limits, fewerSets: x.sleep === "low" };
   const build = (equip) => split.sessions.map((s) => buildSession(s, COUNT[a.length], EXP_INDEX[a.experience], equip, a.goal, opt));
-  const roadEquip = x.road && x.road !== "same" && x.road !== a.equipment ? x.road : null;
   const mode = x.cardio ? CARDIO_TEXT[x.cardio] : null;
   let cond = g.cond;
-  if (mode) cond = cond.replace("on a bike, rower, or hill", "by " + mode).replace("a run, a ride, or a loaded hike", mode) + (a.goal === "muscle" || a.goal === "general" ? ` Your pick: ${mode}.` : "");
+  if (mode) cond = cond.replace("on a bike, rower, or hill", "by " + mode).replace("a run, a ride, or a swim", mode) + (a.goal === "muscle" || a.goal === "general" ? ` Your pick: ${mode}.` : "");
   if (x.hike === "tough") cond += ` Build the base first: twice a week, 20 minutes of easy ${mode || "cardio"} at a pace where you can still talk, adding 5 minutes each week.`;
   if (x.hike === "easy") cond += ` You have a good base, so make one session a week harder: 6 rounds of 3 minutes fast or uphill, 2 minutes easy between.`;
   const recovery = x.sleep === "low" ? "Short sleep slows recovery, so the main lifts have one fewer set. Getting 30 more minutes a night will do more for you than anything else on this page."
@@ -3331,18 +3293,18 @@ function generatePlan(a) {
   if (x.weekdays) why.push(`Sessions fall on your days: ${x.weekdays.map((d) => DAY_NAMES[d]).join(", ")}.`);
   (x.limits || []).forEach((l) => { const n = sessions.reduce((s, ss) => s + ss.exercises.filter((e) => e.swap === SWAPS[l].label).length, 0); if (n) why.push(`${n} ${n === 1 ? "exercise" : "exercises"} swapped to go easy on your ${l === "back" ? "lower back" : l}.`); });
   if (opt.fewerSets) why.push("One fewer set on the main lifts while sleep is short.");
-  if (x.hike) why.push(x.hike === "tough" ? "Extra easy cardio to build your hiking base." : x.hike === "easy" ? "One harder cardio session a week, since hills already feel easy." : "Cardio kept steady: hills feel manageable now.");
+  if (x.hike) why.push(x.hike === "tough" ? "Extra easy cardio to build your base." : x.hike === "easy" ? "One harder cardio session a week, since your base is already good." : "Cardio kept steady: your base is decent now.");
+  const SPORT = { basketball: ["basketball", "Add 3 × 5 box jumps or squat jumps at the start of leg days, and some ankle work. On days you play hard, skip extra cardio: the game is your cardio."], football: ["football", "Add 4 × 20 m sprints at the start of leg days. On match or practice days, skip extra cardio."], racket: ["your racket sport", "Add lateral lunges and band rotations for the quick side-to-side moves. On days you play, skip extra cardio."], combat: ["martial arts", "Add rotational core work and neck-and-grip strength. Keep hard lifting away from hard sparring days."], other: ["your sport", "Keep your hardest lifting away from game days, and let the sport count as cardio."] };
+  if (SPORT[x.sport]) { cond += " " + SPORT[x.sport][1]; why.push(`Built around ${SPORT[x.sport][0]}: training makes you better at it, and it counts as cardio.`); }
   if (mode) why.push(`Cardio uses ${mode}.`);
-  if (roadEquip) why.push(`A road version of every session, for trips where you only have ${{ gym: "a hotel gym", home: "bands and light dumbbells", bw: "your bodyweight" }[x.road]}.`);
-  if (dest) why.push(`Trail prep for ${dest.name}: ${tripPlan(dest, x.tripWhen, weekdays).weeks} weeks, long hikes with a pack.`);
-  const body = isMinor() ? null : state.bodyCheck, bx = {}, roadSessions = roadEquip ? build(roadEquip) : null;
-  applyBody(body, [[sessions, a.equipment], ...(roadSessions ? [[roadSessions, roadEquip]] : [])], a.equipment, why, bx);
+  const body = isMinor() ? null : state.bodyCheck, bx = {};
+  applyBody(body, [[sessions, a.equipment]], a.equipment, why, bx);
   if (bx.cond) cond += bx.cond;
   return {
     version: 2, answers: { ...a }, split: split.name, weekdays,
     goal: label("goal", a.goal), rest: g.rest, progression: g.prog, conditioning: cond, warmup: WARMUP, recovery,
-    sessions, sessionsRoad: roadSessions, roadLabel: roadEquip ? xlabel("road", x.road) : "",
-    trip: dest ? tripPlan(dest, x.tripWhen, weekdays) : null, why,
+    sessions, sessionsRoad: null, roadLabel: "",
+    trip: null, why,
     body: body ? { warmup: bx.warmup || [], uneven: !!bx.uneven, at: body.at } : null,
     builtAt: new Date().toISOString(),
   };
@@ -3375,7 +3337,7 @@ function todayCard() {
   const t = todayWorkout(); if (!t) return "";
   if (t.planned && !t.done) return `<article class="card today-card due" role="status"><div><span class="eyebrow">Today</span><h3>${esc(t.planned)}</h3><p class="muted">Your session is below. Mark it done when you finish.</p></div><button class="btn primary" type="button" data-act="toggle-day" data-date="${t.iso}">Mark today done</button></article>`;
   if (t.done) return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>Done: ${esc(t.done.session)}</h3><p class="muted">${t.left > 0 ? `${t.left} more ${t.left === 1 ? "session" : "sessions"} this week.` : "That's every session this week. Great week."}</p></div></article>`;
-  return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>${t.hike ? "Long hike day" : "Rest day from lifting"}</h3><p class="muted">${t.hike ? "Wear the boots and pack you'll travel with." : "Still move: shoot hoops, go for a walk or a ride, or stretch for 20 minutes. Rest days are when you get stronger."}</p></div></article>`;
+  return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>Rest day from lifting</h3><p class="muted">Still move: shoot hoops, go for a walk or a ride, or stretch for 20 minutes. Rest days are when you get stronger.</p></div></article>`;
 }
 function renderTraining() {
   const el = $("#training");
@@ -3394,13 +3356,11 @@ function quizState() {
 }
 function renderQuiz(el, hasPlan) {
   const d = tUI.draft, qs = quizState();
-  const tripOpts = [["none", "No specific trip"], ...sortedPlaces().filter((p) => !p.visited || p.id === d.trip).map((p) => [p.id, p.name])];
   const groups = [...new Set(EXTRA.map((q) => q.group))];
   const extraQ = (q) => {
-    if (q.select) return `<div class="field"><label for="q-trip" class="lbl">${esc(q.q)}</label><select id="q-trip" name="trip">${tripOpts.map(([v, l]) => `<option value="${esc(v)}" ${(d.trip || "none") === v ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></div>`;
     const type = q.multi ? "checkbox" : "radio", cur = d[q.key];
     const hint = q.key === "weekdays" ? `<span class="hint" id="days-hint">${qs.n ? `Pick ${qs.n}, to match your ${qs.n} days a week.` : "Pick the days that usually work."}</span>` : q.hint ? `<span class="hint">${esc(q.hint)}</span>` : "";
-    const hidden = q.key === "tripWhen" && (!d.trip || d.trip === "none");
+    const hidden = false;
     return `<fieldset id="fs-${q.key}" ${hidden ? "hidden" : ""}><legend>${esc(q.q)}</legend>${hint}
       <div class="choice">${q.opts.map(([v, l]) => `<input type="${type}" name="${q.key}" id="q-${q.key}-${v}" value="${v}" ${q.multi ? (Array.isArray(cur) && cur.includes(v) ? "checked" : "") : cur === v ? "checked" : ""}><label for="q-${q.key}-${v}">${esc(l)}</label>`).join("")}</div></fieldset>`;
   };
@@ -3419,7 +3379,7 @@ function renderQuiz(el, hasPlan) {
         </fieldset>`).join("")}
       <div class="quiz-optional">
         <h3 class="quiz-group">Make it personal <span class="muted">(optional)</span></h3>
-        <p class="muted">Each answer changes the plan: your days, joint-friendly swaps, recovery, cardio, a version for the road, and trail prep for your next trip.</p>
+        <p class="muted">Each answer changes the plan: your days, joint-friendly swaps, recovery, cardio, and extra work for your sport.</p>
       </div>
       ${groups.map((g) => `<div class="quiz-sub"><span class="eyebrow">${esc(g)}</span>${EXTRA.filter((q) => q.group === g).map(extraQ).join("")}</div>`).join("")}
       <div class="quiz-foot">
@@ -3435,7 +3395,6 @@ function renderQuiz(el, hasPlan) {
     const s = quizState();
     $("#build-btn").disabled = !s.ok; $("#build-note").textContent = s.note;
     const h = $("#days-hint"); if (h) h.textContent = s.n ? `Pick ${s.n}, to match your ${s.n} days a week.` : "Pick the days that usually work.";
-    $("#fs-tripWhen").hidden = !tUI.draft.trip || tUI.draft.trip === "none";
   };
   form.addEventListener("change", (e) => {
     const t = e.target; if (!t.name) return;
@@ -3449,7 +3408,6 @@ function renderQuiz(el, hasPlan) {
     const a = {}; QUESTIONS.forEach((q) => (a[q.key] = tUI.draft[q.key]));
     if (!validAnswers(a)) return;
     Object.assign(a, normExtras(tUI.draft), { personalized: true });
-    if (tUI.draft.trip === "none") a.trip = "none";
     const plan = generatePlan(a);
     try { await store.setSingle("answers", a); await store.setSingle("plan", plan); }
     catch (err) { $("#quiz-err").textContent = SAVE_FAIL; return; }
@@ -3543,7 +3501,7 @@ function weekInfo() {
   days.forEach((x) => {
     x.planIdx = plan.weekdays.indexOf(x.i);
     x.planned = x.planIdx >= 0 ? plan.sessions[x.planIdx].name : null;
-    x.hike = !x.planned && plan.trip && plan.trip.hikeDay === x.i;
+    x.hike = false;
     x.done = logged.get(x.iso) || null; x.today = x.iso === tISO;
   });
   return { days, count: days.filter((x) => x.done).length, target: plan.sessions.length };
@@ -3564,8 +3522,8 @@ function bodyPlanCard(p) {
 function renderPlan(el) {
   const p = state.plan, a = state.answers;
   const w = weekInfo();
-  const road = p.sessionsRoad && tUI.view === "road";
-  const list = road ? p.sessionsRoad : p.sessions;
+  const road = false;
+  const list = p.sessions;
   const history = state.trainingLog.filter((e) => e && validISO(e.date)).slice().sort((x, y) => y.date.localeCompare(x.date));
   const x = normExtras(a);
   el.innerHTML = `
@@ -3582,7 +3540,7 @@ function renderPlan(el) {
         ${x.limits ? `<div><dt>Going easy on</dt><dd>${x.limits.map((l) => l === "back" ? "Lower back" : l[0].toUpperCase() + l.slice(1)).join(", ")}</dd></div>` : ""}
       </dl>
     </div>
-    ${!a.personalized ? `<div class="card personalize"><div><strong>Make this plan more personal.</strong> <span class="muted">Seven optional questions: your days, joints, sleep, cardio, travel and your next trip.</span></div><button class="btn primary small" type="button" data-act="rebuild">Answer them</button></div>` : ""}
+    ${!a.personalized ? `<div class="card personalize"><div><strong>Make this plan more personal.</strong> <span class="muted">A few optional questions: your days, joints, sleep, cardio and your sport.</span></div><button class="btn primary small" type="button" data-act="rebuild">Answer them</button></div>` : ""}
     ${todayCard()}
     <section class="card week" aria-labelledby="week-h">
       <div class="week-head">
@@ -3592,8 +3550,8 @@ function renderPlan(el) {
       <div class="week-strip" id="week-strip">
         ${w.days.map((d) => {
           const cls = d.done ? "done" : d.planned ? "plan" : "rest";
-          const sub = d.done ? d.done.session : d.planned || (d.hike ? "Long hike" : "Rest");
-          const st = d.done ? `trained, ${d.done.session}` : d.planned ? `planned, ${d.planned}, not trained yet` : d.hike ? "long hike day" : "rest day";
+          const sub = d.done ? d.done.session : d.planned || "Rest";
+          const st = d.done ? `trained, ${d.done.session}` : d.planned ? `planned, ${d.planned}, not trained yet` : "rest day";
           return `<button type="button" class="wd ${cls} ${d.today ? "today" : ""}" data-act="toggle-day" data-date="${d.iso}" aria-pressed="${!!d.done}" aria-label="${d.d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}${d.today ? ", today" : ""}: ${esc(st)}">
             <span class="w">${d.today ? "Today" : d.d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.d.getDate()}</span><span class="s">${esc(sub)}</span></button>`;
         }).join("")}
@@ -3607,7 +3565,6 @@ function renderPlan(el) {
     </section>
     ${bodyPlanCard(p)}
     ${p.why && p.why.length ? `<article class="card why"><h3>Why this plan fits you</h3><ul>${p.why.map((t) => `<li>${esc(t)}</li>`).join("")}</ul></article>` : ""}
-    ${p.sessionsRoad ? `<div class="seg-toggle" role="group" aria-label="Which version of the sessions"><button type="button" data-act="plan-view" data-v="home" aria-pressed="${!road}">At home</button><button type="button" data-act="plan-view" data-v="road" aria-pressed="${road}">On the road: ${esc(p.roadLabel.toLowerCase())}</button></div>` : ""}
     <div class="sessions">
       ${list.map((s, i) => `
         <article class="card lift session">
@@ -3616,15 +3573,6 @@ function renderPlan(el) {
           <ol class="ex-list">${s.exercises.map((e) => `<li><span>${esc(e.name)}<span class="pat">${esc(e.pattern === "trail" ? "Trail prep" : PATTERN_LABEL[e.pattern] || "")}${e.swap ? ` · <span class="swap">${esc(e.swap)}</span>` : ""}</span></span><span class="rx">${esc(e.prescription)}</span></li>`).join("")}</ol>
         </article>`).join("")}
     </div>
-    ${p.trip ? `<article class="card trip">
-      <span class="eyebrow">Trail prep · ${esc(FAMILY_LABEL[p.trip.family] || "")}</span>
-      <h3>Getting ready for ${esc(p.trip.name)}</h3>
-      <p>${esc(p.trip.focus)}</p>
-      <p class="muted" style="font-size:.9rem">About ${p.trip.weeks} weeks of prep. ${p.trip.hikeDay != null ? `Do the long hike on ${DAY_LONG[p.trip.hikeDay]}s, wearing the boots and pack you'll travel with.` : "Fit one long hike into each week, wearing the boots and pack you'll travel with."}</p>
-      <div class="phase-wrap"><table class="phases"><thead><tr><th scope="col">Phase</th><th scope="col">Weeks</th><th scope="col">Long hike</th><th scope="col">Pack</th></tr></thead>
-        <tbody>${p.trip.phases.map((ph) => `<tr><th scope="row">${esc(ph.name)}</th><td class="num">${ph.from === ph.to ? ph.from : `${ph.from}-${ph.to}`}</td><td>${esc(ph.hike)}</td><td class="num">${esc(ph.pack)}</td></tr>`).join("")}</tbody></table></div>
-      <p class="muted" style="font-size:.86rem">${esc(p.trip.taperNote)}</p>
-    </article>` : ""}
     <article class="card howto">
       <h3>How to run it</h3>
       <dl>
@@ -3862,9 +3810,9 @@ const ASSISTANTS = {
   },
   summit: {
     name: "Summit", tab: "training", role: "Master of fitness",
-    intro: "Strength, conditioning, form, recovery and getting your body ready for altitude and a heavy pack. I coach from your plan and your week.",
-    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, and preparing for multi-day treks, altitude and carrying a pack. You coach from the user's actual plan and week. The app has a library of 530+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
-    starters: () => ["Walk me through today's session and good form", "How do I get ready for a multi-day trek at altitude?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
+    intro: "Strength, speed, conditioning, form, recovery and eating well. I coach from your plan and your week.",
+    persona: "You are Summit, a master of fitness and strength coaching, with deep knowledge of exercise technique, progressive overload, conditioning, mobility, recovery, sleep and nutrition for training, sports performance (speed, jumps, agility, especially basketball) and healthy habits. Fitness here is its own goal, not preparation for trips: don't bring up travel unless they do. You coach from the user's actual plan and week. The app has a library of 530+ healthy recipes: when food comes up, search it with your tools and recommend real recipes from it by name. You give clear form cues and simple progressions. For pain or injury, you give safe general guidance and tell them to see a qualified professional; you don't diagnose.",
+    starters: () => ["Walk me through today's session and good form", "How do I jump higher and get faster for basketball?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
       const bc = state.bodyCheck && !isMinor() ? `\nPhoto check-in (Summit's own earlier read of their photo; the photo itself isn't available): ${[state.bodyCheck.build && "build " + BODY_BUILD[state.bodyCheck.build], state.bodyCheck.bodyFat && "body fat roughly " + state.bodyCheck.bodyFat, state.bodyCheck.posture.length && "posture: " + state.bodyCheck.posture.map((k) => BODY_POSTURE[k]).join(", "), state.bodyCheck.focus.length && "focus: " + state.bodyCheck.focus.map((k) => BODY_FOCUS[k]).join(", ")].filter(Boolean).join("; ")}. Notes: ${state.bodyCheck.notes}` : "";
       const lib = libraryIndex("summit"), libPre = lib ? lib + "\n\n" : "";
@@ -3873,7 +3821,7 @@ const ASSISTANTS = {
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
       const week = w.days.map((d) => `${d.iso}${d.today ? " (today)" : ""}: ${d.done ? "trained " + d.done.session : d.planned ? "planned " + d.planned + ", not done" : "rest"}`).join("\n");
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
-      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}\nThe trips they're training for include: ${sortedPlaces().slice(0, 12).map((d) => d.name + " (" + (d.terrain || d.family) + ")").join(", ")}.${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("A steep 1-hour hike feels: " + xlabel("hike", x.hike)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.road) out.push("On the road they have: " + xlabel("road", x.road)); if (p.recovery) out.push("Recovery note: " + p.recovery); if (p.trip) out.push(`Next trip: ${p.trip.name} (${p.trip.family}), about ${p.trip.weeks} weeks out. Trail prep phases: ${p.trip.phases.map((ph) => `${ph.name} weeks ${ph.from}-${ph.to}: long hike ${ph.hike}, pack ${ph.pack}`).join("; ")}.`); if (p.sessionsRoad) out.push("Road version sessions: " + p.sessionsRoad.map((s) => s.name + ": " + s.exercises.map((e) => e.name).join(", ")).join(" | ")); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
+      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("20 minutes of steady running feels: " + xlabel("hike", x.hike)); if (x.sport) out.push("Sport: " + xlabel("sport", x.sport)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (p.recovery) out.push("Recovery note: " + p.recovery); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
     },
     tools: () => [...summitRecipeTools(), libraryTool("summit")],
   },
@@ -4150,7 +4098,7 @@ document.addEventListener("keydown", (e) => { if (e.key === "Escape" && ai.open 
 
 /* ============================ KITCHEN: healthy recipes ============================ */
 const REC_CATS = [["all", "All"], ["breakfast", "Breakfast"], ["starter", "Starters & salads"], ["main", "Mains"], ["snack", "Snacks"], ["dessert", "Desserts"], ["drink", "Drinks & smoothies"]];
-const REC_FILTERS = [["hp", "High protein"], ["veg", "Vegetarian"], ["vgn", "Vegan"], ["gf", "Gluten-free"], ["df", "Dairy-free"], ["lc", "Low carb"], ["quick", "Under 20 min"], ["mp", "Meal prep"], ["trail", "Trail food"]];
+const REC_FILTERS = [["hp", "High protein"], ["veg", "Vegetarian"], ["vgn", "Vegan"], ["gf", "Gluten-free"], ["df", "Dairy-free"], ["lc", "Low carb"], ["quick", "Under 20 min"], ["mp", "Meal prep"], ["trail", "Energy snacks"]];
 const TAG_LABEL = Object.fromEntries(REC_FILTERS);
 const REC_SORTS = [["match", "Best match"], ["protein", "Most protein"], ["kcal", "Fewest calories"], ["time", "Quickest"], ["ratio", "Most protein per calorie"]];
 // words people search for → the words recipes actually use

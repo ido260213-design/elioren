@@ -3,7 +3,7 @@
 import json, sys
 
 LABELS = {"strength": "Strength", "muscle": "Building muscle", "bodyweight": "Bodyweight", "mobility": "Mobility",
-          "injury": "Staying injury-free", "cardio": "Cardio", "endurance": "Endurance", "mountains": "Mountains & hiking",
+          "injury": "Staying injury-free", "cardio": "Cardio", "endurance": "Endurance",
           "basketball": "Basketball", "athletic": "Speed & jumps", "sleep": "Sleep", "nutrition": "Food",
           "recovery": "Recovery", "mindset": "Mindset", "habits": "Habits", "youth": "Young athletes"}
 TOPICS = list(LABELS)
@@ -71,12 +71,6 @@ BOOKS = [
    ["Plan progressions for skills like handstands, muscle-ups and levers.",
     "Build tendon strength slowly to avoid elbow and wrist injuries."],
    "Use it for calisthenics skills once the basics are solid."),
-  ("uphill-athlete", "Training for the Uphill Athlete", "Steve House, Scott Johnston & Kilian Jornet", 2019, ["mountains", "endurance", "cardio"], True,
-   "Build a big aerobic base with lots of easy hours, then add hills and strength for the mountains.",
-   ["Most training should be easy enough to talk (zone 1-2).",
-    "Muscular endurance: long uphill work with a pack.",
-    "Increase weekly hours gradually, about 10% at a time."],
-   "Use it to get ready for Patagonia, Peru, the Alps and other mountain trips."),
   ("endure", "Endure", "Alex Hutchinson", 2018, ["endurance", "mindset"], False,
    "Your brain sets limits before your body really runs out.",
    ["Belief and motivation change how hard effort feels.",
@@ -235,10 +229,6 @@ ATHLETES = [
    ["Consistency over years: he keeps a simple, steady routine.",
     "Logs every training session in a notebook.",
     "Trains hard but mostly smart and easy."], ""),
-  ("jornet", "Kilian Jornet", "Mountain runner and alpinist", ["mountains", "endurance"],
-   "Enjoy the mountains; fitness comes from spending lots of time moving in them.",
-   ["Huge amounts of easy uphill movement build mountain fitness.",
-    "Listen to your body and respect the mountain."], ""),
   ("goggins-mind", "David Goggins", "Ultra-endurance athlete, ex-Navy SEAL", ["mindset"],
    "When your mind says you're done, you still have more in you.",
    ["Do something hard every day to build mental toughness.",
