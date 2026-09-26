@@ -236,6 +236,17 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .store-table .acts{white-space:nowrap;text-align:right}
 .store-table tbody th{font-weight:500;white-space:nowrap}
 .day-preview{margin:4px 0 0}
+.acts-card{padding:16px 20px;margin-top:18px;display:grid;gap:10px}
+.acts-card h3{margin:0}
+.acts-week{margin:0}
+.acts-list{list-style:none;margin:0;padding:0}
+.acts-list li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:8px 0;border-top:1px solid var(--hairline);font-size:.92rem}
+.acts-list .d{font-size:.8rem;white-space:nowrap}
+.act-note{display:block;font-size:.82rem}
+.acts-btns{white-space:nowrap}
+.eff-hard{color:var(--loss)} .eff-easy{color:var(--muted)}
+.wd .xa{display:block;font-size:.68rem;color:var(--gold);margin-top:2px;line-height:1.2}
+@media (max-width:560px){.acts-list li{grid-template-columns:1fr auto}.acts-list .d{grid-column:1/-1}}
 .milestone{border-top:1px solid var(--hairline);padding-top:12px}
 .milestone h4{margin:0;font-size:1.02rem}
 .milestone.later{opacity:.75}
@@ -790,6 +801,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
       <button type="button" data-act="train-sec" data-v="library" aria-pressed="false">Summit's library</button>
     </div>
     <div id="training"></div>
+    <div id="activities"></div>
     <div id="kitchen" hidden></div>
     <div id="summit-library-wrap" hidden><p class="muted" style="margin:0 0 12px">The key ideas from the best training books, coaches, legendary athletes and fitness creators. Summit uses them when he coaches you.</p><div id="summit-library"></div></div>
   </section>
@@ -874,6 +886,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 
 <dialog id="dlg-recipe" aria-labelledby="recipe-title" class="dlg-wide"><div class="recipe-body" id="recipe-body"></div></dialog>
 
+<dialog id="dlg-act" aria-labelledby="act-title" class="dlg-wide"><form id="act-form" class="recipe-body" novalidate></form></dialog>
 <dialog id="dlg-day" aria-labelledby="day-title" class="dlg-wide"><form id="day-form" class="recipe-body" novalidate></form></dialog>
 <dialog id="dlg-profile" aria-labelledby="profile-title" class="dlg-wide"><form id="profile-form" class="recipe-body" novalidate></form></dialog>
 <dialog id="dlg-country" aria-labelledby="country-title" class="dlg-wide"><div class="recipe-body" id="country-body"></div></dialog>
@@ -936,8 +949,8 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { storedays: [], destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null, profile: null };
-const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos", "storedays"];
+const state = { activities: [], storedays: [], destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null, profile: null };
+const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos", "storedays", "activities"];
 const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck", profile: "meta/profile", storeSettings: "business/store" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 const SEED_V = 2; // bump when places are added to seed.json; each place's "since" says which version added it
@@ -1007,6 +1020,7 @@ const store = {
     if (!Array.isArray(state.favRecipes)) state.favRecipes = [];
     if (!Array.isArray(state.myrecipes)) state.myrecipes = [];
     if (!Array.isArray(state.storedays)) state.storedays = [];
+    if (!Array.isArray(state.activities)) state.activities = [];
     if (!Array.isArray(state.countries)) state.countries = [];
     if (!Array.isArray(state.photos)) state.photos = [];
     state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile);
@@ -1021,8 +1035,8 @@ const store = {
   saveLocal() {
     if (this.mode === "memory") return;
     try {
-      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays, storeSettings } = state;
-      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays, storeSettings }));
+      const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays, storeSettings, activities } = state;
+      localStorage.setItem(LOCAL_KEY, JSON.stringify({ destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, seedV, bodyCheck, profile, storedays, storeSettings, activities }));
     } catch (e) {
       this.mode = "memory";
       setBanner("This browser stopped allowing storage, so recent changes only last until this tab closes.");
@@ -3440,7 +3454,7 @@ function generatePlan(a) {
   const SPORT = { basketball: ["basketball", "Add 3 × 5 box jumps or squat jumps at the start of leg days, and some ankle work. On days you play hard, skip extra cardio: the game is your cardio."], football: ["football", "Add 4 × 20 m sprints at the start of leg days. On match or practice days, skip extra cardio."], racket: ["your racket sport", "Add lateral lunges and band rotations for the quick side-to-side moves. On days you play, skip extra cardio."], combat: ["martial arts", "Add rotational core work and neck-and-grip strength. Keep hard lifting away from hard sparring days."], other: ["your sport", "Keep your hardest lifting away from game days, and let the sport count as cardio."] };
   if (SPORT[x.sport]) { cond += " " + SPORT[x.sport][1]; why.push(`Built around ${SPORT[x.sport][0]}: training makes you better at it, and it counts as cardio.`); }
   if (mode) why.push(`Cardio uses ${mode}.`);
-  const body = isMinor() ? null : state.bodyCheck, bx = {};
+  const body = isAdult() ? state.bodyCheck : null, bx = {};
   applyBody(body, [[sessions, a.equipment]], a.equipment, why, bx);
   if (bx.cond) cond += bx.cond;
   return {
@@ -3480,11 +3494,11 @@ function todayCard() {
   const t = todayWorkout(); if (!t) return "";
   if (t.planned && !t.done) return `<article class="card today-card due" role="status"><div><span class="eyebrow">Today</span><h3>${esc(t.planned)}</h3><p class="muted">Your session is below. Mark it done when you finish.</p></div><button class="btn primary" type="button" data-act="toggle-day" data-date="${t.iso}">Mark today done</button></article>`;
   if (t.done) return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>Done: ${esc(t.done.session)}</h3><p class="muted">${t.left > 0 ? `${t.left} more ${t.left === 1 ? "session" : "sessions"} this week.` : "That's every session this week. Great week."}</p></div></article>`;
-  return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>Rest day from lifting</h3><p class="muted">Still move: shoot hoops, go for a walk or a ride, or stretch for 20 minutes. Rest days are when you get stronger.</p></div></article>`;
+  return `<article class="card today-card"><div><span class="eyebrow">Today</span><h3>Rest day from lifting</h3>${actsOn(t.iso).length ? `<p><strong>You moved today:</strong> ${esc(actsOn(t.iso).map((a) => `${actName(a)} ${fmtMin(a.minutes)}`).join(", "))}. Nice.</p>` : ""}<p class="muted">Still move: shoot hoops, go for a walk or a ride, or stretch for 20 minutes. Rest days are when you get stronger.</p></div></article>`;
 }
 function renderTraining() {
   const el = $("#training");
-  updateTrainDot();
+  updateTrainDot(); renderActivities();
   if (!loaded) { el.innerHTML = `<p class="loading">Opening the training plan…</p>`; return; }
   const hasPlan = validPlan(state.plan, state.answers);
   if (!hasPlan || tUI.rebuilding) return renderQuiz(el, hasPlan);
@@ -3560,7 +3574,7 @@ function renderQuiz(el, hasPlan) {
 const bcUI = { busy: false, error: "", preview: [] };
 function renderBodyCard() {
   const el = $("#body-card"); if (!el) return;
-  if (isMinor()) { el.innerHTML = ""; return; } // photo check-ins are for adults only
+  if (!isAdult()) { el.innerHTML = ""; return; } // photo check-ins are only for people whose profile says 18+
   const b = state.bodyCheck, canRead = !!(ai.sample && ai.images);
   if (!b && !canRead && !bcUI.busy) { el.innerHTML = ""; return; }
   const accept = ai.images ? ai.images.mediaTypes.join(",") : "image/*";
@@ -3601,7 +3615,7 @@ function renderBodyCard() {
 }
 async function readBodyPhotos(fileList) {
   await aiReady;
-  if (isMinor()) return;
+  if (!isAdult()) return;
   if (!ai.sample || !ai.images) { bcUI.error = "Summit can't look at photos in this view."; renderBodyCard(); return; }
   const maxN = Math.min(2, ai.images.maxCount || 1), types = ai.images.mediaTypes || [];
   const files = [...fileList].slice(0, maxN);
@@ -3637,6 +3651,75 @@ Reply with only a JSON object:
     if ($("#quiz")) renderTraining(); else renderBodyCard();
   }
 }
+
+/* ---------- other workouts: anything outside the plan (basketball, runs, swims…) ---------- */
+const ACT_TYPES = [["basketball", "Basketball"], ["football", "Football (soccer)"], ["running", "Running"], ["cycling", "Cycling"], ["swimming", "Swimming"], ["gym", "My own gym workout"], ["walking", "Walking"], ["racket", "Tennis or padel"], ["combat", "Martial arts"], ["other", "Other"]];
+const ACT_LABEL = Object.fromEntries(ACT_TYPES);
+const EFFORT = [["easy", "Easy"], ["medium", "Medium"], ["hard", "Hard"]];
+const aUI = { confirm: null, showAll: false, draft: null };
+function normAct(a) {
+  if (!a || !validISO(a.date) || !ACT_LABEL[a.type]) return null;
+  const min = Math.round(Number(a.minutes)); if (!(min >= 1 && min <= 600)) return null;
+  return { id: a.id || uid(), date: a.date, type: a.type, name: a.type === "other" ? String(a.name || "").trim().slice(0, 40) : "", minutes: min, effort: EFFORT.some((e) => e[0] === a.effort) ? a.effort : "medium", note: String(a.note || "").trim().slice(0, 200), createdAt: a.createdAt || new Date().toISOString() };
+}
+const actName = (a) => a.type === "other" && a.name ? a.name : ACT_LABEL[a.type];
+const fmtMin = (m) => m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ""}` : `${m} min`;
+function actsOn(date) { return (state.activities || []).filter((a) => a.date === date); }
+function renderActivities() {
+  const el = $("#activities"); if (!el) return;
+  if (!loaded) { el.innerHTML = ""; return; }
+  const acts = (state.activities || []).map(normAct).filter(Boolean).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+  const mon = iso(mondayOf(new Date())), week = acts.filter((a) => a.date >= mon && a.date <= todayISO());
+  const byType = {}; week.forEach((a) => { byType[actName(a)] = (byType[actName(a)] || 0) + a.minutes; });
+  const list = aUI.showAll ? acts : acts.slice(0, 8);
+  el.innerHTML = `<section class="card acts-card" aria-labelledby="acts-h">
+    <div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+      <div><h3 id="acts-h">Other workouts</h3><p class="muted" style="margin:2px 0 0">Basketball, runs, swims, your own gym sessions: anything outside your plan counts too.</p></div>
+      <button class="btn primary small" type="button" data-act="act-add">Log a workout</button>
+    </div>
+    <p class="acts-week"><strong>This week:</strong> ${week.length ? `${week.length} ${week.length === 1 ? "workout" : "workouts"} · ${fmtMin(week.reduce((n, a) => n + a.minutes, 0))}` : "nothing logged yet"}${Object.keys(byType).length ? ` <span class="muted">(${Object.entries(byType).map(([k, m]) => `${esc(k)} ${fmtMin(m)}`).join(", ")})</span>` : ""}</p>
+    ${list.length ? `<ul class="acts-list">${list.map((a) => `<li>
+      <span class="d mono muted">${esc(parseISO(a.date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }))}</span>
+      <span><strong>${esc(actName(a))}</strong> · ${fmtMin(a.minutes)} · <span class="eff eff-${a.effort}">${esc(EFFORT.find((e) => e[0] === a.effort)[1])}</span>${a.note ? `<span class="muted act-note">${esc(a.note)}</span>` : ""}</span>
+      <span class="acts-btns">${aUI.confirm === a.id ? `<button class="btn small danger" type="button" data-act="act-del-yes" data-id="${a.id}">Delete</button><button class="btn small" type="button" data-act="act-del-no">Keep</button>` : `<button class="btn ghost small" type="button" data-act="act-edit" data-id="${a.id}">Edit</button><button class="btn ghost small" type="button" data-act="act-del" data-id="${a.id}" aria-label="Delete ${esc(actName(a))} on ${esc(fmtDate(a.date))}">Delete</button>`}</span></li>`).join("")}</ul>` : ""}
+    ${acts.length > 8 ? `<button class="btn ghost small" type="button" data-act="act-all">${aUI.showAll ? "Show fewer" : `Show all ${acts.length}`}</button>` : ""}
+  </section>`;
+}
+function openAct(id) {
+  const ex = id ? (state.activities || []).find((a) => a.id === id) : null;
+  aUI.draft = ex ? { ...ex } : { date: todayISO(), type: "basketball", minutes: "", effort: "medium", note: "", name: "" };
+  renderActForm(); openDialog("#dlg-act", "#af-minutes");
+}
+function renderActForm() {
+  const d = aUI.draft;
+  $("#act-form").innerHTML = `
+    <div class="dlg-head"><div><span class="eyebrow">Other workouts</span><h2 id="act-title">${d.id ? "Edit workout" : "Log a workout"}</h2></div></div>
+    <fieldset><legend class="lbl">What did you do?</legend><div class="choice">${ACT_TYPES.map(([v, l]) => `<input type="radio" name="af-type" id="af-type-${v}" value="${v}" ${d.type === v ? "checked" : ""}><label for="af-type-${v}">${esc(l)}</label>`).join("")}</div></fieldset>
+    <div class="field" id="af-name-wrap" ${d.type === "other" ? "" : "hidden"}><label class="lbl" for="af-name">Name it</label><input id="af-name" type="text" maxlength="40" value="${esc(d.name || "")}" placeholder="Skateboarding, climbing…"></div>
+    <div class="profile-grid">
+      <div class="field"><label class="lbl" for="af-date">Day</label><input id="af-date" type="date" value="${esc(d.date)}" max="${todayISO()}"></div>
+      <div class="field"><label class="lbl" for="af-minutes">How long (minutes)</label><input id="af-minutes" type="text" inputmode="numeric" value="${esc(String(d.minutes || ""))}" placeholder="60"><span class="err" id="af-minutes-err"></span></div>
+    </div>
+    <fieldset><legend class="lbl">How hard was it?</legend><div class="choice">${EFFORT.map(([v, l]) => `<input type="radio" name="af-effort" id="af-effort-${v}" value="${v}" ${d.effort === v ? "checked" : ""}><label for="af-effort-${v}">${esc(l)}</label>`).join("")}</div></fieldset>
+    <div class="field"><label class="lbl" for="af-note">Note <span class="muted">(optional)</span></label><input id="af-note" type="text" maxlength="200" value="${esc(d.note || "")}" placeholder="Pickup game, scored 14, felt fast…"></div>
+    <span class="err" id="af-err" role="alert"></span>
+    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save</button></div>`;
+}
+$("#act-form").addEventListener("change", (e) => { if (e.target.name === "af-type") { const w = $("#af-name-wrap"); if (w) w.hidden = e.target.value !== "other"; } });
+async function saveAct(a) {
+  await store.put("activities", a);
+  renderActivities(); if ($("#week-strip")) renderTraining();
+}
+$("#act-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const type = ($("input[name=af-type]:checked") || {}).value, min = $("#af-minutes").value.trim();
+  if (!/^\d+$/.test(min) || Number(min) < 1 || Number(min) > 600) { $("#af-minutes-err").textContent = "Minutes as a number, like 60."; $("#af-minutes").focus(); return; }
+  const a = normAct({ ...aUI.draft, type, minutes: Number(min), date: $("#af-date").value, effort: ($("input[name=af-effort]:checked") || {}).value, note: $("#af-note").value, name: $("#af-name") ? $("#af-name").value : "" });
+  if (!a) { $("#af-err").textContent = "Check the day and the activity."; return; }
+  if (a.type === "other" && !a.name) { $("#af-err").textContent = "Give the workout a name."; $("#af-name").focus(); return; }
+  try { await saveAct(a); } catch (err) { $("#af-err").textContent = SAVE_FAIL; return; }
+  closeDialogs(); toast(`${actName(a)} logged: ${fmtMin(a.minutes)}`);
+});
 function weekInfo() {
   const plan = state.plan; const mon = mondayOf(new Date()); const tISO = todayISO();
   const days = []; for (let i = 0; i < 7; i++) { const d = addDays(mon, i); days.push({ i, d, iso: iso(d) }); }
@@ -3645,7 +3728,7 @@ function weekInfo() {
     x.planIdx = plan.weekdays.indexOf(x.i);
     x.planned = x.planIdx >= 0 ? plan.sessions[x.planIdx].name : null;
     x.hike = false;
-    x.done = logged.get(x.iso) || null; x.today = x.iso === tISO;
+    x.done = logged.get(x.iso) || null; x.today = x.iso === tISO; x.acts = actsOn(x.iso);
   });
   return { days, count: days.filter((x) => x.done).length, target: plan.sessions.length };
 }
@@ -3653,7 +3736,7 @@ function bodyPlanCard(p) {
   if (isMinor()) return `<article class="card body-plan"><span class="eyebrow">Training at ${profileAge()}</span>
     <ul class="youth-rules"><li>Learn every lift light first, and stop 2-3 reps before you can't do another. No max attempts.</li><li>Heavy barbell lifts only with a coach or adult watching.</li><li>Sleep 9+ hours and eat enough: at your age, food and sleep are what make you stronger. No dieting.</li></ul></article>`;
   const b = state.bodyCheck;
-  if (!b) return ai.sample && ai.images ? `<div class="card personalize"><div><strong>Add a photo check-in.</strong> <span class="muted">Summit looks at your build and posture and tailors the plan. The photo isn't saved.</span></div><button class="btn small" type="button" data-act="rebuild">Add a photo</button></div>` : "";
+  if (!b) return ai.sample && ai.images && isAdult() ? `<div class="card personalize"><div><strong>Add a photo check-in.</strong> <span class="muted">Summit looks at your build and posture and tailors the plan. The photo isn't saved.</span></div><button class="btn small" type="button" data-act="rebuild">Add a photo</button></div>` : "";
   const stale = !p.body || p.body.at !== b.at;
   return `<article class="card body-plan">
     <span class="eyebrow">From your photo check-in</span>
@@ -3696,7 +3779,7 @@ function renderPlan(el) {
           const sub = d.done ? d.done.session : d.planned || "Rest";
           const st = d.done ? `trained, ${d.done.session}` : d.planned ? `planned, ${d.planned}, not trained yet` : "rest day";
           return `<button type="button" class="wd ${cls} ${d.today ? "today" : ""}" data-act="toggle-day" data-date="${d.iso}" aria-pressed="${!!d.done}" aria-label="${d.d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}${d.today ? ", today" : ""}: ${esc(st)}">
-            <span class="w">${d.today ? "Today" : d.d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.d.getDate()}</span><span class="s">${esc(sub)}</span></button>`;
+            <span class="w">${d.today ? "Today" : d.d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.d.getDate()}</span><span class="s">${esc(sub)}</span>${d.acts.length ? `<span class="xa">+ ${esc(d.acts.map(actName).join(", "))}</span>` : ""}</button>`;
         }).join("")}
       </div>
       <div class="legend" aria-hidden="true">
@@ -3801,6 +3884,7 @@ function profileAge() {
   return p.age + Math.max(0, yrs);
 }
 const isMinor = () => { const a = profileAge(); return a != null && a < 18; };
+const isAdult = () => { const a = profileAge(); return a != null && a >= 18; };
 function profileBlock() {
   const p = state.profile;
   if (!p) return "They haven't filled in their profile (the About me button at the top). If it would help, suggest it once.";
@@ -3832,7 +3916,7 @@ function renderProfileForm() {
         : `<input id="me-${f.key}" name="${f.key}" ${f.num ? `type="number" inputmode="numeric" min="${f.num[0]}" max="${f.num[1]}"` : `type="text" maxlength="${f.max}"`} value="${esc(p[f.key] != null ? String(f.key === "age" ? profileAge() : p[f.key]) : "")}" autocomplete="off">`}</div>`).join("")}
     </div>
     <span class="err" id="profile-err" role="alert"></span>
-    <div class="dlg-foot"><button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save</button></div>`;
+    <div class="dlg-foot">${state.profile ? `<button class="btn ghost danger" type="button" data-act="profile-reset" style="margin-right:auto">Reset profile</button>` : ""}<button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save</button></div>`;
 }
 function openProfile() { renderProfileForm(); openDialog("#dlg-profile", "#me-name"); }
 async function saveProfile() {
@@ -3968,7 +4052,9 @@ const ASSISTANTS = {
     starters: () => ["Walk me through today's session and good form", "How do I jump higher and get faster for basketball?", "I missed sessions this week. How do I get back on track?", "What should I eat to support this plan?"],
     context() {
       const bc = state.bodyCheck && !isMinor() ? `\nPhoto check-in (Summit's own earlier read of their photo; the photo itself isn't available): ${[state.bodyCheck.build && "build " + BODY_BUILD[state.bodyCheck.build], state.bodyCheck.bodyFat && "body fat roughly " + state.bodyCheck.bodyFat, state.bodyCheck.posture.length && "posture: " + state.bodyCheck.posture.map((k) => BODY_POSTURE[k]).join(", "), state.bodyCheck.focus.length && "focus: " + state.bodyCheck.focus.map((k) => BODY_FOCUS[k]).join(", ")].filter(Boolean).join("; ")}. Notes: ${state.bodyCheck.notes}` : "";
-      const lib = libraryIndex("summit"), libPre = lib ? lib + "\n\n" : "";
+      const lib = libraryIndex("summit"), from14 = iso(addDays(parseISO(todayISO()), -13));
+      const oa = (state.activities || []).map(normAct).filter((x) => x && x.date >= from14).sort((x, y) => y.date.localeCompare(x.date));
+      const libPre = (lib ? lib + "\n\n" : "") + `Other workouts outside the plan, last 14 days: ${oa.length ? oa.map((x) => `${x.date} ${actName(x)} ${x.minutes} min (${x.effort})${x.note ? ` "${x.note}"` : ""}`).join("; ") : "none logged"}. Count these in their training load (for example, a hard basketball game is real cardio and leg work).\n\n`;
       if (!validPlan(state.plan, state.answers)) return libPre + "They have not built a training plan yet (the setup quiz is on screen). Help them choose answers, or give general advice." + bc;
       const a = state.answers, p = state.plan, w = weekInfo();
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
@@ -3976,7 +4062,15 @@ const ASSISTANTS = {
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
       return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("20 minutes of steady running feels: " + xlabel("hike", x.hike)); if (x.sport) out.push("Sport: " + xlabel("sport", x.sport)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (p.recovery) out.push("Recovery note: " + p.recovery); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
     },
-    tools: () => [...summitRecipeTools(), libraryTool("summit")],
+    tools: () => [...summitRecipeTools(), libraryTool("summit"), {
+      name: "log_workout", description: `Log a workout they did outside their plan when they tell you about it (basketball, a run, a swim, their own gym session…). Today is ${todayISO()}; yesterday is ${iso(addDays(parseISO(todayISO()), -1))}. Ask for the length if they didn't say it.`,
+      inputSchema: { type: "object", properties: { type: { type: "string", enum: ACT_TYPES.map((t) => t[0]) }, name: { type: "string", description: "only for type 'other'" }, date: { type: "string", description: "YYYY-MM-DD, not in the future" }, minutes: { type: "integer" }, effort: { type: "string", enum: ["easy", "medium", "hard"] }, note: { type: "string" } }, required: ["type", "date", "minutes"] },
+      async execute(i) {
+        if (!validISO(i.date) || i.date > todayISO()) throw new Error("date must be YYYY-MM-DD and not in the future");
+        const a = normAct({ ...i }); if (!a) throw new Error("check type and minutes (1-600)");
+        await saveAct(a); toast(`Summit logged ${actName(a)}`); aiNote(`Logged ${actName(a)} ${a.minutes} min`);
+        return { ok: true, logged: { date: a.date, workout: actName(a), minutes: a.minutes, effort: a.effort } };
+      } }],
   },
 };
 const TAB_AI = { atlas: "atlas", journey: "sterling", training: "summit" };
@@ -4468,7 +4562,7 @@ Nutrition is per serving and must add up (kcal ≈ 4×protein + 4×carbs + 9×fa
 }
 function showTrainSection(s) {
   kUI.section = s;
-  $("#training").hidden = s !== "plan"; $("#kitchen").hidden = s !== "recipes"; $("#summit-library-wrap").hidden = s !== "library";
+  $("#training").hidden = s !== "plan"; $("#activities").hidden = s !== "plan"; $("#kitchen").hidden = s !== "recipes"; $("#summit-library-wrap").hidden = s !== "library";
   $$("[data-act=train-sec]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === s)));
   if (s === "recipes") renderKitchen();
   if (s === "library") renderLibrary("summit");
@@ -4494,13 +4588,13 @@ function openDialog(sel, focusSel) {
 function closeDialogs() { $$("dialog[open]").forEach((d) => (d.close ? d.close() : d.removeAttribute("open"))); }
 
 function exportJSON() {
-  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck, profile, storedays, storeSettings } = state;
+  const { destinations, projects, income, books, milestones, stage, answers, plan, trainingLog, bizAnswers, bizDone, travelAnswers, favRecipes, myrecipes, countries, photos, bodyCheck, profile, storedays, storeSettings, activities } = state;
   return JSON.stringify({
     app: "The Goal", exportedAt: new Date().toISOString(), profile,
     destinations, projects,
     income: income.map((e) => ({ ...e, amountUSD: (e.cents || 0) / 100 })),
     readingList: books, milestones, currentStage: stage,
-    training: { answers, activePlan: plan, completedSessions: trainingLog, photoCheckIn: bodyCheck },
+    training: { answers, activePlan: plan, completedSessions: trainingLog, otherWorkouts: activities, photoCheckIn: bodyCheck },
     recipes: { favorites: favRecipes, myRecipes: myrecipes },
     countriesBeenTo: [...visitedCountryMap().keys()].sort(), photos: photos.map(({ id, country, placeId, caption, addedAt, assetId }) => ({ id, country, placeId, caption, addedAt, assetId: assetId || null })),
     travel: { answers: travelAnswers, plan: travelValid(travelAnswers) ? (({ trips, yearCost }) => ({ trips, yearCost }))(travelPlan(travelAnswers)) : null },
@@ -4540,6 +4634,16 @@ document.addEventListener("click", async (e) => {
     }
     case "export": doExport(); break;
     case "profile": openProfile(); break;
+    case "act-add": openAct(); break;
+    case "act-edit": openAct(id); break;
+    case "act-del": aUI.confirm = id; renderActivities(); break;
+    case "act-del-no": aUI.confirm = null; renderActivities(); break;
+    case "act-del-yes": { aUI.confirm = null; try { await store.remove("activities", id); toast("Workout deleted"); } catch (e) { toast(SAVE_FAIL, true); } renderActivities(); if ($("#week-strip")) renderTraining(); break; }
+    case "act-all": aUI.showAll = !aUI.showAll; renderActivities(); break;
+    case "profile-reset": { if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "Tap again to clear (business money stays)"; break; }
+      const keep = state.profile && state.profile.budget != null ? { budget: state.profile.budget, updatedAt: new Date().toISOString() } : null;
+      try { await store.setSingle("profile", normProfile(keep)); } catch (e) { toast(SAVE_FAIL, true); break; }
+      renderProfileForm(); toast("Profile cleared"); if (ai.open) renderAI(); renderTraining(); renderStore(); break; }
     case "day-add": openDay(b.dataset.date); break;
     case "day-edit": openDay(id); break;
     case "day-del": sUI.confirm = id; renderStore(); break;
