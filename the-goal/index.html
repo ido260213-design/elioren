@@ -3959,8 +3959,8 @@ function goalsCard(p, x) {
   if (g.target && g.target !== "none" && TARGET_LABEL[g.target]) rows.push(["Target", TARGET_LABEL[g.target]]);
   if (g.myGoal) rows.push(["In your words", g.myGoal]);
   const custom = !!p.edited;
-  return `<section class="card goals-card" aria-labelledby="goals-h">
-    <div class="goals-top"><h3 id="goals-h">Your goals</h3><button class="btn small primary" type="button" data-act="rebuild">Change goals</button></div>
+  return `<section class="card goals-card" aria-labelledby="tgoals-h">
+    <div class="goals-top"><h3 id="tgoals-h">Your goals</h3><button class="btn small primary" type="button" data-act="rebuild">Change goals</button></div>
     <dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
     ${rows.length < 3 ? `<p class="muted" style="font-size:.86rem;margin-top:8px">Tell the plan what you want to get better at, a target, and your gear. It adds exercises just for that.</p>` : ""}
     <p class="muted" style="font-size:.84rem;margin-top:8px">Don't like an exercise? Tap it and press <strong>Swap</strong>.${custom ? " You've changed some exercises yourself." : ""}</p>
