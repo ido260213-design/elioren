@@ -89,6 +89,20 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 main{max-width:1240px;margin:0 auto;padding:clamp(20px,3vw,36px) clamp(16px,3vw,32px) 64px}
 .banner{max-width:1240px;margin:12px auto 0;padding:0 clamp(16px,3vw,32px)}
+.bday-wrap{max-width:1240px;margin:12px auto 0;padding:0 clamp(16px,3vw,32px)}
+.bday{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:color-mix(in srgb,var(--moss) 10%,var(--raised));border:1px solid color-mix(in srgb,var(--moss) 40%,transparent);border-radius:var(--r-sm);padding:10px 14px;font-size:.92rem}
+.bday ul{list-style:none;margin:0;padding:0;flex:1;min-width:200px;display:grid;gap:2px}
+.bday-rows{display:grid;gap:8px;margin-top:6px}
+.bday-row{display:grid;grid-template-columns:1fr 160px auto;gap:8px;align-items:center}
+@media (max-width:520px){.bday-row{grid-template-columns:1fr 1fr auto}}
+.goals-card{display:grid;gap:4px;margin-bottom:18px;padding:16px 20px}
+.goals-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.goals-card dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:8px 0 0}
+.goals-card dt{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.goals-card dd{margin:2px 0 0}
+.ex-edit{margin-top:10px;gap:8px}
+.swap-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.quiz-text{width:100%;max-width:520px;margin-top:6px}
 .banner p{max-width:none;background:color-mix(in srgb,var(--gold) 12%,var(--raised));border:1px solid color-mix(in srgb,var(--gold) 40%,transparent);border-radius:var(--r-sm);padding:10px 14px;font-size:.9rem}
 .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
 .page-head p{color:var(--muted);margin-top:6px}
@@ -640,6 +654,7 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
   </div>
 </header>
 <div class="banner" id="banner" hidden><p id="banner-text"></p></div>
+<div class="bday-wrap" id="bday-bar" hidden></div>
 
 <main>
   <!-- ================= ATLAS ================= -->
@@ -3264,20 +3279,30 @@ const EX_GUIDE = {
 function rxWords(rx) {
   const m = String(rx).match(/^(\d+) × (.+)$/); if (!m) return rx;
   const n = Number(m[1]), r = m[2].replace("-", " to ");
+  if (/s\/side$/.test(m[2])) return `${n} holds of ${r.replace("s/side", "")} seconds on each side`;
+  if (/\/side$/.test(m[2])) return `${n} sets of ${r.replace("/side", "")} on each side`;
   if (/\/leg$/.test(m[2])) return `${n} sets of ${r.replace("/leg", "")} reps on each leg`;
+  if (/^20m$/.test(m[2])) return `${n} runs of 20 meters`;
   if (/s$/.test(m[2])) return `${n} ${n === 1 ? "hold" : "holds"} of ${r.replace(/s$/, "")} seconds`;
   if (/m$/.test(m[2])) return `${n} ${n === 1 ? "walk" : "walks"} of ${r.replace(/m$/, "")} meters`;
   return `${n} sets of ${r} reps`;
 }
 function exInfo(e, equip) {
   const base = e.name.replace(/, 3-second lower$/, ""), g = EX_GUIDE[base];
-  const list = BANK[e.pattern] && BANK[e.pattern][equip], i = list ? list.indexOf(base) : -1;
+  const src = BANK[e.pattern] || XBANK[e.pattern], list = src && src[equip], i = list ? list.indexOf(base) : -1;
   return { g, slow: base !== e.name, easier: i > 0 ? list[i - 1] : null, harder: i >= 0 && i < list.length - 1 ? list[i + 1] : null };
 }
-function exDetails(e, equip, rest) {
-  const x = exInfo(e, equip), g = x.g;
+function swapOptions(e, equip, s) {
+  const src = BANK[e.pattern] || XBANK[e.pattern] || (e.pattern === "posture" ? { gym: Object.values(POSTURE_EX), home: [], bw: [] } : null);
+  const base = e.name.replace(/, 3-second lower$/, ""), x = normExtras(state.answers || {});
+  const names = src ? [...src[equip], ...src.home, ...src.bw, ...src.gym] : [];
+  Object.values(SWAPS).forEach((w) => w[e.pattern] && Object.values(w[e.pattern]).forEach((n) => names.push(n)));
+  return [...new Set(names)].filter((n) => n !== base && !s.exercises.some((o) => o.name === n) && !avoided(n, x)).slice(0, 8);
+}
+function exDetails(e, equip, rest, si, ei) {
+  const x = exInfo(e, equip), g = x.g, key = `${si}-${ei}`, sess = state.plan.sessions[si];
   const restTxt = e.pattern === "posture" || e.pattern === "core" ? "short rest (30-45s)" : `rest ${rest} between sets`;
-  return `<details class="ex"><summary><span class="ex-name">${esc(e.name)}<span class="pat">${esc(PATTERN_LABEL[e.pattern] || "")}${e.swap ? ` · <span class="swap">${esc(e.swap)}</span>` : ""}</span></span><span class="rx">${esc(e.prescription)}</span></summary>
+  return `<details class="ex" ${tUI.openEx === key ? "open" : ""} data-ex="${key}"><summary><span class="ex-name">${esc(e.name)}<span class="pat">${esc(PATTERN_LABEL[e.pattern] || "")}${e.swap ? ` · <span class="swap">${esc(e.swap)}</span>` : ""}</span></span><span class="rx">${esc(e.prescription)}</span></summary>
     <div class="ex-body">
       <p class="rx-words"><strong>${esc(rxWords(e.prescription))}</strong> · ${esc(restTxt)}</p>
       ${g ? `<p class="muted ex-works">Works: ${esc(g.w)}</p>
@@ -3286,6 +3311,8 @@ function exDetails(e, equip, rest) {
       ${x.slow ? `<p class="ex-tip">Lower slowly for 3 seconds on every rep: that's what makes this version work.</p>` : ""}
       ${g && g.b && isMinor() ? `<p class="lib-note">At your age: only with a coach or adult watching, and never a max attempt.</p>` : ""}
       ${x.easier || x.harder ? `<p class="muted ex-alt">${x.easier ? `Too hard? Do <strong>${esc(x.easier)}</strong>. ` : ""}${x.harder ? `Too easy for all sets? Move up to <strong>${esc(x.harder)}</strong>.` : ""}</p>` : ""}
+      ${si != null ? `<div class="row ex-edit"><button class="btn small" type="button" data-act="ex-swap" data-k="${key}">${tUI.swapEx === key ? "Close" : "Swap exercise"}</button>${sess && sess.exercises.length > 2 ? `<button class="btn ghost small" type="button" data-act="ex-remove" data-k="${key}">Remove</button>` : ""}</div>
+      ${tUI.swapEx === key ? `<div class="swap-list"><span class="muted" style="font-size:.84rem">Pick one instead:</span>${swapOptions(e, equip, sess).map((n) => `<button class="chip" type="button" data-act="ex-pick" data-k="${key}" data-name="${esc(n)}">${esc(n)}</button>`).join("") || `<span class="muted">No other options for this one.</span>`}</div>` : ""}` : ""}
     </div></details>`;
 }
 const PROG_EXAMPLE = {
@@ -3295,7 +3322,168 @@ const PROG_EXAMPLE = {
   endurance: "Example: add reps first, up to 20 in every set. Then take 5-10 seconds off your rest. Only when both feel easy, add a little weight.",
 };
 const WARMUP_STEPS = ["3-5 minutes of easy cardio: a light jog, jumping jacks or skipping", "10 bodyweight squats and 10 lunges (5 each leg)", "10 arm circles each way and 10 band pull-aparts or wall slides", "5 inchworms or 5 easy push-ups", "1-2 light sets of your first exercise before the real sets"];
-const PATTERN_LABEL = { posture: "Posture", squat: "Squat", hinge: "Hinge", hpush: "Horizontal push", vpush: "Vertical push", hpull: "Horizontal pull", vpull: "Vertical pull", core: "Core", carry: "Carry / conditioning" };
+// Extra exercises added for goals, focus areas and targets. Same shape as BANK: pattern -> equipment -> easy..hard.
+const XBANK = {
+  jump: { gym: ["Squat jump", "Box jump", "Broad jump"], home: ["Squat jump", "Broad jump", "Lateral bound"], bw: ["Squat jump", "Broad jump", "Lateral bound"] },
+  speed: { gym: ["A-skip", "Sprint 20 m", "Shuttle run 5-10-5"], home: ["A-skip", "Sprint 20 m", "Shuttle run 5-10-5"], bw: ["A-skip", "Sprint 20 m", "Shuttle run 5-10-5"] },
+  calves: { gym: ["Calf raise on a step", "Single-leg calf raise", "Pogo hops"], home: ["Calf raise", "Single-leg calf raise", "Pogo hops"], bw: ["Calf raise", "Single-leg calf raise", "Pogo hops"] },
+  biceps: { gym: ["Dumbbell curl", "Cable curl", "Chin-up"], home: ["Band curl", "Dumbbell curl", "Hammer curl"], bw: ["Doorframe curl", "Chin-up negative", "Chin-up"] },
+  triceps: { gym: ["Cable triceps pushdown", "Dumbbell overhead triceps extension", "Close-grip push-up"], home: ["Band triceps pushdown", "Dumbbell overhead triceps extension", "Close-grip push-up"], bw: ["Bench dip", "Close-grip push-up", "Bench dip, feet raised"] },
+  delts: { gym: ["Dumbbell lateral raise", "Cable lateral raise", "Arnold press"], home: ["Band lateral raise", "Dumbbell lateral raise", "Arnold press"], bw: ["Wall slide", "Prone Y-T-W raise", "Pike push-up"] },
+  lunge: { gym: ["Reverse lunge with dumbbells", "Walking lunge", "Step-up with dumbbells"], home: ["Reverse lunge with dumbbells", "Walking lunge", "Step-up with dumbbells"], bw: ["Reverse lunge", "Walking lunge", "Step-up"] },
+  glutes: { gym: ["Glute bridge", "Hip thrust", "Single-leg hip thrust"], home: ["Glute bridge", "Dumbbell hip thrust", "Single-leg hip thrust"], bw: ["Glute bridge", "Single-leg glute bridge", "Single-leg hip thrust"] },
+  sidecore: { gym: ["Side plank", "Side plank with reach", "Copenhagen plank"], home: ["Side plank", "Side plank with reach", "Copenhagen plank"], bw: ["Side plank", "Side plank with reach", "Copenhagen plank"] },
+  mobility: { gym: ["World's greatest stretch", "Hip 90/90 switches", "Ankle rocks"], home: ["World's greatest stretch", "Hip 90/90 switches", "Ankle rocks"], bw: ["World's greatest stretch", "Hip 90/90 switches", "Ankle rocks"] },
+  cond: { gym: ["High knees", "Mountain climber", "Burpee"], home: ["High knees", "Mountain climber", "Burpee"], bw: ["High knees", "Mountain climber", "Burpee"] },
+  hang: { gym: ["Dead hang", "Negative pull-up", "Pull-up"], home: ["Dead hang", "Negative pull-up", "Pull-up"], bw: ["Dead hang", "Negative pull-up", "Pull-up"] },
+  pushprac: { gym: ["Incline push-up", "Push-up", "Deficit push-up"], home: ["Incline push-up", "Push-up", "Deficit push-up"], bw: ["Incline push-up", "Push-up", "Deficit push-up"] },
+};
+const XRX = { jump: "3 × 5", speed: "4 × 20m", calves: "3 × 12-20", biceps: "3 × 10-15", triceps: "3 × 10-15", delts: "3 × 12-15", lunge: "3 × 8/leg", glutes: "3 × 10-15", sidecore: "3 × 20-40s/side", mobility: "2 × 5/side", cond: "6 × 30s", hang: "3 × 20-40s", pushprac: "2 × 8-20" };
+const XGUIDE = {
+  "Squat jump": { w: "Legs, jumping power", s: ["Feet shoulder-width, quick dip into a quarter squat.", "Swing your arms and jump as high as you can.", "Land softly on the balls of your feet, knees bent, then reset."], t: "Quiet landings: if it's loud, you're landing too stiff." },
+  "Box jump": { w: "Legs, jumping power", s: ["Stand in front of a box or sturdy step, about knee height to start.", "Swing your arms, jump and land softly on top with both feet.", "Stand tall, then step down (don't jump down)."], t: "Pick a height you land on easily; higher isn't better." },
+  "Broad jump": { w: "Legs, hips, explosive power", s: ["Feet hip-width, swing your arms back and hinge your hips.", "Jump forward as far as you can.", "Stick the landing with bent knees and hold for 2 seconds."], t: "Land balanced; if you stumble forward, jump a bit shorter." },
+  "Lateral bound": { w: "Legs, side-to-side power, balance", s: ["Stand on your right leg.", "Push off sideways and land on your left leg.", "Hold the landing for a second, then bound back."], t: "Great for basketball defense: knee stays over your foot on landing." },
+  "A-skip": { w: "Running form, speed, coordination", s: ["Skip forward driving one knee up to hip height.", "Strike the ground under your hips with the other foot.", "Swing your arms in rhythm, stay tall."], t: "Quick, light contacts; think 'up and down', not 'forward'." },
+  "Sprint 20 m": { w: "Speed, acceleration", s: ["Mark out about 20 meters on flat ground.", "Start leaning forward and drive hard with your arms.", "Sprint all-out, then walk back slowly to recover fully."], t: "Full rest between sprints keeps them fast. Warm up well first." },
+  "Shuttle run 5-10-5": { w: "Agility, quick changes of direction", s: ["Three cones 5 m apart in a line. Start at the middle one.", "Sprint 5 m to one side and touch the line, then 10 m to the other side.", "Sprint 5 m back through the middle. That's one run."], t: "Stay low when you turn, like a defensive slide." },
+  "Calf raise": { w: "Calves, ankles (helps jumping)", s: ["Stand with the balls of your feet on the floor, hands on a wall.", "Rise up as high as you can onto your toes.", "Pause, then lower slowly."], t: "Slow down: 1 second up, 1 second pause, 2 seconds down." },
+  "Calf raise on a step": { w: "Calves, ankles (helps jumping)", s: ["Balls of your feet on a step, heels hanging off.", "Lower your heels below the step for a stretch.", "Rise all the way up and pause."], t: "Full range: deep stretch at the bottom, full squeeze at the top." },
+  "Single-leg calf raise": { w: "Calves, ankle stability", s: ["Stand on one foot, hand on a wall for balance.", "Rise onto your toes as high as you can.", "Lower slowly. Do all reps, then switch."], t: "Keep your knee straight and your ankle from rolling out." },
+  "Pogo hops": { w: "Calves, springy ankles, jumping", s: ["Stand tall with straight legs.", "Bounce on the balls of your feet, using mostly your ankles.", "Keep contacts short and quick, like a pogo stick."], t: "Stiff ankles, quiet feet; stop when the bounce gets slow." },
+  "Dumbbell curl": { w: "Biceps", s: ["Stand tall, dumbbells by your sides, palms forward.", "Curl them up without moving your elbows forward.", "Lower slowly all the way down."], t: "No swinging: if you need to swing, it's too heavy." },
+  "Cable curl": { w: "Biceps", s: ["Stand facing a low cable with a bar or rope.", "Curl it up to your shoulders, elbows at your sides.", "Lower slowly."], t: "Squeeze at the top for a second." },
+  "Hammer curl": { w: "Biceps, forearms", s: ["Hold dumbbells with palms facing each other.", "Curl up keeping that grip.", "Lower with control."], t: "Great for grip and thicker forearms." },
+  "Band curl": { w: "Biceps", s: ["Stand on a band, hold the ends, palms forward.", "Curl up to your shoulders.", "Lower slowly against the band."], t: "Step wider on the band to make it harder." },
+  "Doorframe curl": { w: "Biceps", s: ["Hold a doorframe with one hand at chest height, palm up.", "Lean back with a straight arm.", "Curl your body toward the frame, then lower. Switch arms."], t: "Feet closer to the door = harder." },
+  "Chin-up negative": { w: "Biceps, back", s: ["Jump or step up so your chin is over the bar, palms facing you.", "Lower yourself as slowly as you can (3-5 seconds).", "Step down and repeat."], t: "The slow lowering builds the strength for full chin-ups." },
+  "Chin-up": { w: "Biceps, back, grip", s: ["Hang from a bar, palms facing you, hands shoulder-width.", "Pull until your chin is over the bar.", "Lower all the way down slowly."], t: "Full hang at the bottom every rep." },
+  "Cable triceps pushdown": { w: "Triceps", s: ["Face a high cable with a rope or bar, elbows at your sides.", "Push down until your arms are straight.", "Let it come up slowly to about chest height."], t: "Elbows stay pinned to your sides." },
+  "Band triceps pushdown": { w: "Triceps", s: ["Band anchored high (top of a door).", "Elbows at your sides, push the band down to straight arms.", "Return slowly."], t: "Only your forearms move." },
+  "Dumbbell overhead triceps extension": { w: "Triceps", s: ["Hold one dumbbell with both hands above your head.", "Lower it behind your head by bending your elbows.", "Straighten your arms to lift it back up."], t: "Elbows point forward, not out to the sides." },
+  "Close-grip push-up": { w: "Triceps, chest", s: ["Push-up position with hands under your shoulders or a bit closer.", "Lower with elbows brushing your sides.", "Push back up."], t: "Do them from your knees or on a bench if full ones are too hard." },
+  "Bench dip": { w: "Triceps, shoulders", s: ["Hands on the edge of a bench or chair behind you, legs bent.", "Lower by bending your elbows to about 90 degrees.", "Push back up."], t: "Keep your back close to the bench and shoulders down." },
+  "Bench dip, feet raised": { w: "Triceps, shoulders", s: ["Like a bench dip, with your feet on a second chair.", "Lower to about 90 degrees at the elbow.", "Press back up."], t: "Stop if your shoulders feel pinchy." },
+  "Dumbbell lateral raise": { w: "Side shoulders", s: ["Stand with light dumbbells by your sides.", "Raise them out to the sides to shoulder height.", "Lower slowly."], t: "Go light; lead with your elbows, slight bend in the arms." },
+  "Cable lateral raise": { w: "Side shoulders", s: ["Stand side-on to a low cable, handle in the far hand.", "Raise your arm out to the side to shoulder height.", "Lower slowly. Finish one side, then switch."], t: "Smooth and controlled, no swinging." },
+  "Band lateral raise": { w: "Side shoulders", s: ["Stand on a band, ends in each hand.", "Raise your arms out to shoulder height.", "Lower slowly."], t: "Shoulders stay down, away from your ears." },
+  "Arnold press": { w: "Shoulders", s: ["Sit or stand, dumbbells at your chin, palms facing you.", "Press up while turning your palms forward.", "Reverse the turn on the way down."], t: "Smooth rotation, no rushing." },
+  "Wall slide": { w: "Shoulders, upper back (posture)", s: ["Stand with your back against a wall, arms in a W shape against it.", "Slide your arms up into a Y, keeping them touching the wall.", "Slide back down to the W."], t: "Ribs down, lower back stays near the wall." },
+  "Reverse lunge": { w: "Thighs, glutes, balance", s: ["Stand tall, step one foot back.", "Lower until your back knee almost touches the floor.", "Push through the front foot to stand. Alternate legs."], t: "Easier on the knees than forward lunges." },
+  "Reverse lunge with dumbbells": { w: "Thighs, glutes, balance", s: ["Dumbbells in each hand, stand tall.", "Step back and lower until your back knee is near the floor.", "Drive through the front heel to stand. Alternate."], t: "Front knee stays over your foot." },
+  "Walking lunge": { w: "Thighs, glutes, balance", s: ["Step forward into a lunge, both knees bending.", "Push up and bring the back foot forward into the next lunge.", "Keep walking, alternating legs."], t: "Long steps, tall chest." },
+  "Step-up": { w: "Thighs, glutes", s: ["Stand in front of a sturdy step or bench at knee height.", "Step up with one foot and stand all the way up.", "Step down slowly. Finish one leg, then switch."], t: "Push through the top foot; don't push off the bottom one." },
+  "Step-up with dumbbells": { w: "Thighs, glutes", s: ["Dumbbells in your hands, stand in front of a bench.", "Step up and stand tall on top.", "Lower slowly. Finish one leg, then switch."], t: "Control the way down: that's where the strength builds." },
+  "Single-leg hip thrust": { w: "Glutes", s: ["Upper back on a couch or bench, one foot on the floor, other leg up.", "Push through the heel to lift your hips level.", "Squeeze, lower slowly. Finish one side, then switch."], t: "Hips stay level the whole time." },
+  "Side plank": { w: "Side core (obliques)", s: ["Lie on your side, elbow under your shoulder, legs straight.", "Lift your hips so your body is a straight line.", "Hold, then switch sides."], t: "Don't let your hips drop toward the floor." },
+  "Side plank with reach": { w: "Side core, shoulders", s: ["Side plank on your elbow.", "Reach your top arm under your body, then up to the ceiling.", "Do the reps, then switch sides."], t: "Move slowly; your hips stay up." },
+  "Copenhagen plank": { w: "Inner thighs, side core (protects groins)", s: ["Side plank with your top leg resting on a bench, bottom leg free.", "Lift your hips, holding with your top leg.", "Hold, then switch. Start with knee on the bench to make it easier."], t: "Short, solid holds beat long, shaky ones." },
+  "World's greatest stretch": { w: "Hips, back, shoulders (mobility)", s: ["Step into a long lunge, both hands on the floor inside your front foot.", "Rotate and reach your inside arm to the ceiling.", "Bring it back down, then switch sides."], t: "Breathe out as you rotate." },
+  "Hip 90/90 switches": { w: "Hip mobility", s: ["Sit with both knees bent at 90 degrees, both falling to one side.", "Keeping your feet on the floor, rotate both knees to the other side.", "Switch slowly back and forth."], t: "Use your hands behind you for support at first." },
+  "Ankle rocks": { w: "Ankle mobility (squats, jumps, landing)", s: ["Half-kneel facing a wall, front foot about a hand's length away.", "Push your front knee toward the wall without lifting your heel.", "Rock back and forth slowly, then switch."], t: "Heel stays down; that's the whole point." },
+  "High knees": { w: "Conditioning, running form", s: ["Run in place driving your knees up to hip height.", "Pump your arms and stay on the balls of your feet.", "Go hard for the time given, then rest."], t: "Tall body, quick feet." },
+  "Mountain climber": { w: "Conditioning, core", s: ["Start in a push-up position.", "Drive one knee toward your chest, then switch quickly.", "Keep your hips low and hands under your shoulders."], t: "Fast feet, still shoulders." },
+  "Burpee": { w: "Conditioning, whole body", s: ["Squat down and put your hands on the floor.", "Jump or step your feet back into a push-up position, then back in.", "Stand up and jump with your arms overhead."], t: "Step back instead of jumping to make it easier." },
+  "Jump rope": { w: "Conditioning, calves, footwork", s: ["Hold the handles at hip height, rope behind you.", "Turn the rope with your wrists and hop just high enough to clear it.", "Keep a steady rhythm for the time given."], t: "Small, quick hops on the balls of your feet." },
+  "Dead hang": { w: "Grip, shoulders (first step to pull-ups)", s: ["Grab a pull-up bar with straight arms.", "Hang with your shoulders pulled slightly down.", "Hold for the time given, then drop down."], t: "Use a box to reach the bar so you don't jump into it." },
+  "Towel door row": { w: "Upper back, biceps (no bar needed)", s: ["Loop a towel around both handles of a closed, locked door.", "Hold the ends and lean back with straight arms, feet near the door.", "Pull your chest toward the door, then lower slowly."], t: "Make sure the door is closed and can't open toward you." },
+};
+
+// Personal touches on top of the base plan: goals, focus areas, a target, gear and exercises to avoid.
+Object.assign(EX_GUIDE, XGUIDE);
+const AVOID_RX = { jumping: /jump|bound|hop|pogo/i, running: /sprint|shuttle|a-skip|high knees|hill sprint/i, pullups: /pull-up|chin-up/i, pushups: /push-up/i, burpees: /burpee/i, lunges: /lunge|split squat|step-up/i, planks: /plank/i };
+const IMPROVE_LABEL = { jump: "Jump higher", speed: "Faster and quicker", strength: "Get stronger", muscle: "Bigger muscles", endurance: "More stamina", flex: "More flexible", core: "Stronger core" };
+const FOCUS_LABEL = { arms: "Arms", chest: "Chest", back: "Back", shoulders: "Shoulders", legs: "Legs", glutes: "Glutes", calves: "Calves", abs: "Abs" };
+const TARGET_LABEL = { pullups: "Do 10 pull-ups", pushups: "Do 30 push-ups in a row", dunk: "Touch the rim / dunk", run5k: "Run 5 km without stopping", sprint: "Run a faster sprint", none: "No specific target" };
+const isUpperDay = (n) => /upper|push|pull|full/i.test(n), isLowerDay = (n) => /legs|lower|full/i.test(n);
+function avoided(name, x) { return (x.avoid || []).some((k) => AVOID_RX[k] && AVOID_RX[k].test(name)); }
+// The extra exercises a set of answers asks for, most important first.
+function personalExtras(x, minor) {
+  const items = [], add = (p, where, why, twice) => { if (!items.some((i) => i.p === p)) items.push({ p, where, why, twice }); };
+  const t = x.target;
+  if (t === "pullups") add(x.gear && !x.gear.includes("pullupbar") ? "nobar" : "hang", "upper", "Your target: 10 pull-ups", true);
+  if (t === "pushups") add("pushprac", "upper", "Your target: 30 push-ups", true);
+  if (t === "dunk") { add("jump", "lower", "Your target: touch the rim", true); add("calves", "lower", "Your target: touch the rim"); }
+  if (t === "sprint") add("speed", "lower", "Your target: a faster sprint", true);
+  (x.improve || []).forEach((k) => {
+    if (k === "jump") add("jump", "lower", "For: Jump higher", true);
+    if (k === "speed") add("speed", "lower", "For: Faster and quicker");
+    if (k === "endurance") add("cond", "any", "For: More stamina");
+    if (k === "core") add("sidecore", "any", "For: Stronger core");
+  });
+  (x.focus || []).forEach((k) => {
+    const why = `Focus: ${FOCUS_LABEL[k]}`;
+    if (k === "arms") { add("biceps", "upper", why); add("triceps", "upper", why); }
+    if (k === "shoulders") add("delts", "upper", why);
+    if (k === "chest") add("hpush", "upper", why);
+    if (k === "back") add("hpull", "upper", why);
+    if (k === "legs") add("lunge", "lower", why);
+    if (k === "glutes") add("glutes", "lower", why);
+    if (k === "calves") add("calves", "lower", why);
+    if (k === "abs") add("sidecore", "any", why);
+  });
+  return items;
+}
+function pickExtra(p, equip, expIdx, x, inSession) {
+  const lists = p === "nobar" ? [["Towel door row", "Doorframe row"]] : [p === "hpush" || p === "hpull" ? BANK[p][equip] : XBANK[p][equip]];
+  let list = lists[0].slice();
+  if (p === "cond" && x.gear && x.gear.includes("rope")) list = ["Jump rope", ...list];
+  if (equip !== "gym" && x.gear && !x.gear.includes("pullupbar")) list = list.filter((n) => !/pull-up|chin-up|dead hang/i.test(n) || p === "nobar");
+  if (equip !== "gym" && x.gear && !x.gear.includes("bands") && list.some((n) => !/band/i.test(n))) list = list.filter((n) => !/band/i.test(n));
+  if (equip !== "gym" && x.gear && !x.gear.includes("dumbbells") && list.some((n) => !/dumbbell/i.test(n))) list = list.filter((n) => !/dumbbell/i.test(n));
+  if (!list.length) list = p === "biceps" ? ["Doorframe curl"] : [];
+  const order = [Math.min(expIdx, list.length - 1), ...list.map((_, i) => i)];
+  for (const i of order) { const n = list[i]; if (n && !avoided(n, x) && !inSession.includes(n)) return n; }
+  return null;
+}
+function applyPersonal(sessions, a, x, why, minor) {
+  const equip = a.equipment, extraEquip = equip === "bw" && x.gear && (x.gear.includes("dumbbells") || x.gear.includes("bands")) ? "home" : equip;
+  const expIdx = EXP_INDEX[a.experience];
+  // 1) swap out avoided exercises and pull-ups without a bar, inside the base plan
+  sessions.forEach((s) => s.exercises.forEach((e) => {
+    const noBar = equip !== "gym" && x.gear && !x.gear.includes("pullupbar") && /pull-up|chin-up/i.test(e.name);
+    if (!avoided(e.name, x) && !noBar) return;
+    const pool = [...new Set([...(BANK[e.pattern] ? [...BANK[e.pattern][equip], ...BANK[e.pattern].home, ...BANK[e.pattern].bw] : []), ...(noBar ? ["Towel door row", "Doorframe row"] : [])])];
+    const alt = pool.find((n) => !avoided(n, x) && !(equip !== "gym" && x.gear && !x.gear.includes("pullupbar") && /pull-up|chin-up/i.test(n)) && !s.exercises.some((o) => o.name === n));
+    if (alt) { e.name = alt; e.swap = noBar ? "No bar at home" : "Swapped: you'd rather skip the original"; }
+  }));
+  // 2) strength / muscle tweaks to the main lifts
+  if ((x.improve || []).includes("strength") && a.goal !== "endurance") sessions.forEach((s) => s.exercises.forEach((e, i) => { if (i === 0 && !["core", "carry", "posture"].includes(e.pattern)) e.prescription = e.prescription.replace(/× .+$/, `× ${minor ? "6-8" : "5-8"}`); }));
+  if ((x.improve || []).includes("muscle")) sessions.forEach((s) => { const e = s.exercises.find((y) => !["core", "carry", "posture"].includes(y.pattern)); const m = e && e.prescription.match(/^(\d+) × (.*)$/); if (m && Number(m[1]) < 5) e.prescription = `${Number(m[1]) + 1} × ${m[2]}`; });
+  // 3) extra exercises, spread over the matching days within each session's time budget
+  const cap = { "30": 1, "45": 2, "60": 3 }[a.length] || 2, used = sessions.map(() => 0);
+  // every goal gets one day first; goals marked "twice" get their second day only if there's still room
+  const items = personalExtras(x, minor), placed = new Map();
+  [...items, ...items.filter((it) => it.twice)].forEach((it) => {
+    const fits = sessions.map((s, i) => i).filter((i) => (it.where === "any" || (it.where === "upper" ? isUpperDay(sessions[i].name) : isLowerDay(sessions[i].name))) && used[i] < cap && !(placed.get(it.p) || []).includes(i));
+    fits.sort((i, j) => used[i] - used[j]);
+    fits.slice(0, 1).forEach((i) => {
+      placed.set(it.p, [...(placed.get(it.p) || []), i]);
+      const s = sessions[i], n = pickExtra(it.p, extraEquip, expIdx, x, s.exercises.map((e) => e.name)); if (!n) return;
+      const pattern = it.p === "nobar" ? "hpull" : it.p, rx = it.p === "hpush" || it.p === "hpull" || it.p === "nobar" ? "3 × 8-12" : XRX[it.p];
+      const pos = it.p === "jump" || it.p === "speed" ? 0 : s.exercises.length; // power work goes first, when you're fresh
+      s.exercises.splice(pos, 0, { pattern, name: n, prescription: rx, swap: it.why, extra: true });
+      used[i]++;
+    });
+  });
+  // 4) flexibility: a short mobility finisher on every day
+  if ((x.improve || []).includes("flex")) sessions.forEach((s, i) => { const n = XBANK.mobility.bw[i % 3]; if (!avoided(n, x)) s.exercises.push({ pattern: "mobility", name: n, prescription: XRX.mobility, swap: "For: More flexible", extra: true }); });
+  // 5) explain it
+  const imp = (x.improve || []).map((k) => IMPROVE_LABEL[k]), foc = (x.focus || []).map((k) => FOCUS_LABEL[k]);
+  if (imp.length) why.push(`Built for your goals: ${imp.join(", ").toLowerCase()}.`);
+  if (foc.length) why.push(`Extra work for ${foc.join(", ").toLowerCase()}.`);
+  if (x.target && x.target !== "none") why.push(`Working toward your target: ${TARGET_LABEL[x.target].toLowerCase()}.`);
+  if (x.avoid && x.avoid.length) why.push(`Leaves out what you'd rather skip: ${x.avoid.map((k) => xlabel("avoid", k).toLowerCase()).join(", ")}.`);
+  if (equip !== "gym" && x.gear && !x.gear.includes("pullupbar")) why.push("No pull-up bar: pull-ups are swapped for rows you can do with a door.");
+}
+const TARGET_NOTE = {
+  pullups: "Pull-up target: test how many clean pull-ups (or seconds of dead hang) you can do every 2 weeks and write it down. Add one rep at a time.",
+  pushups: "Push-up target: test your max every 2 weeks. When you can do 15 clean push-ups, move the practice to the floor version; at 30 in a row, you've hit it.",
+  dunk: "Rim target: jump work comes first in the session while you're fresh. Test your reach once a month with chalk on your fingers against a wall.",
+  run5k: "5 km target: run 3 times a week. Start with 1 minute running, 1 minute walking, 10 times. Add a minute of running each week until you can run 25-30 minutes without stopping.",
+  sprint: "Sprint target: time a 20 m sprint once a month. Always sprint fresh and fully rested, never when tired.",
+};
+const PATTERN_LABEL = { jump: "Jumping power", speed: "Speed", calves: "Calves", biceps: "Biceps", triceps: "Triceps", delts: "Shoulders", lunge: "Single-leg", glutes: "Glutes", sidecore: "Core", mobility: "Mobility", cond: "Conditioning", hang: "Grip / pull-up", pushprac: "Push-up practice", posture: "Posture", squat: "Squat", hinge: "Hinge", hpush: "Horizontal push", vpush: "Vertical push", hpull: "Horizontal pull", vpull: "Vertical pull", core: "Core", carry: "Carry / conditioning" };
 const POOLS = {
   "Full Body A": ["squat", "hpush", "hpull", "core", "hinge"],
   "Full Body B": ["hinge", "vpush", "vpull", "core", "carry"],
@@ -3330,6 +3518,12 @@ const DAY_LONG = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Satur
 
 // Optional questions that personalize the plan further. None of them is required, so a plan built from the five basics stays valid.
 const EXTRA = [
+  { group: "Your goals", key: "improve", multi: true, q: "What do you want to get better at?", hint: "Pick up to 3. Each one adds work for it.", max: 3, opts: Object.entries(IMPROVE_LABEL) },
+  { group: "Your goals", key: "focus", multi: true, q: "Which parts of your body do you want to focus on?", hint: "Pick any. They get extra exercises.", opts: Object.entries(FOCUS_LABEL) },
+  { group: "Your goals", key: "target", q: "Do you have a specific target?", opts: Object.entries(TARGET_LABEL) },
+  { group: "Your goals", key: "myGoal", text: true, q: "Your own goal, in your words", hint: "For example: make the school team, beat my 5 km time. Summit sees it.", max: 120 },
+  { group: "Your setup", key: "gear", multi: true, q: "What else do you have?", hint: "Pick everything you can use.", opts: [["pullupbar", "Pull-up bar"], ["dumbbells", "Dumbbells"], ["bands", "Resistance bands"], ["rope", "Jump rope"], ["bench", "Bench or sturdy chair"], ["box", "Box or step"]] },
+  { group: "Your setup", key: "avoid", multi: true, q: "Anything you don't like or can't do?", hint: "We'll pick other exercises instead.", opts: [["jumping", "Jumping"], ["running", "Running"], ["pullups", "Pull-ups"], ["pushups", "Push-ups"], ["burpees", "Burpees"], ["lunges", "Lunges"], ["planks", "Planks"]] },
   { group: "Your week", key: "weekdays", multi: true, q: "Which days can you train?", opts: DAY_NAMES.map((d, i) => [String(i), d]) },
   { group: "Your week", key: "cardio", q: "Favorite way to do cardio?", opts: [["run", "Running"], ["bike", "Cycling"], ["row", "Rowing"], ["hike", "Walking or hiking"], ["swim", "Swimming"]] },
   { group: "Your body", key: "limits", multi: true, q: "Anything to go easy on?", opts: [["knees", "Knees"], ["back", "Lower back"], ["shoulders", "Shoulders"]], hint: "Pick any that apply, or leave it empty." },
@@ -3342,7 +3536,11 @@ function normExtras(a) {
   const e = {}, n = Number(a.days), one = (k) => { const q = EXTRA.find((x) => x.key === k); if (q.opts.some((o) => o[0] === a[k])) e[k] = a[k]; };
   if (Array.isArray(a.weekdays)) { const w = [...new Set(a.weekdays.map(Number))].filter((x) => x >= 0 && x <= 6).sort((x, y) => x - y); if (w.length === n) e.weekdays = w; }
   if (Array.isArray(a.limits)) { const l = ["knees", "back", "shoulders"].filter((x) => a.limits.includes(x)); if (l.length) e.limits = l; }
-  ["cardio", "sleep", "hike", "sport"].forEach(one);
+  ["cardio", "sleep", "hike", "sport", "target"].forEach(one);
+  const many = (k, max) => { const q = EXTRA.find((y) => y.key === k); if (Array.isArray(a[k])) { const v = q.opts.map((o) => o[0]).filter((o) => a[k].includes(o)).slice(0, max || 99); if (v.length) e[k] = v; } };
+  many("improve", 3); many("focus"); many("avoid");
+  if (Array.isArray(a.gear)) e.gear = ["pullupbar", "dumbbells", "bands", "rope", "bench", "box"].filter((g) => a.gear.includes(g)); // an empty list means "none of these"
+  if (typeof a.myGoal === "string" && a.myGoal.trim()) e.myGoal = a.myGoal.trim().slice(0, 120);
   return e;
 }
 // Joint-friendly swaps: same movement pattern, less load on the named area.
@@ -3446,6 +3644,7 @@ function generatePlan(a) {
   const recovery = x.sleep === "low" ? "Short sleep slows recovery, so the main lifts have one fewer set. Getting 30 more minutes a night will do more for you than anything else on this page."
     : x.sleep === "mid" ? "6-7 hours works. Keep bedtime steady, especially the night before a session." : x.sleep === "good" ? "Your sleep is on your side. Protect it on training days." : "";
   const sessions = build(a.equipment);
+  const pwhy = []; applyPersonal(sessions, a, x, pwhy, isMinor());
   const why = [];
   if (x.weekdays) why.push(`Sessions fall on your days: ${x.weekdays.map((d) => DAY_NAMES[d]).join(", ")}.`);
   (x.limits || []).forEach((l) => { const n = sessions.reduce((s, ss) => s + ss.exercises.filter((e) => e.swap === SWAPS[l].label).length, 0); if (n) why.push(`${n} ${n === 1 ? "exercise" : "exercises"} swapped to go easy on your ${l === "back" ? "lower back" : l}.`); });
@@ -3454,11 +3653,13 @@ function generatePlan(a) {
   const SPORT = { basketball: ["basketball", "Add 3 × 5 box jumps or squat jumps at the start of leg days, and some ankle work. On days you play hard, skip extra cardio: the game is your cardio."], football: ["football", "Add 4 × 20 m sprints at the start of leg days. On match or practice days, skip extra cardio."], racket: ["your racket sport", "Add lateral lunges and band rotations for the quick side-to-side moves. On days you play, skip extra cardio."], combat: ["martial arts", "Add rotational core work and neck-and-grip strength. Keep hard lifting away from hard sparring days."], other: ["your sport", "Keep your hardest lifting away from game days, and let the sport count as cardio."] };
   if (SPORT[x.sport]) { cond += " " + SPORT[x.sport][1]; why.push(`Built around ${SPORT[x.sport][0]}: training makes you better at it, and it counts as cardio.`); }
   if (mode) why.push(`Cardio uses ${mode}.`);
+  why.push(...pwhy);
+  if (TARGET_NOTE[x.target]) cond += " " + TARGET_NOTE[x.target];
   const body = isAdult() ? state.bodyCheck : null, bx = {};
   applyBody(body, [[sessions, a.equipment]], a.equipment, why, bx);
   if (bx.cond) cond += bx.cond;
   return {
-    version: 2, answers: { ...a }, split: split.name, weekdays,
+    version: 2, answers: { ...a }, split: split.name, weekdays, goals: { improve: x.improve || [], focus: x.focus || [], target: x.target || "", myGoal: x.myGoal || "" },
     goal: label("goal", a.goal), rest: g.rest, progression: g.prog, conditioning: cond, warmup: WARMUP, recovery,
     sessions, sessionsRoad: null, roadLabel: "",
     trip: null, why,
@@ -3515,6 +3716,7 @@ function renderQuiz(el, hasPlan) {
   const d = tUI.draft, qs = quizState();
   const groups = [...new Set(EXTRA.map((q) => q.group))];
   const extraQ = (q) => {
+    if (q.text) return `<fieldset id="fs-${q.key}"><legend>${esc(q.q)}</legend>${q.hint ? `<span class="hint">${esc(q.hint)}</span>` : ""}<input type="text" name="${q.key}" id="q-${q.key}" maxlength="${q.max || 120}" value="${esc(d[q.key] || "")}" class="quiz-text" autocomplete="off"></fieldset>`;
     const type = q.multi ? "checkbox" : "radio", cur = d[q.key];
     const hint = q.key === "weekdays" ? `<span class="hint" id="days-hint">${qs.n ? `Pick ${qs.n}, to match your ${qs.n} days a week.` : "Pick the days that usually work."}</span>` : q.hint ? `<span class="hint">${esc(q.hint)}</span>` : "";
     const hidden = false;
@@ -3526,6 +3728,7 @@ function renderQuiz(el, hasPlan) {
       <div>
         <span class="eyebrow">${hasPlan ? "Rebuild the plan" : "Set up the plan"}</span>
         <h2 style="margin-top:6px">${hasPlan ? "Change what's different. The rest stays as it was." : "Set up the plan"}</h2>
+        ${hasPlan && state.plan && state.plan.edited ? `<p class="lib-note" style="margin-top:8px">Rebuilding makes a fresh plan, so the exercises you swapped yourself go back to the defaults.</p>` : ""}
         <p class="muted" style="margin-top:6px">The plan is built from rules, not luck. The same answers always give the same plan. Your logged sessions are kept whatever you change.</p>
       </div>
       <div id="body-card"></div>
@@ -3555,10 +3758,13 @@ function renderQuiz(el, hasPlan) {
   };
   form.addEventListener("change", (e) => {
     const t = e.target; if (!t.name) return;
+    const q = EXTRA.find((y) => y.key === t.name);
+    if (t.type === "checkbox" && t.checked && q && q.max && q.multi && $$(`input[name="${t.name}"]:checked`, form).length > q.max) { t.checked = false; toast(`Pick up to ${q.max}`); }
     if (t.type === "checkbox") tUI.draft[t.name] = $$(`input[name="${t.name}"]:checked`, form).map((i) => i.value);
     else tUI.draft[t.name] = t.value;
     sync();
   });
+  form.addEventListener("input", (e) => { if (e.target.classList.contains("quiz-text")) tUI.draft[e.target.name] = e.target.value; });
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!quizState().ok) return;
@@ -3745,6 +3951,21 @@ function bodyPlanCard(p) {
     ${stale ? `<div class="row"><span class="muted" style="font-size:.88rem">Your check-in is newer than this plan.</span><button class="btn small primary" type="button" data-act="rebuild">Rebuild to use it</button></div>` : ""}
   </article>`;
 }
+function goalsCard(p, x) {
+  const g = p.goals || {}, rows = [];
+  rows.push(["Main goal", p.goal]);
+  if (g.improve && g.improve.length) rows.push(["Getting better at", g.improve.map((k) => IMPROVE_LABEL[k]).join(", ")]);
+  if (g.focus && g.focus.length) rows.push(["Focus areas", g.focus.map((k) => FOCUS_LABEL[k]).join(", ")]);
+  if (g.target && g.target !== "none" && TARGET_LABEL[g.target]) rows.push(["Target", TARGET_LABEL[g.target]]);
+  if (g.myGoal) rows.push(["In your words", g.myGoal]);
+  const custom = !!p.edited;
+  return `<section class="card goals-card" aria-labelledby="goals-h">
+    <div class="goals-top"><h3 id="goals-h">Your goals</h3><button class="btn small primary" type="button" data-act="rebuild">Change goals</button></div>
+    <dl>${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>
+    ${rows.length < 3 ? `<p class="muted" style="font-size:.86rem;margin-top:8px">Tell the plan what you want to get better at, a target, and your gear. It adds exercises just for that.</p>` : ""}
+    <p class="muted" style="font-size:.84rem;margin-top:8px">Don't like an exercise? Tap it and press <strong>Swap</strong>.${custom ? " You've changed some exercises yourself." : ""}</p>
+  </section>`;
+}
 function renderPlan(el) {
   const p = state.plan, a = state.answers;
   const w = weekInfo();
@@ -3766,6 +3987,7 @@ function renderPlan(el) {
         ${x.limits ? `<div><dt>Going easy on</dt><dd>${x.limits.map((l) => l === "back" ? "Lower back" : l[0].toUpperCase() + l.slice(1)).join(", ")}</dd></div>` : ""}
       </dl>
     </div>
+    ${goalsCard(p, x)}
     ${!a.personalized ? `<div class="card personalize"><div><strong>Make this plan more personal.</strong> <span class="muted">A few optional questions: your days, joints, sleep, cardio and your sport.</span></div><button class="btn primary small" type="button" data-act="rebuild">Answer them</button></div>` : ""}
     ${todayCard()}
     <section class="card week" aria-labelledby="week-h">
@@ -3805,7 +4027,7 @@ function renderPlan(el) {
         <article class="card lift session">
           <span class="eyebrow">Day ${i + 1} · ${DAY_NAMES[p.weekdays[i]]}${road ? " · road version" : ""}</span>
           <h3>${esc(s.name)}</h3>
-          <ol class="ex-list">${s.exercises.map((e) => `<li>${exDetails(e, a.equipment, p.rest)}</li>`).join("")}</ol>
+          <ol class="ex-list">${s.exercises.map((e, ei) => `<li>${exDetails(e, a.equipment, p.rest, i, ei)}</li>`).join("")}</ol>
         </article>`).join("")}
     </div>
     <article class="card howto">
@@ -3873,15 +4095,41 @@ function normProfile(p) {
     if (f.num) { const n = Number(v); if (v !== "" && v != null && Number.isFinite(n) && n >= f.num[0] && n <= f.num[1]) o[f.key] = Math.round(n); }
     else if (typeof v === "string" && v.trim()) o[f.key] = v.trim().slice(0, f.max);
   }
+  if (validISO(p.birthDate) && p.birthDate <= todayISO() && p.birthDate >= "1900-01-01") o.birthDate = p.birthDate;
+  if (Array.isArray(p.family)) { const fam = p.family.filter((f) => f && typeof f.name === "string" && f.name.trim() && validISO(f.date) && f.date <= todayISO()).slice(0, 30).map((f) => ({ name: f.name.trim().slice(0, 40), date: f.date })); if (fam.length) o.family = fam; }
   if (!Object.keys(o).length) return null;
   o.updatedAt = typeof p.updatedAt === "string" ? p.updatedAt : new Date().toISOString();
   return o;
 }
 // Age as of today: a saved age grows by the whole years since it was entered.
+function ageOn(birth, d) { const b = parseISO(birth); let n = d.getFullYear() - b.getFullYear(); if (d.getMonth() < b.getMonth() || (d.getMonth() === b.getMonth() && d.getDate() < b.getDate())) n--; return n; }
 function profileAge() {
-  const p = state.profile; if (!p || !p.age) return null;
+  const p = state.profile; if (p && p.birthDate) return ageOn(p.birthDate, new Date());
+  if (!p || !p.age) return null;
   const since = Date.parse(p.updatedAt); const yrs = Number.isFinite(since) ? Math.floor((Date.now() - since) / (365.25 * 864e5)) : 0;
   return p.age + Math.max(0, yrs);
+}
+// Birthdays in the next `within` days (today counts), soonest first. Feb 29 falls on Feb 28 in other years.
+function upcomingBirthdays(within = 7) {
+  const p = state.profile; if (!p) return [];
+  const list = [...(p.birthDate ? [{ name: "You", date: p.birthDate, me: true }] : []), ...(p.family || [])];
+  const t = new Date(); const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  return list.map((f) => {
+    const b = parseISO(f.date), at = (y) => { const d = new Date(y, b.getMonth(), b.getDate()); return d.getMonth() !== b.getMonth() ? new Date(y, b.getMonth() + 1, 0) : d; };
+    let next = at(today.getFullYear()); if (next < today) next = at(today.getFullYear() + 1);
+    return { ...f, next, days: Math.round((next - today) / 864e5), turning: next.getFullYear() - b.getFullYear() };
+  }).filter((f) => f.days <= within).sort((x, y) => x.days - y.days);
+}
+const ordinal = (n) => n + ([11, 12, 13].includes(n % 100) ? "th" : ["th", "st", "nd", "rd"][n % 10] || "th");
+const BDAY_HIDE = "the-goal-bday-hidden";
+function renderBirthdays() {
+  const el = $("#bday-bar"); if (!el) return;
+  let hidden = ""; try { hidden = localStorage.getItem(BDAY_HIDE) || ""; } catch (e) {}
+  const list = upcomingBirthdays();
+  if (!list.length || hidden === todayISO()) { el.hidden = true; el.innerHTML = ""; return; }
+  const when = (f) => f.days === 0 ? "today" : f.days === 1 ? "tomorrow" : `in ${f.days} days (${f.next.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" })})`;
+  el.hidden = false;
+  el.innerHTML = `<div class="bday" role="status"><span aria-hidden="true">🎂</span><ul>${list.map((f) => `<li>${f.me ? `<strong>Your birthday</strong> is ${when(f)}${f.days === 0 ? `. Happy ${ordinal(f.turning)} birthday!` : ` (you turn ${f.turning}).`}` : `<strong>${esc(f.name)}</strong>'s birthday is ${when(f)}${f.days === 0 ? `: ${f.turning} today.` : ` (turning ${f.turning}).`}`}</li>`).join("")}</ul><button class="btn ghost small" type="button" data-act="bday-hide">Hide for today</button></div>`;
 }
 const isMinor = () => { const a = profileAge(); return a != null && a < 18; };
 const isAdult = () => { const a = profileAge(); return a != null && a >= 18; };
@@ -3891,7 +4139,10 @@ function profileBlock() {
   const age = profileAge();
   return [
     p.name && `Name: ${p.name}${p.nickname ? ` (goes by ${p.nickname})` : ""}`, !p.name && p.nickname && `Goes by: ${p.nickname}`,
-    age != null && `Age: ${age}`, p.budget != null && `Money available for their business: $${p.budget.toLocaleString("en-US")}`,
+    age != null && `Age: ${age}`, p.birthDate && `Birthday: ${fmtDate(p.birthDate)}`,
+    p.family && p.family.length && `Family birthdays: ${p.family.map((f) => `${f.name} ${fmtDate(f.date)} (age ${ageOn(f.date, new Date())})`).join("; ")}`,
+    upcomingBirthdays().length && `Coming up: ${upcomingBirthdays().map((f) => `${f.me ? "their own birthday" : f.name + "'s birthday"} ${f.days === 0 ? "today" : f.days === 1 ? "tomorrow" : `in ${f.days} days`}`).join("; ")}`,
+    p.budget != null && `Money available for their business: $${p.budget.toLocaleString("en-US")}`,
     p.about && `About them, in their words: ${p.about}`, p.dreams && `Their dreams and goals: ${p.dreams}`, p.now && `What they're working on now: ${p.now}`,
   ].filter(Boolean).join("\n");
 }
@@ -3913,21 +4164,33 @@ function renderProfileForm() {
     <div class="profile-grid">
       ${PROFILE_FIELDS.map((f) => `<div class="field ${f.long ? "wide" : ""}"><label class="lbl" for="me-${f.key}">${esc(f.label)}</label>${f.long
         ? `<textarea id="me-${f.key}" name="${f.key}" rows="3" maxlength="${f.max}" placeholder="${esc(f.ph || "")}">${esc(p[f.key] || "")}</textarea>`
-        : `<input id="me-${f.key}" name="${f.key}" ${f.num ? `type="number" inputmode="numeric" min="${f.num[0]}" max="${f.num[1]}"` : `type="text" maxlength="${f.max}"`} value="${esc(p[f.key] != null ? String(f.key === "age" ? profileAge() : p[f.key]) : "")}" autocomplete="off">`}</div>`).join("")}
+        : `<input id="me-${f.key}" name="${f.key}" ${f.num ? `type="number" inputmode="numeric" min="${f.num[0]}" max="${f.num[1]}"` : `type="text" maxlength="${f.max}"`} value="${esc(p[f.key] != null || (f.key === "age" && p.birthDate) ? String(f.key === "age" ? profileAge() : p[f.key]) : "")}" ${f.key === "age" && p.birthDate ? "readonly" : ""} autocomplete="off">${f.key === "age" && p.birthDate ? `<span class="hint">From your birthday.</span>` : ""}`}</div>${f.key === "age" ? `<div class="field"><label class="lbl" for="me-birthDate">My birthday</label><input id="me-birthDate" name="birthDate" type="date" max="${todayISO()}" value="${esc(p.birthDate || "")}"></div>` : ""}`).join("")}
+      <div class="field wide"><span class="lbl">Family birthdays</span><span class="hint">You'll see a reminder at the top of the app a week before each one.</span>
+        <div class="bday-rows" id="bday-rows">${(p.family || []).map(famRow).join("")}</div>
+        <button class="btn small" type="button" data-act="bday-add" style="margin-top:8px;justify-self:start">Add a birthday</button></div>
     </div>
     <span class="err" id="profile-err" role="alert"></span>
     <div class="dlg-foot">${state.profile ? `<button class="btn ghost danger" type="button" data-act="profile-reset" style="margin-right:auto">Reset profile</button>` : ""}<button class="btn" type="button" data-act="close-dialog">Cancel</button><button class="btn primary" type="submit">Save</button></div>`;
 }
+function famRow(f = {}) { return `<div class="bday-row"><input type="text" maxlength="40" placeholder="Who (e.g. Mom)" aria-label="Name" value="${esc(f.name || "")}" class="fam-name"><input type="date" max="${todayISO()}" aria-label="Birthday" value="${esc(f.date || "")}" class="fam-date"><button class="btn ghost small" type="button" data-act="bday-del" aria-label="Remove">✕</button></div>`; }
 function openProfile() { renderProfileForm(); openDialog("#dlg-profile", "#me-name"); }
 async function saveProfile() {
   const fd = new FormData($("#profile-form")), raw = {};
   for (const f of PROFILE_FIELDS) raw[f.key] = (fd.get(f.key) || "").toString();
   const bad = PROFILE_FIELDS.find((f) => f.num && raw[f.key].trim() && !(Number(raw[f.key]) >= f.num[0] && Number(raw[f.key]) <= f.num[1]));
   if (bad) { $("#profile-err").textContent = `${bad.label}: use a number from ${bad.num[0]} to ${bad.num[1].toLocaleString("en-US")}.`; return; }
+  raw.birthDate = (fd.get("birthDate") || "").toString();
+  if (raw.birthDate && !(validISO(raw.birthDate) && raw.birthDate <= todayISO())) { $("#profile-err").textContent = "Your birthday can't be in the future."; return; }
+  if (raw.birthDate) raw.age = "";
+  raw.family = $$("#bday-rows .bday-row").map((r) => ({ name: $(".fam-name", r).value, date: $(".fam-date", r).value }));
+  const half = raw.family.find((f) => (f.name.trim() && !f.date) || (!f.name.trim() && f.date));
+  if (half) { $("#profile-err").textContent = "Each family birthday needs a name and a date."; return; }
+  if (raw.family.some((f) => f.date && f.date > todayISO())) { $("#profile-err").textContent = "A birthday can't be in the future."; return; }
   const p = normProfile({ ...raw, updatedAt: new Date().toISOString() });
   try { await store.setSingle("profile", p); } catch (e) { $("#profile-err").textContent = SAVE_FAIL; return; }
   closeDialogs(); toast(p ? "Saved. All three assistants will use it." : "Profile cleared");
   if (ai.open) renderAI();
+  renderBirthdays();
   if (currentTab === "training") renderTraining();
 }
 const SHARED_RULES = `You live inside "The Goal", a personal dossier for one person who is building an online business to fund extended stretches chasing wild, uncrowded nature around the world, while keeping a real home base to build a family.
@@ -4060,7 +4323,7 @@ const ASSISTANTS = {
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
       const week = w.days.map((d) => `${d.iso}${d.today ? " (today)" : ""}: ${d.done ? "trained " + d.done.session : d.planned ? "planned " + d.planned + ", not done" : "rest"}`).join("\n");
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
-      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("20 minutes of steady running feels: " + xlabel("hike", x.hike)); if (x.sport) out.push("Sport: " + xlabel("sport", x.sport)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (p.recovery) out.push("Recovery note: " + p.recovery); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
+      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("20 minutes of steady running feels: " + xlabel("hike", x.hike)); if (x.sport) out.push("Sport: " + xlabel("sport", x.sport)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.improve && x.improve.length) out.push("Wants to get better at: " + x.improve.map((k) => IMPROVE_LABEL[k]).join(", ")); if (x.focus && x.focus.length) out.push("Body areas to focus on: " + x.focus.map((k) => FOCUS_LABEL[k]).join(", ")); if (x.target && x.target !== "none") out.push("Target: " + TARGET_LABEL[x.target]); if (x.myGoal) out.push("Their goal in their own words: " + x.myGoal); if (x.gear) out.push("Gear at home: " + (x.gear.length ? x.gear.map((k) => xlabel("gear", k)).join(", ") : "none")); if (x.avoid && x.avoid.length) out.push("Would rather skip: " + x.avoid.map((k) => xlabel("avoid", k)).join(", ")); if (p.edited) out.push("They swapped or removed some exercises themselves (shown in the sessions above)"); if (p.recovery) out.push("Recovery note: " + p.recovery); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
     },
     tools: () => [...summitRecipeTools(), libraryTool("summit"), {
       name: "log_workout", description: `Log a workout they did outside their plan when they tell you about it (basketball, a run, a swim, their own gym session…). Today is ${todayISO()}; yesterday is ${iso(addDays(parseISO(todayISO()), -1))}. Ask for the length if they didn't say it.`,
@@ -4640,10 +4903,13 @@ document.addEventListener("click", async (e) => {
     case "act-del-no": aUI.confirm = null; renderActivities(); break;
     case "act-del-yes": { aUI.confirm = null; try { await store.remove("activities", id); toast("Workout deleted"); } catch (e) { toast(SAVE_FAIL, true); } renderActivities(); if ($("#week-strip")) renderTraining(); break; }
     case "act-all": aUI.showAll = !aUI.showAll; renderActivities(); break;
+    case "bday-add": { $("#bday-rows").insertAdjacentHTML("beforeend", famRow()); const r = $$("#bday-rows .fam-name"); r[r.length - 1].focus(); break; }
+    case "bday-del": b.closest(".bday-row").remove(); break;
+    case "bday-hide": try { localStorage.setItem(BDAY_HIDE, todayISO()); } catch (e) {} $("#bday-bar").hidden = true; break;
     case "profile-reset": { if (!b.dataset.sure) { b.dataset.sure = "1"; b.textContent = "Tap again to clear (business money stays)"; break; }
       const keep = state.profile && state.profile.budget != null ? { budget: state.profile.budget, updatedAt: new Date().toISOString() } : null;
       try { await store.setSingle("profile", normProfile(keep)); } catch (e) { toast(SAVE_FAIL, true); break; }
-      renderProfileForm(); toast("Profile cleared"); if (ai.open) renderAI(); renderTraining(); renderStore(); break; }
+      renderProfileForm(); renderBirthdays(); toast("Profile cleared"); if (ai.open) renderAI(); renderTraining(); renderStore(); break; }
     case "day-add": openDay(b.dataset.date); break;
     case "day-edit": openDay(id); break;
     case "day-del": sUI.confirm = id; renderStore(); break;
@@ -4735,6 +5001,16 @@ document.addEventListener("click", async (e) => {
     case "body-goal": if (state.bodyCheck && state.bodyCheck.suggestGoal) { tUI.draft.goal = state.bodyCheck.suggestGoal; renderTraining(); } break;
     case "body-remove": { try { await store.setSingle("bodyCheck", null); bcUI.error = ""; toast("Photo check-in removed"); } catch (e) { bcUI.error = SAVE_FAIL; } if ($("#quiz")) renderTraining(); else renderBodyCard(); break; }
     case "rebuild": tUI.rebuilding = true; tUI.draft = draftFrom(state.answers); renderTraining(); window.scrollTo({ top: 0 }); break;
+    case "ex-swap": { const k = b.dataset.k; tUI.swapEx = tUI.swapEx === k ? null : k; tUI.openEx = k; renderTraining(); const n = $(`[data-act=ex-swap][data-k="${k}"]`); n && n.focus(); break; }
+    case "ex-pick": case "ex-remove": {
+      const [si, ei] = b.dataset.k.split("-").map(Number), plan = JSON.parse(JSON.stringify(state.plan)), sess = plan.sessions[si];
+      if (!sess || !sess.exercises[ei]) break;
+      if (act === "ex-pick") { const e = sess.exercises[ei]; const old = e.name; e.name = b.dataset.name; e.swap = "Your pick"; e.custom = true; delete e.extra; if (!/^\d+ × /.test(e.prescription)) e.prescription = "3 × 8-12"; toast(`Swapped ${old} for ${e.name}`); }
+      else { if (sess.exercises.length <= 2) break; const old = sess.exercises[ei].name; sess.exercises.splice(ei, 1); toast(`Removed ${old}`); }
+      plan.edited = true;
+      try { await store.setSingle("plan", plan); } catch (err) { toast(SAVE_FAIL, true); break; }
+      tUI.swapEx = null; tUI.openEx = act === "ex-pick" ? b.dataset.k : null; renderTraining(); break;
+    }
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
     case "train-sec": showTrainSection(b.dataset.v); break;
@@ -4811,7 +5087,7 @@ store.init().then(() => {
   chatSyncInit(); photoStore.init().then(() => { renderDetailPhotos(); renderCountryDialog(); });
   loaded = true;
   if (validAnswers(state.answers)) tUI.draft = draftFrom(state.answers);
-  renderAtlas(); renderJourney(); renderTraining();
+  renderAtlas(); renderJourney(); renderTraining(); renderBirthdays();
   if (globe && atlasUI.selectedId) { const p = state.destinations.find((d) => d.id === atlasUI.selectedId); p && globe.flyTo(p.lat, p.lon); }
   $("#foot").textContent = store.mode === "db" ? "Saved to the dossier's database." : store.mode === "local" ? "Saved in this browser." : "Not saved: storage is unavailable here.";
 });
