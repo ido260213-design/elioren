@@ -259,6 +259,19 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
 .act-note{display:block;font-size:.82rem}
 .acts-btns{white-space:nowrap}
 .eff-hard{color:var(--loss)} .eff-easy{color:var(--muted)}
+.wd .xs{color:var(--moss)}
+.skills-intro{margin-bottom:14px}.skills-intro p{margin-top:6px;max-width:62ch}
+.skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:14px}
+.skill-pick{padding:16px 18px;display:grid;gap:8px;align-content:start}.skill-pick .btn{justify-self:start}
+.skill-main,.skill-step{padding:18px 20px;margin-bottom:16px;display:grid;gap:10px}
+.skill-top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.skill-steps{list-style:none;margin:0;padding:0;display:flex;gap:6px}
+.skill-steps li{flex:1;height:8px;border-radius:99px;background:var(--sunken);border:1px solid var(--hairline)}
+.skill-steps li.done{background:var(--moss);border-color:var(--moss)}
+.skill-steps li.cur{background:color-mix(in srgb,var(--gold) 55%,var(--raised));border-color:var(--gold)}
+.skill-days .choice{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.skill-session{display:grid;gap:8px;margin:4px 0 0}.skill-session dt{font-weight:600}.skill-session dd{margin:2px 0 0}
+.skill-acts{gap:8px;flex-wrap:wrap}
 .wd .xa{display:block;font-size:.68rem;color:var(--gold);margin-top:2px;line-height:1.2}
 @media (max-width:560px){.acts-list li{grid-template-columns:1fr auto}.acts-list .d{grid-column:1/-1}}
 .milestone{border-top:1px solid var(--hairline);padding-top:12px}
@@ -812,11 +825,13 @@ dialog .dlg-foot{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;ma
     </div>
     <div class="seg-toggle train-switch" role="group" aria-label="Training section">
       <button type="button" data-act="train-sec" data-v="plan" aria-pressed="true">Training plan</button>
+      <button type="button" data-act="train-sec" data-v="skills" aria-pressed="false">Skills</button>
       <button type="button" data-act="train-sec" data-v="recipes" aria-pressed="false">Healthy recipes</button>
       <button type="button" data-act="train-sec" data-v="library" aria-pressed="false">Summit's library</button>
     </div>
     <div id="training"></div>
     <div id="activities"></div>
+    <div id="skills" hidden></div>
     <div id="kitchen" hidden></div>
     <div id="summit-library-wrap" hidden><p class="muted" style="margin:0 0 12px">The key ideas from the best training books, coaches, legendary athletes and fitness creators. Summit uses them when he coaches you.</p><div id="summit-library"></div></div>
   </section>
@@ -964,9 +979,9 @@ function toast(msg, bad = false) {
 function setBanner(text) { $("#banner").hidden = !text; $("#banner-text").textContent = text || ""; }
 
 /* ============================ state & storage ============================ */
-const state = { activities: [], storedays: [], destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null, profile: null };
+const state = { activities: [], storedays: [], destinations: [], projects: [], income: [], books: [], milestones: [], stage: null, answers: null, plan: null, trainingLog: [], bizAnswers: null, bizDone: [], travelAnswers: null, favRecipes: [], myrecipes: [], countries: [], photos: [], bodyCheck: null, profile: null, skills: null };
 const COLLECTIONS = ["destinations", "projects", "income", "books", "milestones", "myrecipes", "photos", "storedays", "activities"];
-const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck", profile: "meta/profile", storeSettings: "business/store" };
+const SINGLE_PATHS = { stage: "meta/stage", answers: "training/answers", plan: "training/plan", trainingLog: "training/log", bizAnswers: "business/answers", bizDone: "business/milestones", travelAnswers: "travel/answers", favRecipes: "kitchen/favorites", countries: "travel/countries", bodyCheck: "training/bodycheck", profile: "meta/profile", storeSettings: "business/store", skills: "training/skills" };
 const LOCAL_KEY = "the-goal-dossier-v1";
 const SEED_V = 2; // bump when places are added to seed.json; each place's "since" says which version added it
 const newSeedPlaces = (seed, fromV) => (seed.destinations || []).filter((d) => (d.since || 1) > fromV).map(({ since, ...d }) => d);
@@ -1018,7 +1033,7 @@ const store = {
     state.bizDone = state.bizDone && Array.isArray(state.bizDone.done) ? state.bizDone.done.map(String) : [];
     state.favRecipes = state.favRecipes && Array.isArray(state.favRecipes.ids) ? state.favRecipes.ids.map(String) : [];
     state.countries = state.countries && Array.isArray(state.countries.names) ? state.countries.names.map(String) : [];
-    state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile);
+    state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile); state.skills = normSkills(state.skills);
   },
   async loadLocal() {
     let raw = null, ok = true;
@@ -1038,7 +1053,7 @@ const store = {
     if (!Array.isArray(state.activities)) state.activities = [];
     if (!Array.isArray(state.countries)) state.countries = [];
     if (!Array.isArray(state.photos)) state.photos = [];
-    state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile);
+    state.bodyCheck = normBody(state.bodyCheck); state.profile = normProfile(state.profile); state.skills = normSkills(state.skills);
     if (raw && (state.seedV || 1) < SEED_V) {
       const seed = await fetchSeed();
       if (seed) { const have = new Set(state.destinations.map((d) => d.id)); for (const d of newSeedPlaces(seed, state.seedV || 1)) if (!have.has(d.id)) state.destinations.push(d); state.seedV = SEED_V; }
@@ -3934,7 +3949,7 @@ function weekInfo() {
     x.planIdx = plan.weekdays.indexOf(x.i);
     x.planned = x.planIdx >= 0 ? plan.sessions[x.planIdx].name : null;
     x.hike = false;
-    x.done = logged.get(x.iso) || null; x.today = x.iso === tISO; x.acts = actsOn(x.iso);
+    x.done = logged.get(x.iso) || null; x.today = x.iso === tISO; x.acts = actsOn(x.iso); x.skill = skillOnDay(x.i);
   });
   return { days, count: days.filter((x) => x.done).length, target: plan.sessions.length };
 }
@@ -3990,6 +4005,7 @@ function renderPlan(el) {
     ${goalsCard(p, x)}
     ${!a.personalized ? `<div class="card personalize"><div><strong>Make this plan more personal.</strong> <span class="muted">A few optional questions: your days, joints, sleep, cardio and your sport.</span></div><button class="btn primary small" type="button" data-act="rebuild">Answer them</button></div>` : ""}
     ${todayCard()}
+    ${skillTodayNote()}
     <section class="card week" aria-labelledby="week-h">
       <div class="week-head">
         <h3 id="week-h" class="week-count" aria-live="polite">This week — <span class="num">${w.count}</span> of <span class="num">${w.target}</span> sessions</h3>
@@ -4001,7 +4017,7 @@ function renderPlan(el) {
           const sub = d.done ? d.done.session : d.planned || "Rest";
           const st = d.done ? `trained, ${d.done.session}` : d.planned ? `planned, ${d.planned}, not trained yet` : "rest day";
           return `<button type="button" class="wd ${cls} ${d.today ? "today" : ""}" data-act="toggle-day" data-date="${d.iso}" aria-pressed="${!!d.done}" aria-label="${d.d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}${d.today ? ", today" : ""}: ${esc(st)}">
-            <span class="w">${d.today ? "Today" : d.d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.d.getDate()}</span><span class="s">${esc(sub)}</span>${d.acts.length ? `<span class="xa">+ ${esc(d.acts.map(actName).join(", "))}</span>` : ""}</button>`;
+            <span class="w">${d.today ? "Today" : d.d.toLocaleDateString("en-US", { weekday: "short" })}</span><span class="dn">${d.d.getDate()}</span><span class="s">${esc(sub)}</span>${d.acts.length ? `<span class="xa">+ ${esc(d.acts.map(actName).join(", "))}</span>` : ""}${d.skill ? `<span class="xa xs">+ Skill${skillState().log.some((e) => e.date === d.iso) ? " ✓" : ""}</span>` : ""}</button>`;
         }).join("")}
       </div>
       <div class="legend" aria-hidden="true">
@@ -4323,7 +4339,7 @@ const ASSISTANTS = {
       const sessions = p.sessions.map((s, i) => `Day ${i + 1} (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][p.weekdays[i]]}) ${s.name}: ${s.exercises.map((x) => `${x.name} ${x.prescription}`).join("; ")}`).join("\n");
       const week = w.days.map((d) => `${d.iso}${d.today ? " (today)" : ""}: ${d.done ? "trained " + d.done.session : d.planned ? "planned " + d.planned + ", not done" : "rest"}`).join("\n");
       const hist = state.trainingLog.slice().sort((x, y) => y.date.localeCompare(x.date)).slice(0, 12).map((e) => `${e.date} ${e.session}`).join(", ") || "none";
-      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("20 minutes of steady running feels: " + xlabel("hike", x.hike)); if (x.sport) out.push("Sport: " + xlabel("sport", x.sport)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.improve && x.improve.length) out.push("Wants to get better at: " + x.improve.map((k) => IMPROVE_LABEL[k]).join(", ")); if (x.focus && x.focus.length) out.push("Body areas to focus on: " + x.focus.map((k) => FOCUS_LABEL[k]).join(", ")); if (x.target && x.target !== "none") out.push("Target: " + TARGET_LABEL[x.target]); if (x.myGoal) out.push("Their goal in their own words: " + x.myGoal); if (x.gear) out.push("Gear at home: " + (x.gear.length ? x.gear.map((k) => xlabel("gear", k)).join(", ") : "none")); if (x.avoid && x.avoid.length) out.push("Would rather skip: " + x.avoid.map((k) => xlabel("avoid", k)).join(", ")); if (p.edited) out.push("They swapped or removed some exercises themselves (shown in the sessions above)"); if (p.recovery) out.push("Recovery note: " + p.recovery); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
+      return `${libPre}Their answers: goal ${label("goal", a.goal)}; experience ${label("experience", a.experience)}; ${a.days} days a week; equipment ${label("equipment", a.equipment)}; sessions ${label("length", a.length)}.\nPlan: ${p.split}, rest ${p.rest} between sets.\n${sessions}\nProgression rule: ${p.progression}\nConditioning: ${p.conditioning}\nThis week:\n${week}\nRecent sessions: ${hist}${skillContext()}${(() => { const x = normExtras(a), out = []; if (x.limits) out.push("Going easy on: " + x.limits.join(", ") + " (exercises were swapped for joint-friendly versions)"); if (x.sleep) out.push("Sleep: " + xlabel("sleep", x.sleep)); if (x.hike) out.push("20 minutes of steady running feels: " + xlabel("hike", x.hike)); if (x.sport) out.push("Sport: " + xlabel("sport", x.sport)); if (x.cardio) out.push("Favorite cardio: " + xlabel("cardio", x.cardio)); if (x.improve && x.improve.length) out.push("Wants to get better at: " + x.improve.map((k) => IMPROVE_LABEL[k]).join(", ")); if (x.focus && x.focus.length) out.push("Body areas to focus on: " + x.focus.map((k) => FOCUS_LABEL[k]).join(", ")); if (x.target && x.target !== "none") out.push("Target: " + TARGET_LABEL[x.target]); if (x.myGoal) out.push("Their goal in their own words: " + x.myGoal); if (x.gear) out.push("Gear at home: " + (x.gear.length ? x.gear.map((k) => xlabel("gear", k)).join(", ") : "none")); if (x.avoid && x.avoid.length) out.push("Would rather skip: " + x.avoid.map((k) => xlabel("avoid", k)).join(", ")); if (p.edited) out.push("They swapped or removed some exercises themselves (shown in the sessions above)"); if (p.recovery) out.push("Recovery note: " + p.recovery); return out.length ? "\nPersonal details:\n- " + out.join("\n- ") : ""; })()}` + bc;
     },
     tools: () => [...summitRecipeTools(), libraryTool("summit"), {
       name: "log_workout", description: `Log a workout they did outside their plan when they tell you about it (basketball, a run, a swim, their own gym session…). Today is ${todayISO()}; yesterday is ${iso(addDays(parseISO(todayISO()), -1))}. Ask for the length if they didn't say it.`,
@@ -4823,11 +4839,153 @@ Nutrition is per serving and must add up (kcal ≈ 4×protein + 4×carbs + 9×fa
     renderKitchen();
   }
 }
+// Skill practice: learn one calisthenics skill at home, 1-2 days a week, one step at a time.
+const SKILLS = [
+  { key: "handstand", name: "Handstand", blurb: "Balance upside down on your hands. Starts with a plank, ends freestanding.", needs: "A clear wall and floor space",
+    safety: "Clear the space first: no furniture, nothing sharp. Learn to bail out (step 5) before you kick up away from the wall.",
+    steps: [
+      { name: "Plank and shoulder taps", how: ["Hold a push-up position: hands under shoulders, body straight from head to heels", "Squeeze your legs and stomach so your hips don't sag", "Lift one hand to tap the other shoulder, switch, keep the hips still"], do: "3 × 30s plank, then 3 × 10 taps", test: "Hold a 45-second plank with a straight body, then 20 taps without your hips rocking", tip: "Push the floor away so your upper back rounds a little. That's the handstand shoulder position." },
+      { name: "Pike hold", how: ["Start in a push-up position", "Walk your feet toward your hands so your hips go up high, like an upside-down V", "Shift your shoulders over your hands and hold, arms straight"], do: "4 × 20s", test: "Hold 30 seconds with your shoulders right above your hands", tip: "Look at the floor between your hands, not at your feet." },
+      { name: "Wall walk", how: ["Start in a push-up position with your feet against the wall", "Walk your feet up the wall while your hands walk back toward it", "Go as high as is comfortable, then walk back down slowly"], do: "4 × 2 walks", test: "Walk up until your body is almost straight (hands about a hand-length from the wall) and hold 10 seconds", tip: "Never let your arms bend: straight, locked elbows carry your weight." },
+      { name: "Chest-to-wall handstand", how: ["Walk up the wall all the way, belly facing the wall", "Hands 10-20 cm from the wall, body in one straight line", "Squeeze legs together, point your toes, push tall through your shoulders"], do: "5 × 15-30s", test: "Hold 45 seconds in a straight line", tip: "Think 'tall': push the floor away like you're trying to touch the ceiling with your feet." },
+      { name: "Kick-up and bail", how: ["Practice the bail first: from a short kick, turn one hand out and step down to the side, like a cartwheel", "Then kick up with your back to the wall: hands on the floor, one leg kicks, the other follows", "Touch the wall lightly with your heels and come down with control"], do: "3 × 5 bails, then 6 × 3 kick-ups", test: "Kick up and touch the wall softly 5 times out of 5, and bail to the side safely every time", tip: "Kick with a straight leg and keep your arms locked. Small kicks first." },
+      { name: "Freestanding handstand", how: ["Kick up in the middle of the room", "Find balance with your fingers: press the fingertips if you're falling forward, the palms if falling back", "Bail to the side when it goes over"], do: "10-15 attempts, count your best hold", test: "5 seconds freestanding. Then keep going for 10, 20, 30", tip: "This takes weeks. Every attempt counts, even the short ones." },
+    ] },
+  { key: "crow", name: "Crow pose", blurb: "Balance on your hands with your knees on your arms. Great for strength and balance.", needs: "Floor and a pillow",
+    safety: "Put a pillow in front of your face while learning, so a forward tip lands soft.",
+    steps: [
+      { name: "Deep squat and wrist prep", how: ["Squat all the way down with your heels on the floor", "On hands and knees, rock gently forward and back over your wrists", "Circle your wrists both ways"], do: "3 × 30s squat, 20 wrist rocks", test: "Sit in a deep squat for 60 seconds, heels down", tip: "Warm your wrists before every hand-balancing session." },
+      { name: "Frog stand on toes", how: ["Squat down, hands flat on the floor, shoulder-width", "Put your knees against the outside of your elbows", "Lean forward until your weight is on your hands, toes still touching"], do: "5 × 10s", test: "Lean forward for 20 seconds with almost no weight on your toes", tip: "Fingers spread wide and grip the floor." },
+      { name: "Frog stand", how: ["Same position, lean a bit further", "Lift one foot, then the other", "Hold with bent arms, look a little forward"], do: "6 × 5-15s", test: "Hold 15 seconds with both feet up", tip: "If you tip forward, that's what the pillow is for. Lean less next time." },
+      { name: "Crow pose", how: ["Knees high on the back of your upper arms, close to the armpits", "Lean forward and lift both feet", "Squeeze your knees in and round your back a little"], do: "6 × 5-20s", test: "Hold 20 seconds", tip: "Pull your belly button in. A rounded back makes it much easier." },
+      { name: "Straight-arm crow", how: ["Start in crow", "Slowly push the floor away to straighten your arms", "Keep the knees squeezed against your arms"], do: "6 × 5-10s", test: "Hold 10 seconds with straight arms", tip: "This is the first step toward a tuck planche." },
+    ] },
+  { key: "pistol", name: "Pistol squat", blurb: "A full squat on one leg. Your bed is the perfect tool to learn it.", needs: "Your bed and a door frame",
+    safety: "Go slowly on the way down. Stop if your knee hurts (not just tired).",
+    steps: [
+      { name: "Deep squat", how: ["Feet shoulder-width, toes slightly out", "Sit down as low as you can with your heels down and chest up", "Stand up and squeeze your glutes at the top"], do: "3 × 15", test: "25 clean squats in a row, thighs below parallel", tip: "Knees go the same way as your toes." },
+      { name: "Split squat, back foot on the bed", how: ["Stand a big step in front of your bed, put the top of your back foot on it", "Lower straight down until your front thigh is flat", "Push up through your front heel"], do: "3 × 8 per leg", test: "12 per leg with control", tip: "Most of your weight stays on the front leg." },
+      { name: "One-leg sit to the bed", how: ["Stand in front of your bed on one leg, the other leg forward", "Sit down slowly onto the bed on one leg", "Stand back up on the same leg without rocking"], do: "3 × 5 per leg", test: "8 per leg standing up without a rock or a push", tip: "Reach your arms forward to balance." },
+      { name: "Slow one-leg lowering", how: ["Stand on one leg, the other straight in front", "Lower as slowly as you can, about 5 seconds, all the way down", "Put the other foot down and stand up with two legs"], do: "3 × 4 per leg", test: "5 slow lowerings per leg without falling back", tip: "Keep your heel down. If it lifts, the bed step needs more time." },
+      { name: "Assisted pistol", how: ["Hold a door frame lightly with one hand", "Do a full pistol: all the way down and up on one leg", "Use the door frame only as much as you need"], do: "3 × 5 per leg", test: "5 per leg using just your fingertips for balance", tip: "Every week, use the door a little less." },
+      { name: "Full pistol squat", how: ["Arms forward, one leg straight out in front", "Lower all the way down on one leg", "Stand up without help"], do: "3 × 3-5 per leg", test: "3 clean pistols on each leg", tip: "You did it. Next: hold a weight in your hands, or try it on a step." },
+    ] },
+  { key: "lsit", name: "L-sit", blurb: "Hold your body up with your legs straight out in front. Super strong core.", needs: "Floor (two books help)",
+    safety: "Keep your shoulders pushed down, away from your ears.",
+    steps: [
+      { name: "Hollow body hold", how: ["Lie on your back, press your lower back into the floor", "Lift your shoulders and legs a little, arms by your ears", "Hold like a banana shape, lower back never lifts"], do: "3 × 20s", test: "Hold 30 seconds with your lower back on the floor", tip: "Bend your knees to make it easier." },
+      { name: "Seated leg lifts", how: ["Sit with your legs straight, hands on the floor beside your knees", "Lift both heels off the floor without leaning back", "Lower slowly"], do: "3 × 10", test: "15 lifts with heels off the floor for a second each", tip: "Pull your toes back toward you." },
+      { name: "Foot-supported L-sit", how: ["Sit, hands flat beside your hips (or fists on two books)", "Push down hard and lift your bottom off the floor", "Heels stay on the floor"], do: "4 × 15s", test: "Hold 30 seconds", tip: "Lock your elbows and push your shoulders down." },
+      { name: "Tuck sit", how: ["Same start, knees bent to your chest", "Push down and lift everything off the floor", "Hold, breathing slowly"], do: "5 × 5-10s", test: "Hold 15 seconds", tip: "Books under your hands give your feet room." },
+      { name: "One-leg L-sit", how: ["From the tuck sit, straighten one leg", "Hold, then switch legs", "Keep both feet off the floor"], do: "5 × 5s per leg", test: "10 seconds each leg", tip: "Point the toes of the straight leg." },
+      { name: "Full L-sit", how: ["Lift off with both legs straight", "Legs together, toes pointed, level with your hips", "Hold"], do: "6 × 3-10s", test: "Hold 10 seconds", tip: "Next: V-sit, or hold it longer." },
+    ] },
+  { key: "backflip", name: "Backflip prep", blurb: "Everything you can safely build at home for a backflip: core, bridge, rolls and jump power.", needs: "Floor and a mattress laid on the floor",
+    safety: "Never try a backflip on a bed, on the floor, or alone. Beds are bouncy and uneven, and landing on your head or neck can be a serious injury. The flip itself happens with a coach (last step).",
+    steps: [
+      { name: "Hollow and arch holds", how: ["Hollow: on your back, lower back pressed down, shoulders and legs a little off the floor", "Arch: on your belly, lift your chest, arms and legs off the floor", "These are the two body shapes you need in every flip"], do: "3 × 20s each", test: "30 seconds of each", tip: "A tight body is what makes flips safe." },
+      { name: "Bridge", how: ["Lie on your back, feet flat near your bottom, hands by your ears with fingers toward your shoulders", "Push up into an arch: hips and belly up high", "Try to straighten your arms"], do: "4 × 5-10s", test: "Hold 15 seconds with straight arms", tip: "Warm up with a few glute bridges first." },
+      { name: "Backward roll", how: ["Lay a mattress flat on the floor. Squat on it, back facing the mattress", "Chin on your chest, roll back, put your hands by your ears", "Push with your hands and roll over one shoulder or straight back onto your feet"], do: "4 × 3 rolls", test: "5 smooth rolls in a row, chin tucked, landing on your feet", tip: "Keep your chin tucked the whole time." },
+      { name: "Tuck jumps", how: ["Swing your arms and jump as high as you can", "Pull your knees to your chest at the top", "Land soft on the balls of your feet with bent knees"], do: "4 × 5", test: "10 tuck jumps in a row, knees above your hips, soft landings", tip: "Height first. A good backflip is a high jump with a tuck." },
+      { name: "Jump and set", how: ["Stand tall, swing your arms down and back", "Jump straight UP (not back), arms reaching high, hips pushing up", "Land in the same spot. Do this, not the flip"], do: "4 × 5", test: "Land on the same spot every time, jumping straight up as high as you can", tip: "Coaches call this the 'set'. It's the most important part of a backflip." },
+      { name: "The flip, with a coach", how: ["Find a gymnastics club, parkour gym or trampoline park with a coach", "They teach the flip on mats and a trampoline, and spot you", "Ask a parent to help find one and book it"], do: "A coached session", test: "Your coach says you're ready to flip alone", tip: "You've built the body for it. Now do the flip the safe way.", coach: true },
+    ] },
+];
+const SKILL_BY = Object.fromEntries(SKILLS.map((s) => [s.key, s]));
+const SKILL_WARM = "Warm up 5 minutes: wrist circles, arm circles, 20 jumping jacks, 10 squats.";
+const sUIk = { confirm: null };
+function normSkills(o) {
+  if (!o || typeof o !== "object") return null;
+  const step = {}; Object.entries(o.step || {}).forEach(([k, v]) => { if (SKILL_BY[k] && Number.isInteger(v)) step[k] = Math.max(0, Math.min(SKILL_BY[k].steps.length - 1, v)); });
+  const days = Array.isArray(o.days) ? [...new Set(o.days.map(Number).filter((d) => d >= 0 && d <= 6))].sort().slice(0, 2) : [];
+  const log = Array.isArray(o.log) ? o.log.filter((e) => e && validISO(e.date) && SKILL_BY[e.skill]).slice(-300) : [];
+  return { current: SKILL_BY[o.current] ? o.current : null, step, days, log };
+}
+const skillState = () => state.skills || { current: null, step: {}, days: [], log: [] };
+const todayIdx = () => (new Date().getDay() + 6) % 7;
+function skillOnDay(i) { const s = skillState(); return s.current && s.days.includes(i) ? SKILL_BY[s.current] : null; }
+async function saveSkills(next) {
+  try { await store.setSingle("skills", normSkills(next)); } catch (e) { toast(SAVE_FAIL, true); return false; }
+  return true;
+}
+function defaultSkillDays() {
+  const busy = state.plan && Array.isArray(state.plan.weekdays) ? state.plan.weekdays : [];
+  const free = [5, 2, 6, 3, 1, 4, 0].filter((d) => !busy.includes(d));
+  return (free.length >= 2 ? free.slice(0, 2) : [2, 5]).sort();
+}
+function skillTodayNote() {
+  const s = skillState(), sk = skillOnDay(todayIdx()); if (!sk) return "";
+  const done = s.log.some((e) => e.date === todayISO() && e.skill === sk.key);
+  const st = sk.steps[s.step[sk.key] || 0];
+  return `<article class="card today-card skill-today"><div><span class="eyebrow">Skill practice today</span><h3>${esc(sk.name)}: ${esc(st.name)}</h3><p class="muted">${done ? "Done for today. Nice work." : "15-20 minutes at home, before or after anything else."}</p></div><button class="btn ${done ? "" : "primary"}" type="button" data-act="train-sec" data-v="skills">${done ? "See it" : "Open practice"}</button></article>`;
+}
+function renderSkills() {
+  const el = $("#skills"); if (!el) return;
+  if (!loaded) { el.innerHTML = `<p class="loading">Opening skills…</p>`; return; }
+  const s = skillState(), sk = s.current && SKILL_BY[s.current];
+  if (!sk || sUIk.picking) {
+    el.innerHTML = `<div class="skills-intro"><h2>Learn a skill at home</h2><p class="muted">Pick one skill. You practice it 1-2 times a week for 15-20 minutes, with nothing but the floor, a wall and your bed. Each step has a test: pass it and you move up.</p></div>
+      <div class="skill-grid">${SKILLS.map((k) => { const n = s.step[k.key]; return `<article class="card skill-pick"><h3>${esc(k.name)}</h3><p>${esc(k.blurb)}</p><p class="muted" style="font-size:.84rem">You need: ${esc(k.needs)} · ${k.steps.length} steps${n != null ? ` · you're on step ${n + 1}` : ""}</p><button class="btn ${s.current === k.key ? "" : "primary"} small" type="button" data-act="skill-pick" data-k="${k.key}">${s.current === k.key ? "Keep this one" : n != null ? "Continue" : "Start"}</button></article>`; }).join("")}</div>
+      ${sk ? `<button class="btn ghost" type="button" data-act="skill-cancel">Back</button>` : ""}`;
+    return;
+  }
+  const i = s.step[sk.key] || 0, st = sk.steps[i], prev = i > 0 ? sk.steps[i - 1] : null;
+  const mine = s.log.filter((e) => e.skill === sk.key), doneToday = mine.some((e) => e.date === todayISO());
+  const wk = mondayOf(new Date()), weekCount = mine.filter((e) => parseISO(e.date) >= wk).length;
+  el.innerHTML = `
+    <section class="card skill-main">
+      <div class="skill-top"><div><span class="eyebrow">Your skill</span><h2>${esc(sk.name)}</h2></div><button class="btn small" type="button" data-act="skill-change">Change skill</button></div>
+      <ol class="skill-steps" aria-label="Steps">${sk.steps.map((x, j) => `<li class="${j < i ? "done" : j === i ? "cur" : ""}" title="${esc(x.name)}"><span class="sr-only">Step ${j + 1}: ${esc(x.name)}${j < i ? ", passed" : j === i ? ", current" : ""}</span></li>`).join("")}</ol>
+      <p class="muted" style="font-size:.86rem">Step ${i + 1} of ${sk.steps.length} · practiced ${mine.length} ${mine.length === 1 ? "time" : "times"}${mine.length ? `, last on ${fmtDate(mine[mine.length - 1].date)}` : ""} · ${weekCount} of ${s.days.length || 2} this week</p>
+      <div class="skill-days"><span class="lbl">Practice days (pick 1 or 2)</span><div class="choice">${DAY_NAMES.map((d, j) => `<button type="button" class="chip ${s.days.includes(j) ? "on" : ""}" aria-pressed="${s.days.includes(j)}" data-act="skill-day" data-d="${j}">${d}${state.plan && state.plan.weekdays && state.plan.weekdays.includes(j) ? " · lift" : ""}</button>`).join("")}</div></div>
+      ${sk.safety ? `<p class="lib-note">${esc(sk.safety)}</p>` : ""}
+    </section>
+    <section class="card skill-step">
+      <span class="eyebrow">Step ${i + 1}</span><h3>${esc(st.name)}</h3>
+      <ol class="ex-steps">${st.how.map((t) => `<li>${esc(t)}</li>`).join("")}</ol>
+      <p class="ex-tip"><strong>Tip:</strong> ${esc(st.tip)}</p>
+      <dl class="skill-session">
+        <div><dt>1. Warm up</dt><dd>${esc(SKILL_WARM)}</dd></div>
+        ${prev ? `<div><dt>2. Review</dt><dd>${esc(prev.name)}: 1-2 easy sets to start.</dd></div>` : ""}
+        <div><dt>${prev ? "3" : "2"}. Practice</dt><dd><strong>${esc(st.do)}</strong>. Rest about a minute between sets. Stop when your form gets sloppy.</dd></div>
+        <div><dt>${prev ? "4" : "3"}. Test</dt><dd>${esc(st.test)}. Try it once at the end of your last practice each week.</dd></div>
+      </dl>
+      <div class="row skill-acts">
+        <button class="btn primary" type="button" data-act="skill-log" ${doneToday ? "disabled" : ""}>${doneToday ? "Practiced today ✓" : "I practiced today"}</button>
+        ${st.coach ? "" : i < sk.steps.length - 1 ? `<button class="btn" type="button" data-act="skill-pass">${sUIk.confirm === "pass" ? "Tap again: I passed the test" : "I passed the test → next step"}</button>` : `<button class="btn" type="button" data-act="skill-pass">${sUIk.confirm === "pass" ? "Tap again to confirm" : "I can do it!"}</button>`}
+        ${i > 0 ? `<button class="btn ghost small" type="button" data-act="skill-back">Go back a step</button>` : ""}
+      </div>
+      ${i < sk.steps.length - 1 ? `<p class="muted" style="font-size:.84rem;margin-top:8px">Next: ${esc(sk.steps[i + 1].name)}</p>` : ""}
+    </section>`;
+}
+async function skillAction(act, b) {
+  const s = JSON.parse(JSON.stringify(skillState()));
+  if (act === "skill-pick") { const k = b.dataset.k; s.current = k; if (s.step[k] == null) s.step[k] = 0; if (!s.days.length) s.days = defaultSkillDays(); sUIk.picking = false; sUIk.confirm = null; if (await saveSkills(s)) toast(`${SKILL_BY[k].name}: practice on ${s.days.map((d) => DAY_NAMES[d]).join(" and ")}`); }
+  else if (act === "skill-change") { sUIk.picking = true; }
+  else if (act === "skill-cancel") { sUIk.picking = false; }
+  else if (act === "skill-day") { const d = Number(b.dataset.d); if (s.days.includes(d)) { if (s.days.length === 1) { toast("Keep at least one day"); return; } s.days = s.days.filter((x) => x !== d); } else { if (s.days.length >= 2) s.days.shift(); s.days.push(d); } await saveSkills(s); }
+  else if (act === "skill-log") { const k = s.current, i = s.step[k] || 0; if (!s.log.some((e) => e.date === todayISO() && e.skill === k)) s.log.push({ date: todayISO(), skill: k, step: i }); if (await saveSkills(s)) toast("Practice logged"); }
+  else if (act === "skill-pass") {
+    if (sUIk.confirm !== "pass") { sUIk.confirm = "pass"; renderSkills(); return; }
+    sUIk.confirm = null; const k = s.current, sk = SKILL_BY[k], i = s.step[k] || 0;
+    if (i < sk.steps.length - 1) { s.step[k] = i + 1; if (await saveSkills(s)) toast(`Step ${i + 2}: ${sk.steps[i + 1].name}`); }
+    else toast(`You can do a ${sk.name.toLowerCase()}! Pick a new skill whenever you want.`);
+  }
+  else if (act === "skill-back") { const k = s.current; s.step[k] = Math.max(0, (s.step[k] || 0) - 1); sUIk.confirm = null; await saveSkills(s); }
+  renderSkills(); if (["skill-log", "skill-day", "skill-pick"].includes(act) && validPlan(state.plan, state.answers)) renderTraining();
+  const f = b.dataset.act && $(`#skills [data-act="${act}"]${b.dataset.d ? `[data-d="${b.dataset.d}"]` : ""}`); f && f.focus();
+}
+function skillContext() {
+  const s = skillState(), sk = s.current && SKILL_BY[s.current]; if (!sk) return "";
+  const i = s.step[sk.key] || 0, mine = s.log.filter((e) => e.skill === sk.key);
+  return `\nSkill practice (the Skills tab): learning ${sk.name}, step ${i + 1} of ${sk.steps.length} "${sk.steps[i].name}" (test to move up: ${sk.steps[i].test}). Practice days: ${s.days.map((d) => DAY_NAMES[d]).join(", ")}. Practiced ${mine.length} times${mine.length ? `, last on ${mine[mine.length - 1].date}` : ""}. ${sk.key === "backflip" ? "The flip itself only with a coach on mats, never on a bed or alone." : ""}`;
+}
 function showTrainSection(s) {
   kUI.section = s;
-  $("#training").hidden = s !== "plan"; $("#activities").hidden = s !== "plan"; $("#kitchen").hidden = s !== "recipes"; $("#summit-library-wrap").hidden = s !== "library";
+  $("#training").hidden = s !== "plan"; $("#activities").hidden = s !== "plan"; $("#skills").hidden = s !== "skills"; $("#kitchen").hidden = s !== "recipes"; $("#summit-library-wrap").hidden = s !== "library";
   $$("[data-act=train-sec]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === s)));
   if (s === "recipes") renderKitchen();
+  if (s === "skills") { renderSkills(); window.scrollTo({ top: Math.min(window.scrollY, $(".train-switch").offsetTop - 80) }); }
   if (s === "library") renderLibrary("summit");
 }
 // Summit can look recipes up in the library
@@ -5014,6 +5172,7 @@ document.addEventListener("click", async (e) => {
     case "quiz-cancel": tUI.rebuilding = false; renderTraining(); break;
     case "toggle-day": toggleDay(b.dataset.date); break;
     case "train-sec": showTrainSection(b.dataset.v); break;
+    case "skill-pick": case "skill-change": case "skill-cancel": case "skill-day": case "skill-log": case "skill-pass": case "skill-back": await skillAction(act, b); break;
     case "country-open": openCountry(b.dataset.name); break;
     case "country-toggle": { const n = cUI.country, v = visitedCountryMap().get(n); await setCountryManual(n, !(v && v.manual)); break; }
     case "photo-open": openLightbox(id); break;
